@@ -1632,7 +1632,25 @@ function buildPapersGrid() {
 
 // ══ CODE EDITOR ═══════════════════════════════════════════════════════════════
 function loadSnippet(name) {
-  document.getElementById('code-editor').value = SNIPPETS[name] || '';
+  const editor = document.getElementById('code-editor');
+  let code = SNIPPETS[name] || '';
+  // Replace any Unicode math symbols with proper ASCII operators
+  code = code.replace(/\u2264/g, '<=').replace(/\u2265/g, '>=').replace(/\u2260/g, '!=').replace(/\u2212/g, '-');
+  editor.value = code;
+}
+
+function sanitizeCode(code) {
+  // Fix common Unicode characters that break C compilation
+  return code
+    .replace(/\u2264/g, '<=')   // ≤ → <=
+    .replace(/\u2265/g, '>=')   // ≥ → >=
+    .replace(/\u2260/g, '!=')   // ≠ → !=
+    .replace(/\u2212/g, '-')    // − → -
+    .replace(/\u00d7/g, '*')    // × → *
+    .replace(/\u00f7/g, '/')    // ÷ → /
+    .replace(/\u2019/g, "'")    // ' → '
+    .replace(/\u201c/g, '"')    // " → "
+    .replace(/\u201d/g, '"');   // " → "
 }
 
 function clearEditor() {
@@ -1641,7 +1659,8 @@ function clearEditor() {
 }
 
 async function runCode() {
-  const code = document.getElementById('code-editor').value;
+  const rawCode = document.getElementById('code-editor').value;
+  const code = sanitizeCode(rawCode);
   const output = document.getElementById('code-output');
   const runBtn = document.querySelector('.editor-run-btn');
 
