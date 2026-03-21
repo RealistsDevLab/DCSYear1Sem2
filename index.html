@@ -52,34 +52,90 @@ body {
   overflow: hidden;
 }
 
+/* Slideshow layers */
+.login-slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 1.5s ease-in-out;
+  z-index: 0;
+}
+
+.login-slide.active { opacity: 1; }
+
+/* Dark overlay so login box stays readable */
+.login-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(10,10,15,0.75) 0%,
+    rgba(10,10,15,0.55) 50%,
+    rgba(10,10,15,0.75) 100%
+  );
+  z-index: 1;
+}
+
+/* Subtle color tint on top */
 .login-bg {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background:
-    radial-gradient(ellipse 80% 60% at 20% 50%, rgba(108,99,255,0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 80% at 80% 20%, rgba(255,101,132,0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 40% at 60% 80%, rgba(67,233,123,0.06) 0%, transparent 50%);
+    radial-gradient(ellipse 60% 60% at 15% 50%, rgba(108,99,255,0.18) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 70% at 85% 20%, rgba(255,101,132,0.12) 0%, transparent 60%);
+  pointer-events: none;
 }
 
 .login-grid {
   position: absolute;
   inset: 0;
+  z-index: 2;
   background-image:
-    linear-gradient(rgba(108,99,255,0.06) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(108,99,255,0.06) 1px, transparent 1px);
+    linear-gradient(rgba(108,99,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(108,99,255,0.05) 1px, transparent 1px);
   background-size: 40px 40px;
-  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Slide counter dots */
+.login-dots {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  z-index: 10;
+}
+
+.login-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.3);
+  transition: background 0.3s, transform 0.3s;
+  cursor: pointer;
+}
+
+.login-dot.active {
+  background: var(--accent);
+  transform: scale(1.4);
 }
 
 .login-box {
   position: relative;
   z-index: 10;
   width: 420px;
-  background: var(--card);
-  border: 1px solid var(--border2);
+  background: rgba(19,19,32,0.88);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(108,99,255,0.25);
   border-radius: 20px;
   padding: 48px 40px;
-  box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(108,99,255,0.1);
+  box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(108,99,255,0.1);
   animation: loginSlide 0.6s cubic-bezier(.16,1,.3,1) both;
 }
 
@@ -1350,8 +1406,11 @@ body {
 
 <!-- ══ LOGIN PAGE ══ -->
 <div id="login-page">
+  <div id="login-slides"></div>
+  <div class="login-overlay"></div>
   <div class="login-bg"></div>
   <div class="login-grid"></div>
+  <div class="login-dots" id="login-dots"></div>
   <div class="login-box">
     <div class="login-logo">
       <div class="login-logo-icon">🚀</div>
@@ -1950,6 +2009,53 @@ const SNIPPETS = {
   pointers: `#include <stdio.h>\n\nint main() {\n    int x = 42;\n    int *ptr = &x;  // ptr stores address of x\n    \n    printf("Value of x: %d\\n", x);\n    printf("Address of x: %p\\n", &x);\n    printf("ptr points to: %p\\n", ptr);\n    printf("Value at ptr: %d\\n", *ptr);\n    \n    // Modify through pointer\n    *ptr = 100;\n    printf("x after *ptr = 100: %d\\n", x);\n    \n    return 0;\n}`
 };
 
+// ══ LOGIN SLIDESHOW ═══════════════════════════════════════════════════════════
+function initLoginSlideshow() {
+  if (typeof PHOTOS === 'undefined' || PHOTOS.length === 0) return;
+
+  const container = document.getElementById('login-slides');
+  const dotsEl = document.getElementById('login-dots');
+
+  // Pick a random starting photo — different every visit
+  const startIndex = Math.floor(Math.random() * PHOTOS.length);
+
+  // Create slide elements (use up to 20 shuffled photos for performance)
+  const shuffled = [...PHOTOS].sort(() => Math.random() - 0.5).slice(0, 20);
+
+  shuffled.forEach((p, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'login-slide' + (i === 0 ? ' active' : '');
+    slide.style.backgroundImage = `url('${p.src}')`;
+    container.appendChild(slide);
+
+    const dot = document.createElement('div');
+    dot.className = 'login-dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goToSlide(i);
+    dotsEl.appendChild(dot);
+  });
+
+  let current = 0;
+  const slides = container.querySelectorAll('.login-slide');
+  const dots = dotsEl.querySelectorAll('.login-dot');
+
+  function goToSlide(n) {
+    slides[current].classList.remove('active');
+    dots[current].classList.remove('active');
+    current = (n + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    dots[current].classList.add('active');
+  }
+
+  // Auto advance every 4 seconds
+  setInterval(() => goToSlide(current + 1), 4000);
+}
+
+// Run slideshow as soon as PHOTOS is available
+document.addEventListener('DOMContentLoaded', () => {
+  // Small delay to ensure PHOTOS array is populated
+  setTimeout(initLoginSlideshow, 100);
+});
+
 // ══ LOGIN ═════════════════════════════════════════════════════════════════════
 function doLogin() {
   const code = document.getElementById('access-code').value.trim();
@@ -2271,80 +2377,10 @@ function hideSearch() {
 // Add your photos here after uploading to GitHub repo in a photos/ folder
 // Format: { src: "photos/filename.jpg", caption: "Description" }
 const PHOTOS = [
-  { src: "photos/20250918_165540.jpg", caption: "TheRealists — 20250918_165540" },
-  { src: "photos/20250920_142229~2.jpg", caption: "TheRealists — 20250920_142229~2" },
-  { src: "photos/20251003_141018.jpg", caption: "TheRealists — 20251003_141018" },
-  { src: "photos/IMG-20250906-WA0010.jpg", caption: "TheRealists — IMG-20250906-WA0010" },
-  { src: "photos/IMG-20250906-WA0012.jpg", caption: "TheRealists — IMG-20250906-WA0012" },
-  { src: "photos/IMG-20250906-WA0015.jpg", caption: "TheRealists — IMG-20250906-WA0015" },
-  { src: "photos/IMG-20250906-WA0017.jpg", caption: "TheRealists — IMG-20250906-WA0017" },
-  { src: "photos/IMG-20250906-WA0020.jpg", caption: "TheRealists — IMG-20250906-WA0020" },
-  { src: "photos/IMG-20250906-WA0023.jpg", caption: "TheRealists — IMG-20250906-WA0023" },
-  { src: "photos/IMG-20250906-WA0024.jpg", caption: "TheRealists — IMG-20250906-WA0024" },
-  { src: "photos/IMG-20250906-WA0025.jpg", caption: "TheRealists — IMG-20250906-WA0025" },
-  { src: "photos/IMG-20250906-WA0026.jpg", caption: "TheRealists — IMG-20250906-WA0026" },
-  { src: "photos/IMG-20250906-WA0027.jpg", caption: "TheRealists — IMG-20250906-WA0027" },
-  { src: "photos/IMG-20250906-WA0028.jpg", caption: "TheRealists — IMG-20250906-WA0028" },
-  { src: "photos/IMG-20250906-WA0029.jpg", caption: "TheRealists — IMG-20250906-WA0029" },
-  { src: "photos/IMG-20250906-WA0030.jpg", caption: "TheRealists — IMG-20250906-WA0030" },
-  { src: "photos/IMG-20250906-WA0031.jpg", caption: "TheRealists — IMG-20250906-WA0031" },
-  { src: "photos/IMG-20250906-WA0032.jpg", caption: "TheRealists — IMG-20250906-WA0032" },
-  { src: "photos/IMG-20250910-WA0007.jpg", caption: "TheRealists — IMG-20250910-WA0007" },
-  { src: "photos/IMG-20250911-WA0030.jpg", caption: "TheRealists — IMG-20250911-WA0030" },
-  { src: "photos/IMG-20250911-WA0031.jpg", caption: "TheRealists — IMG-20250911-WA0031" },
-  { src: "photos/IMG-20250911-WA0032.jpg", caption: "TheRealists — IMG-20250911-WA0032" },
-  { src: "photos/IMG-20250911-WA0033.jpg", caption: "TheRealists — IMG-20250911-WA0033" },
-  { src: "photos/IMG-20250911-WA0034.jpg", caption: "TheRealists — IMG-20250911-WA0034" },
-  { src: "photos/IMG-20250911-WA0035.jpg", caption: "TheRealists — IMG-20250911-WA0035" },
-  { src: "photos/IMG-20250911-WA0036.jpg", caption: "TheRealists — IMG-20250911-WA0036" },
-  { src: "photos/IMG-20250911-WA0037.jpg", caption: "TheRealists — IMG-20250911-WA0037" },
-  { src: "photos/IMG-20250911-WA0038.jpg", caption: "TheRealists — IMG-20250911-WA0038" },
-  { src: "photos/IMG-20250911-WA0039.jpg", caption: "TheRealists — IMG-20250911-WA0039" },
-  { src: "photos/IMG-20250911-WA0040.jpg", caption: "TheRealists — IMG-20250911-WA0040" },
-  { src: "photos/IMG-20250911-WA0041.jpg", caption: "TheRealists — IMG-20250911-WA0041" },
-  { src: "photos/IMG-20250911-WA0042.jpg", caption: "TheRealists — IMG-20250911-WA0042" },
-  { src: "photos/IMG-20250911-WA0043.jpg", caption: "TheRealists — IMG-20250911-WA0043" },
-  { src: "photos/IMG-20250911-WA0044.jpg", caption: "TheRealists — IMG-20250911-WA0044" },
-  { src: "photos/IMG-20250912-WA0011.jpg", caption: "TheRealists — IMG-20250912-WA0011" },
-  { src: "photos/IMG-20250912-WA0012.jpg", caption: "TheRealists — IMG-20250912-WA0012" },
-  { src: "photos/IMG-20250912-WA0013.jpg", caption: "TheRealists — IMG-20250912-WA0013" },
-  { src: "photos/IMG-20250912-WA0016.jpg", caption: "TheRealists — IMG-20250912-WA0016" },
-  { src: "photos/IMG-20250912-WA0017.jpg", caption: "TheRealists — IMG-20250912-WA0017" },
-  { src: "photos/IMG-20250912-WA0018.jpg", caption: "TheRealists — IMG-20250912-WA0018" },
-  { src: "photos/IMG-20250912-WA0020.jpg", caption: "TheRealists — IMG-20250912-WA0020" },
-  { src: "photos/IMG-20250912-WA0053.jpg", caption: "TheRealists — IMG-20250912-WA0053" },
-  { src: "photos/IMG-20250913-WA0000.jpg", caption: "TheRealists — IMG-20250913-WA0000" },
-  { src: "photos/IMG-20250915-WA0034.jpg", caption: "TheRealists — IMG-20250915-WA0034" },
-  { src: "photos/IMG-20250918-WA0015.jpg", caption: "TheRealists — IMG-20250918-WA0015" },
-  { src: "photos/IMG-20250918-WA0016.jpg", caption: "TheRealists — IMG-20250918-WA0016" },
-  { src: "photos/IMG-20250918-WA0017.jpg", caption: "TheRealists — IMG-20250918-WA0017" },
-  { src: "photos/IMG-20250920-WA0055.jpg", caption: "TheRealists — IMG-20250920-WA0055" },
-  { src: "photos/IMG-20250920-WA0056.jpg", caption: "TheRealists — IMG-20250920-WA0056" },
-  { src: "photos/IMG-20250920-WA0057.jpg", caption: "TheRealists — IMG-20250920-WA0057" },
-  { src: "photos/IMG-20250920-WA0058.jpg", caption: "TheRealists — IMG-20250920-WA0058" },
-  { src: "photos/IMG-20250920-WA0059.jpg", caption: "TheRealists — IMG-20250920-WA0059" },
-  { src: "photos/IMG-20250922-WA0014.jpg", caption: "TheRealists — IMG-20250922-WA0014" },
-  { src: "photos/IMG-20250922-WA0015.jpg", caption: "TheRealists — IMG-20250922-WA0015" },
-  { src: "photos/IMG-20250922-WA0016.jpg", caption: "TheRealists — IMG-20250922-WA0016" },
-  { src: "photos/IMG-20250922-WA0017.jpg", caption: "TheRealists — IMG-20250922-WA0017" },
-  { src: "photos/IMG-20250922-WA0018.jpg", caption: "TheRealists — IMG-20250922-WA0018" },
-  { src: "photos/IMG-20251213-WA0006.jpg", caption: "TheRealists — IMG-20251213-WA0006" },
-  { src: "photos/IMG-20251213-WA0007.jpg", caption: "TheRealists — IMG-20251213-WA0007" },
-  { src: "photos/IMG-20251213-WA0008.jpg", caption: "TheRealists — IMG-20251213-WA0008" },
-  { src: "photos/IMG-20251213-WA0009.jpg", caption: "TheRealists — IMG-20251213-WA0009" },
-  { src: "photos/IMG-20251213-WA0010.jpg", caption: "TheRealists — IMG-20251213-WA0010" },
-  { src: "photos/IMG-20251213-WA0011.jpg", caption: "TheRealists — IMG-20251213-WA0011" },
-  { src: "photos/IMG-20251215-WA0013.jpg", caption: "TheRealists — IMG-20251215-WA0013" },
-  { src: "photos/IMG-20260309-WA0005.jpg", caption: "TheRealists — IMG-20260309-WA0005" },
-  { src: "photos/IMG-20260310-WA0002.jpg", caption: "TheRealists — IMG-20260310-WA0002" },
-  { src: "photos/IMG-20260310-WA0003.jpg", caption: "TheRealists — IMG-20260310-WA0003" },
-  { src: "photos/IMG-20260310-WA0004.jpg", caption: "TheRealists — IMG-20260310-WA0004" },
-  { src: "photos/IMG-20260310-WA0005.jpg", caption: "TheRealists — IMG-20260310-WA0005" },
-  { src: "photos/IMG-20260310-WA0006.jpg", caption: "TheRealists — IMG-20260310-WA0006" },
-  { src: "photos/IMG-20260310-WA0008.jpg", caption: "TheRealists — IMG-20260310-WA0008" },
-  { src: "photos/IMG-20260312-WA0007.jpg", caption: "TheRealists — IMG-20260312-WA0007" },
-  { src: "photos/Screenshot_20260309-153039_Video Player~2.jpg", caption: "TheRealists — Screenshot_20260309-153039_Video Player~2" },
-  { src: "photos/gmaildp.jpg", caption: "TheRealists — gmaildp" },
+  // Uncomment and edit these after uploading your photos:
+  // { src: "photos/group1.jpg", caption: "TheRealists — Study Session" },
+  // { src: "photos/group2.jpg", caption: "Workshop Practice — ICT121" },
+  // { src: "photos/group3.jpg", caption: "DCS Year 1 — Semester 2" },
 ];
 
 let currentPhotoIndex = 0;
