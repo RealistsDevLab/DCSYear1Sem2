@@ -1,4 +1,4 @@
-const CACHE = 'rdl-v3';
+const CACHE = 'rdl-v1774193179';
 const STATIC = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

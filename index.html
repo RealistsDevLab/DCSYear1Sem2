@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TheRealistDevLab — DCS Study Portal</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#6c63ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -4259,14 +4262,29 @@ const PHOTOS = [
 
 let currentPhotoIndex = 0;
 
-function buildGallery() {
+async function buildGallery() {
   const grid = document.getElementById('gallery-grid');
   if (!grid) return;
-  if (PHOTOS.length === 0) {
-    grid.innerHTML = `<div class="gallery-empty">📸 No photos yet.<br><br>Upload photos to the <code>photos/</code> folder in your GitHub repo,<br>then add them to the PHOTOS array in index.html</div>`;
+
+  grid.innerHTML = '<div class="gallery-empty">⏳ Loading photos...</div>';
+
+  // Merge GitHub photos + Firebase uploaded photos
+  let allPhotos = [...PHOTOS];
+  if (window.FB_READY) {
+    try {
+      const fbPhotos = await window.FB.getPhotos();
+      allPhotos = [...allPhotos, ...fbPhotos];
+    } catch(e) {}
+  }
+
+  window._allPhotos = allPhotos;
+
+  if (!allPhotos.length) {
+    grid.innerHTML = `<div class="gallery-empty">📸 No photos yet.<br><br>Upload via Settings or add to the photos/ folder in GitHub.</div>`;
     return;
   }
-  grid.innerHTML = PHOTOS.map((p, i) => `
+
+  grid.innerHTML = allPhotos.map((p, i) => `
     <div class="gallery-item fade-in" onclick="openLightbox(${i})">
       <img src="${p.src}" alt="${p.caption}" loading="lazy" onerror="this.parentElement.style.display='none'">
       <div class="gallery-item-overlay"><div class="gallery-item-caption">${p.caption}</div></div>
@@ -4274,9 +4292,15 @@ function buildGallery() {
 }
 
 function openLightbox(index) {
-  if (!PHOTOS.length) return;
+  const photos = window._allPhotos || PHOTOS;
+  if (!photos.length) return;
   currentPhotoIndex = index;
-  updateLightbox();
+  const p = photos[index];
+  document.getElementById('lightbox-img').src = p.src;
+  document.getElementById('lightbox-caption').textContent = `${p.caption} (${index + 1} / ${photos.length})`;
+  document.getElementById('lightbox-dl').onclick = () => {
+    const a = document.createElement('a'); a.href = p.src; a.download = p.src.split('/').pop(); a.click();
+  };
   document.getElementById('lightbox').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -4287,14 +4311,18 @@ function closeLightbox() {
 }
 
 function lightboxNav(dir) {
-  currentPhotoIndex = (currentPhotoIndex + dir + PHOTOS.length) % PHOTOS.length;
-  updateLightbox();
+  const photos = window._allPhotos || PHOTOS;
+  currentPhotoIndex = (currentPhotoIndex + dir + photos.length) % photos.length;
+  const p = photos[currentPhotoIndex];
+  document.getElementById('lightbox-img').src = p.src;
+  document.getElementById('lightbox-caption').textContent = `${p.caption} (${currentPhotoIndex + 1} / ${photos.length})`;
 }
 
 function updateLightbox() {
-  const p = PHOTOS[currentPhotoIndex];
+  const photos = window._allPhotos || PHOTOS;
+  const p = photos[currentPhotoIndex];
   document.getElementById('lightbox-img').src = p.src;
-  document.getElementById('lightbox-caption').textContent = `${p.caption} (${currentPhotoIndex + 1} / ${PHOTOS.length})`;
+  document.getElementById('lightbox-caption').textContent = `${p.caption} (${currentPhotoIndex + 1} / ${photos.length})`;
   document.getElementById('lightbox-dl').onclick = () => {
     const a = document.createElement('a'); a.href = p.src; a.download = p.src.split('/').pop(); a.click();
   };

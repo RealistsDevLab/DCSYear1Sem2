@@ -1,9 +1,12 @@
 #!/bin/bash
 echo "🚀 Deploying TheRealistDevLab..."
 
-python3 - << 'PYEOF'
-import os, re
+cd ~/DCSYear1Sem2
 
+python3 - << 'PYEOF'
+import os, re, time
+
+# ── Restore photos ─────────────────────────────────────────────────
 photos_dir = "photos"
 files = sorted([f for f in os.listdir(photos_dir) if f.lower().endswith('.jpg')])
 
@@ -30,13 +33,27 @@ with open('index.html', 'r') as fh:
 
 new_content = re.sub(r'const PHOTOS = \[.*?\];', '\n'.join(lines), content, flags=re.DOTALL)
 
+# ── Update SW cache version to force all browsers to reload ────────
+version = str(int(time.time()))
+new_content = re.sub(r"const CACHE = 'rdl-v\d+'", f"const CACHE = 'rdl-v{version}'", new_content)
+
 with open('index.html', 'w') as fh:
     fh.write(new_content)
 
+# Also update sw.js cache version
+if os.path.exists('sw.js'):
+    with open('sw.js', 'r') as fh:
+        sw = fh.read()
+    sw = re.sub(r"const CACHE = 'rdl-v\d+'", f"const CACHE = 'rdl-v{version}'", sw)
+    with open('sw.js', 'w') as fh:
+        fh.write(sw)
+
 print(f"✅ {len(files)} photos restored.")
+print(f"✅ Cache version updated to rdl-v{version}")
 PYEOF
 
 git add .
-git commit -m "Deploy update" 2>/dev/null || echo "Nothing new to commit"
+git commit -m "Deploy $(date '+%Y-%m-%d %H:%M')"
 git push
-echo "✅ Done! https://realistsdevlab.github.io/DCSYear1Sem2"
+echo "✅ Done! Site live at https://realistsdevlab.github.io/DCSYear1Sem2"
+echo "📱 Members will see updates automatically — no hard refresh needed!"
