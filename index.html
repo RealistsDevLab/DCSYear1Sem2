@@ -3044,7 +3044,9 @@ function showMemberLogin() {
 function doLogin() {
   const code = document.getElementById('access-code').value.trim();
   const err  = document.getElementById('login-error');
-  if (code === getMemberCode()) {
+  // Always read fresh from localStorage
+  const correctCode = localStorage.getItem('rdl_member_code') || 'UICTR2026';
+  if (code === correctCode) {
     isAdmin = false;
     enterApp();
   } else {
@@ -3058,7 +3060,9 @@ function doLogin() {
 function doAdminLogin() {
   const code = document.getElementById('admin-code-input').value.trim();
   const err  = document.getElementById('admin-login-error');
-  if (code === getAdminCode()) {
+  // Always read fresh from localStorage — never use cached value
+  const correctCode = localStorage.getItem('rdl_admin_code') || 'RDLBRAVE2026';
+  if (code === correctCode) {
     isAdmin = true;
     enterApp();
   } else {
