@@ -13,8 +13,10 @@
 <!-- Firebase -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getDatabase, ref, set, get, onValue, push, remove, update }
+  import { getDatabase, ref, set, get, onValue, push, remove, update, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+  import { getStorage, ref as sref, uploadBytes, getDownloadURL, deleteObject, listAll }
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDgwfW0y5RaTj7XDLfvFUkueiU_OC1uamw",
@@ -26,47 +28,118 @@
     appId: "1:174775227684:web:221575868fbb00e254cfb1"
   };
 
-  const fbApp = initializeApp(firebaseConfig);
-  const db    = getDatabase(fbApp);
+  const fbApp   = initializeApp(firebaseConfig);
+  const db      = getDatabase(fbApp);
+  const storage = getStorage(fbApp);
 
-  // ── Expose Firebase helpers to global scope ───────────────────────────────
   window.FB = {
-    // Codes
+    // ── Auth / Config ──────────────────────────────────────────────────────
     getMemberCode: async () => { const s = await get(ref(db,'config/memberCode')); return s.exists() ? s.val() : 'UICTR2026'; },
     getAdminCode:  async () => { const s = await get(ref(db,'config/adminCode'));  return s.exists() ? s.val() : 'RDLBRAVE2026'; },
-    setMemberCode: (code) => set(ref(db,'config/memberCode'), code),
-    setAdminCode:  (code) => set(ref(db,'config/adminCode'),  code),
+    setMemberCode: (v) => set(ref(db,'config/memberCode'), v),
+    setAdminCode:  (v) => set(ref(db,'config/adminCode'),  v),
 
-    // Announcement
+    // ── Announcements ─────────────────────────────────────────────────────
     getAnnouncement: async () => { const s = await get(ref(db,'config/announcement')); return s.exists() ? s.val() : ''; },
-    setAnnouncement: (text) => set(ref(db,'config/announcement'), text),
+    setAnnouncement: (v) => set(ref(db,'config/announcement'), v),
+    onAnnouncement:  (cb) => onValue(ref(db,'config/announcement'), s => cb(s.exists() ? s.val() : '')),
 
-    // Blocklist
+    // ── Blocklist ─────────────────────────────────────────────────────────
     getBlocklist: async () => { const s = await get(ref(db,'blocklist')); return s.exists() ? Object.values(s.val()) : []; },
-    addBlock: (name) => set(ref(db,'blocklist/'+name.replace(/\s/g,'_')), name),
-    removeBlock: (name) => remove(ref(db,'blocklist/'+name.replace(/\s/g,'_'))),
-    isBlocked: async (name) => { const s = await get(ref(db,'blocklist/'+name.replace(/\s/g,'_'))); return s.exists(); },
+    addBlock:    (n) => set(ref(db,'blocklist/'+n.replace(/\s/g,'_')), n),
+    removeBlock: (n) => remove(ref(db,'blocklist/'+n.replace(/\s/g,'_'))),
+    isBlocked: async (n) => { const s = await get(ref(db,'blocklist/'+n.replace(/\s/g,'_'))); return s.exists(); },
 
-    // Quiz results
-    saveResult: (r) => push(ref(db,'results'), r),
+    // ── Quiz Results ──────────────────────────────────────────────────────
+    saveResult:   (r) => push(ref(db,'results'), r),
     getAllResults: async () => { const s = await get(ref(db,'results')); return s.exists() ? Object.values(s.val()) : []; },
     clearResults: () => remove(ref(db,'results')),
 
-    // Discussion posts
-    savePost: (p) => push(ref(db,'posts'), p),
-    getPosts: async () => { const s = await get(ref(db,'posts')); if (!s.exists()) return []; const arr = []; s.forEach(c => arr.unshift({...c.val(), _key:c.key})); return arr; },
-    deletePost: (key) => remove(ref(db,'posts/'+key)),
+    // ── Discussion Posts ──────────────────────────────────────────────────
+    savePost:   (p) => push(ref(db,'posts'), p),
+    getPosts:   async () => { const s = await get(ref(db,'posts')); if (!s.exists()) return []; const a = []; s.forEach(c => a.unshift({...c.val(),_key:c.key})); return a; },
+    deletePost: (k) => remove(ref(db,'posts/'+k)),
     clearPosts: () => remove(ref(db,'posts')),
+    onPosts:    (cb) => onValue(ref(db,'posts'), s => { const a=[]; if(s.exists()) s.forEach(c=>a.unshift({...c.val(),_key:c.key})); cb(a); }),
 
-    // Live listeners
-    onAnnouncement: (cb) => onValue(ref(db,'config/announcement'), s => cb(s.exists() ? s.val() : '')),
-    onPosts: (cb) => onValue(ref(db,'posts'), s => { const arr = []; if(s.exists()) s.forEach(c => arr.unshift({...c.val(),_key:c.key})); cb(arr); }),
-    onBlocklist: (cb) => onValue(ref(db,'blocklist'), s => cb(s.exists() ? Object.values(s.val()) : [])),
+    // ── Dynamic Quizzes ───────────────────────────────────────────────────
+    saveQuiz:    (q) => push(ref(db,'quizzes'), q),
+    getQuizzes:  async () => { const s = await get(ref(db,'quizzes')); if (!s.exists()) return []; const a=[]; s.forEach(c=>a.push({...c.val(),_key:c.key})); return a; },
+    deleteQuiz:  (k) => remove(ref(db,'quizzes/'+k)),
+    saveQuestion:(qid,q) => push(ref(db,'quizzes/'+qid+'/questions'), q),
+    deleteQuestion:(qid,qk) => remove(ref(db,'quizzes/'+qid+'/questions/'+qk)),
+
+    // ── Dynamic Flashcards ────────────────────────────────────────────────
+    saveFlashcard:   (f) => push(ref(db,'flashcards'), f),
+    getFlashcards:   async () => { const s = await get(ref(db,'flashcards')); if (!s.exists()) return []; const a=[]; s.forEach(c=>a.push({...c.val(),_key:c.key})); return a; },
+    deleteFlashcard: (k) => remove(ref(db,'flashcards/'+k)),
+
+    // ── Timetable ─────────────────────────────────────────────────────────
+    saveTimetable: (t) => set(ref(db,'config/timetable'), t),
+    getTimetable:  async () => { const s = await get(ref(db,'config/timetable')); return s.exists() ? s.val() : null; },
+    saveExams:     (e) => set(ref(db,'config/exams'), e),
+    getExams:      async () => { const s = await get(ref(db,'config/exams')); return s.exists() ? s.val() : null; },
+
+    // ── Member Profiles ───────────────────────────────────────────────────
+    saveProfile:  (name, data) => set(ref(db,'profiles/'+name.replace(/\s/g,'_')), data),
+    getProfile:   async (name) => { const s = await get(ref(db,'profiles/'+name.replace(/\s/g,'_'))); return s.exists() ? s.val() : null; },
+    getAllProfiles:async () => { const s = await get(ref(db,'profiles')); return s.exists() ? s.val() : {}; },
+    onProfiles:   (cb) => onValue(ref(db,'profiles'), s => cb(s.exists() ? s.val() : {})),
+
+    // ── Attendance ────────────────────────────────────────────────────────
+    checkIn: (name) => {
+      const today = new Date().toISOString().split('T')[0];
+      const key = name.replace(/\s/g,'_');
+      return set(ref(db,'attendance/'+key+'/'+today), { name, date: today, ts: Date.now() });
+    },
+    getAttendance: async () => { const s = await get(ref(db,'attendance')); return s.exists() ? s.val() : {}; },
+    onAttendance:  (cb) => onValue(ref(db,'attendance'), s => cb(s.exists() ? s.val() : {})),
+
+    // ── Streaks ───────────────────────────────────────────────────────────
+    getStreak: async (name) => {
+      const att = await get(ref(db,'attendance/'+name.replace(/\s/g,'_')));
+      if (!att.exists()) return 0;
+      const days = Object.keys(att.val()).sort().reverse();
+      let streak = 0, d = new Date();
+      for (const day of days) {
+        const expected = d.toISOString().split('T')[0];
+        if (day === expected) { streak++; d.setDate(d.getDate()-1); }
+        else break;
+      }
+      return streak;
+    },
+
+    // ── Notifications ─────────────────────────────────────────────────────
+    pushNotification: (msg) => push(ref(db,'notifications'), { msg, ts: Date.now(), read: false }),
+    onNotifications:  (cb) => onValue(ref(db,'notifications'), s => { const a=[]; if(s.exists()) s.forEach(c=>a.push({...c.val(),_key:c.key})); cb(a); }),
+    markRead: (k) => update(ref(db,'notifications/'+k), { read: true }),
+
+    // ── File Storage ──────────────────────────────────────────────────────
+    uploadPhoto: async (file, caption) => {
+      const r = sref(storage, 'photos/'+Date.now()+'_'+file.name);
+      await uploadBytes(r, file);
+      const url = await getDownloadURL(r);
+      await push(ref(db,'gallery'), { src: url, caption, path: r.fullPath, ts: Date.now() });
+      return url;
+    },
+    getPhotos: async () => { const s = await get(ref(db,'gallery')); if (!s.exists()) return []; const a=[]; s.forEach(c=>a.push({...c.val(),_key:c.key})); return a; },
+    deletePhoto: async (key, path) => { await remove(ref(db,'gallery/'+key)); if(path) await deleteObject(sref(storage,path)).catch(()=>{}); },
+    onGallery: (cb) => onValue(ref(db,'gallery'), s => { const a=[]; if(s.exists()) s.forEach(c=>a.push({...c.val(),_key:c.key})); cb(a); }),
+
+    uploadFile: async (file, course, label) => {
+      const r = sref(storage, 'files/'+course+'/'+Date.now()+'_'+file.name);
+      await uploadBytes(r, file);
+      const url = await getDownloadURL(r);
+      await push(ref(db,'files/'+course.replace(/\s/g,'_')), { name: label||file.name, url, path: r.fullPath, ts: Date.now() });
+      return url;
+    },
+    getFiles: async (course) => { const s = await get(ref(db,'files/'+course.replace(/\s/g,'_'))); if (!s.exists()) return []; const a=[]; s.forEach(c=>a.push({...c.val(),_key:c.key})); return a; },
+    deleteFile: async (course, key, path) => { await remove(ref(db,'files/'+course.replace(/\s/g,'_')+'/'+key)); if(path) await deleteObject(sref(storage,path)).catch(()=>{}); },
   };
 
   window.FB_READY = true;
   window.dispatchEvent(new Event('fb-ready'));
-  console.log('✅ Firebase connected — TheRealistDevLab');
+  console.log('✅ Firebase connected — TheRealistDevLab 🚀');
 </script>
 <style>
 :root {
@@ -2047,6 +2120,144 @@ body {
 .pwa-banner.visible { display: flex; }
 .pwa-banner-text { flex: 1; font-size: 13px; color: var(--text2); }
 .pwa-banner-text strong { color: var(--text); display: block; margin-bottom: 2px; }
+/* ── NOTIFICATIONS ── */
+.notif-bell {
+  position: relative;
+  cursor: pointer;
+  font-size: 20px;
+  padding: 4px 8px;
+}
+.notif-badge {
+  position: absolute;
+  top: -2px; right: -2px;
+  background: var(--accent2);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Mono', monospace;
+}
+.notif-dropdown {
+  display: none;
+  position: fixed;
+  top: 68px; right: 12px;
+  width: 300px;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 14px;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.4);
+  z-index: 300;
+  overflow: hidden;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.notif-dropdown.open { display: block; }
+.notif-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+}
+.notif-item {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.notif-item:hover { background: var(--bg3); }
+.notif-item.unread { background: rgba(108,99,255,0.06); border-left: 3px solid var(--accent); }
+.notif-time { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-top: 4px; }
+
+/* ── MEMBER PROFILE ── */
+.profile-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.profile-avatar-lg {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  font-weight: 700;
+  color: white;
+  margin: 0 auto 14px;
+  font-family: 'Space Mono', monospace;
+}
+.profile-name { font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.profile-nickname { font-size: 13px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-bottom: 16px; }
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.profile-stat {
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 12px 8px;
+  text-align: center;
+}
+.profile-stat-num { font-size: 24px; font-weight: 800; font-family: 'Space Mono', monospace; color: var(--accent); }
+.profile-stat-label { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+/* ── ATTENDANCE ── */
+.attendance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.attendance-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.attendance-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: white;
+  font-family: 'Space Mono', monospace;
+  flex-shrink: 0;
+}
+.attendance-name { font-size: 13px; font-weight: 700; }
+.attendance-streak { font-size: 11px; color: var(--accent3); font-family: 'JetBrains Mono', monospace; }
+.attendance-last { font-size: 10px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+
+/* ── UPLOAD PROGRESS ── */
+.upload-progress {
+  background: var(--bg3);
+  border-radius: 8px;
+  height: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+  display: none;
+}
+.upload-progress.visible { display: block; }
+.upload-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent3));
+  border-radius: 8px;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+.upload-status { font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-top: 6px; }
 </style>
 </head>
 <body>
@@ -2125,6 +2336,13 @@ body {
     </div>
     <div class="header-right">
       <div class="header-badge">● Online</div>
+      <div class="notif-bell" onclick="toggleNotifications()" id="notif-bell">
+        🔔<span class="notif-badge" id="notif-count" style="display:none">0</span>
+      </div>
+      <div class="notif-dropdown" id="notif-dropdown">
+        <div class="notif-header">NOTIFICATIONS</div>
+        <div id="notif-list"><div style="padding:16px;color:var(--text3);font-size:12px;text-align:center;">No notifications</div></div>
+      </div>
       <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 Dark</button>
       <button class="header-btn" id="pwa-install-btn" style="display:none" onclick="installPWA()">📲 Install App</button>
       <button class="header-btn" onclick="logout()">Sign Out</button>
@@ -2237,6 +2455,14 @@ body {
         <div class="sidebar-item" onclick="showView('discuss', this)">
           <div class="sidebar-item-icon" style="background:rgba(255,101,132,0.15)">💬</div>
           Discussion Board
+        </div>
+        <div class="sidebar-item" onclick="showView('profile', this)">
+          <div class="sidebar-item-icon" style="background:rgba(108,99,255,0.15)">👤</div>
+          My Profile
+        </div>
+        <div class="sidebar-item" onclick="showView('attendance', this)">
+          <div class="sidebar-item-icon" style="background:rgba(67,233,123,0.15)">📆</div>
+          Attendance
         </div>
         <div class="sidebar-item" onclick="showView('howto', this)">
           <div class="sidebar-item-icon">➕</div>
@@ -2816,53 +3042,192 @@ int main() {
         </div>
       </div>
 
+      <!-- PROFILE VIEW -->
+      <div class="view" id="view-profile">
+        <div class="home-greeting fade-in">
+          <h1>My Profile 👤</h1>
+          <p>Your study stats and activity — <span>TheRealists</span></p>
+        </div>
+        <div id="profile-setup" class="fade-in">
+          <div class="admin-card" style="max-width:500px;margin-bottom:20px;">
+            <h3>👤 Set Up Your Profile</h3>
+            <div class="form-group">
+              <label class="form-label">Your Name</label>
+              <input type="text" id="profile-name-input" class="form-input" placeholder="e.g. Bravehart">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nickname (optional)</label>
+              <input type="text" id="profile-nick-input" class="form-input" placeholder="e.g. The Realist">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Course</label>
+              <select id="profile-course-input" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:12px;color:var(--text);font-family:'Syne',sans-serif;font-size:14px;">
+                <option>DCS Year 1</option><option>DCS Year 2</option><option>Other</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" onclick="saveProfile()">Save Profile →</button>
+          </div>
+        </div>
+        <div id="profile-display" class="fade-in" style="display:none;"></div>
+      </div>
+
+      <!-- ATTENDANCE VIEW -->
+      <div class="view" id="view-attendance">
+        <div class="home-greeting fade-in">
+          <h1>Attendance 📆</h1>
+          <p>Who's been studying — <span>check in daily</span></p>
+        </div>
+        <div class="admin-card fade-in" style="max-width:400px;margin-bottom:24px;">
+          <h3>✅ Check In Today</h3>
+          <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:'JetBrains Mono',monospace;">Mark yourself as present for today's study session.</p>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="checkin-name" class="form-input" placeholder="Your name..." style="padding:8px 12px;">
+            <button class="btn btn-green" onclick="doCheckIn()">Check In ✓</button>
+          </div>
+        </div>
+        <div class="section-title fade-in">👥 Study Group Activity</div>
+        <div class="attendance-grid fade-in" id="attendance-grid"></div>
+      </div>
+
     </main>
   </div>
 
   <!-- SETTINGS VIEW — moved outside main for clarity -->
   <div class="view" id="view-settings" style="display:none;position:fixed;inset:0;z-index:500;background:var(--bg);overflow-y:auto;padding:32px;">
-    <div style="max-width:600px;margin:0 auto;">
+    <div style="max-width:700px;margin:0 auto;">
       <div style="display:flex;align-items:center;gap:16px;margin-bottom:32px;">
         <button onclick="showView('home')" class="back-btn">← Back</button>
         <h1 style="font-size:24px;font-weight:800;">Settings ⚙️ <span class="admin-badge">ADMIN ONLY</span></h1>
       </div>
 
+      <!-- ACCESS CODES -->
       <div class="admin-card" style="margin-bottom:16px;">
         <h3>🔑 Change Member Access Code</h3>
-        <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:'JetBrains Mono',monospace;">Current code is what all group members use to log in.</p>
-        <div class="form-group">
-          <label class="form-label">New Member Access Code</label>
-          <input type="text" id="new-member-code" class="form-input" placeholder="e.g. UICTR2027">
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:'JetBrains Mono',monospace;">All group members use this to log in.</p>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="new-member-code" class="form-input" placeholder="e.g. UICTR2027" style="flex:1;">
+          <button class="btn btn-primary" onclick="changeMemberCode()">Save</button>
         </div>
-        <button class="btn btn-primary" onclick="changeMemberCode()">Save Member Code</button>
       </div>
 
       <div class="admin-card" style="margin-bottom:16px;">
         <h3>🛡️ Change Admin Password</h3>
-        <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:'JetBrains Mono',monospace;">This is your secret admin password. Keep it private.</p>
-        <div class="form-group">
-          <label class="form-label">Current Admin Password</label>
-          <input type="password" id="current-admin-pw" class="form-input" placeholder="Current password...">
-        </div>
-        <div class="form-group">
-          <label class="form-label">New Admin Password</label>
-          <input type="password" id="new-admin-pw" class="form-input" placeholder="New password...">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Confirm New Password</label>
-          <input type="password" id="confirm-admin-pw" class="form-input" placeholder="Confirm new password...">
-        </div>
+        <div class="form-group"><label class="form-label">Current Password</label><input type="password" id="current-admin-pw" class="form-input" placeholder="Current password..."></div>
+        <div class="form-group"><label class="form-label">New Password</label><input type="password" id="new-admin-pw" class="form-input" placeholder="New password..."></div>
+        <div class="form-group"><label class="form-label">Confirm New</label><input type="password" id="confirm-admin-pw" class="form-input" placeholder="Confirm..."></div>
         <button class="btn btn-primary" onclick="changeAdminPassword()" style="background:linear-gradient(135deg,var(--accent2),#f72585)">Change Admin Password</button>
       </div>
 
       <div class="admin-card" style="margin-bottom:16px;">
-        <h3>📋 Current Codes (visible only to admin)</h3>
+        <h3>📋 Current Codes</h3>
         <div style="background:var(--bg3);border-radius:8px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:13px;">
           <div style="margin-bottom:6px;">Member Code: <span id="show-member-code" style="color:var(--accent3);font-weight:700;"></span></div>
           <div>Admin Password: <span id="show-admin-code" style="color:var(--accent2);font-weight:700;"></span></div>
         </div>
       </div>
 
+      <!-- PHOTO UPLOAD -->
+      <div class="admin-card" style="margin-bottom:16px;">
+        <h3>📸 Upload Group Photos</h3>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:'JetBrains Mono',monospace;">Upload directly — no GitHub or terminal needed.</p>
+        <div class="form-group">
+          <label class="form-label">Caption / Description</label>
+          <input type="text" id="photo-caption" class="form-input" placeholder="e.g. TheRealists Study Session — March 2026">
+        </div>
+        <input type="file" id="photo-file" accept="image/*" multiple style="display:none" onchange="uploadPhotos()">
+        <button class="btn btn-primary" onclick="document.getElementById('photo-file').click()">📁 Choose Photos</button>
+        <div class="upload-progress" id="photo-progress"><div class="upload-progress-fill" id="photo-progress-fill"></div></div>
+        <div class="upload-status" id="photo-status"></div>
+        <div id="photo-manage" style="margin-top:16px;"></div>
+      </div>
+
+      <!-- FILE UPLOAD -->
+      <div class="admin-card" style="margin-bottom:16px;">
+        <h3>📄 Upload Notes / Past Papers</h3>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:'JetBrains Mono',monospace;">Upload PDFs directly to any course section.</p>
+        <div style="display:grid;gap:8px;margin-bottom:12px;">
+          <div class="form-group">
+            <label class="form-label">Course</label>
+            <select id="upload-course" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;">
+              <option>CSC 122</option><option>CSC 121</option><option>CSC 123</option><option>ICT 121</option><option>BSM 121</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Label (what to call it)</label>
+            <input type="text" id="upload-label" class="form-input" placeholder="e.g. CSC122 Past Paper 2025">
+          </div>
+        </div>
+        <input type="file" id="file-upload" accept=".pdf,.docx,.doc" style="display:none" onchange="uploadCourseFile()">
+        <button class="btn btn-primary" onclick="document.getElementById('file-upload').click()">📁 Choose File (PDF/DOCX)</button>
+        <div class="upload-progress" id="file-progress"><div class="upload-progress-fill" id="file-progress-fill"></div></div>
+        <div class="upload-status" id="file-status"></div>
+        <div id="file-manage" style="margin-top:16px;"></div>
+      </div>
+
+      <!-- ADD QUIZ -->
+      <div class="admin-card" style="margin-bottom:16px;">
+        <h3>🧠 Add Quiz Question</h3>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:'JetBrains Mono',monospace;">Add questions to existing quizzes — no code editing.</p>
+        <div class="form-group">
+          <label class="form-label">Quiz</label>
+          <select id="add-q-quiz" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;">
+            <option value="csc122_test1">CSC 122 — C Programming</option>
+            <option value="csc121_test1">CSC 121 — Hardware</option>
+            <option value="csc123_test1">CSC 123 — Databases</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Question</label><textarea id="add-q-text" class="post-textarea" placeholder="Type the question..." style="min-height:60px;"></textarea></div>
+        <div class="form-group"><label class="form-label">Option A</label><input type="text" id="add-q-a" class="form-input" placeholder="Option A"></div>
+        <div class="form-group"><label class="form-label">Option B</label><input type="text" id="add-q-b" class="form-input" placeholder="Option B"></div>
+        <div class="form-group"><label class="form-label">Option C</label><input type="text" id="add-q-c" class="form-input" placeholder="Option C"></div>
+        <div class="form-group"><label class="form-label">Option D</label><input type="text" id="add-q-d" class="form-input" placeholder="Option D"></div>
+        <div class="form-group">
+          <label class="form-label">Correct Answer</label>
+          <select id="add-q-ans" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;">
+            <option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Explanation</label><input type="text" id="add-q-exp" class="form-input" placeholder="Why is this the correct answer?"></div>
+        <button class="btn btn-primary" onclick="addQuizQuestion()">Add Question →</button>
+        <div class="upload-status" id="quiz-add-status"></div>
+      </div>
+
+      <!-- ADD FLASHCARD -->
+      <div class="admin-card" style="margin-bottom:16px;">
+        <h3>🃏 Add Flashcard</h3>
+        <div class="form-group">
+          <label class="form-label">Course</label>
+          <select id="add-fc-course" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;">
+            <option>CSC 122</option><option>CSC 121</option><option>CSC 123</option><option>ICT 121</option><option>BSM 121</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Question (Front)</label><input type="text" id="add-fc-q" class="form-input" placeholder="e.g. What is a pointer?"></div>
+        <div class="form-group"><label class="form-label">Answer (Back)</label><textarea id="add-fc-a" class="post-textarea" placeholder="The answer..." style="min-height:60px;"></textarea></div>
+        <button class="btn btn-primary" onclick="addFlashcard()">Add Flashcard →</button>
+        <div class="upload-status" id="fc-add-status"></div>
+      </div>
+
+      <!-- EDIT TIMETABLE -->
+      <div class="admin-card" style="margin-bottom:16px;">
+        <h3>📅 Edit Timetable</h3>
+        <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:'JetBrains Mono',monospace;">Edit as JSON — 7 days, each with subject, topic, time.</p>
+        <textarea id="timetable-json" class="post-textarea" style="min-height:200px;font-family:'JetBrains Mono',monospace;font-size:11px;"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn btn-primary" onclick="saveTimetableFromSettings()">Save Timetable</button>
+          <button class="btn btn-outline" onclick="loadTimetableToSettings()">Load Current</button>
+        </div>
+      </div>
+
+      <!-- SEND NOTIFICATION -->
+      <div class="admin-card" style="margin-bottom:16px;">
+        <h3>🔔 Send Notification to All Members</h3>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="notif-msg" class="form-input" placeholder="Notification message..." style="flex:1;">
+          <button class="btn btn-primary" onclick="sendNotification()">Send 🔔</button>
+        </div>
+      </div>
+
+      <!-- BLOCKLIST -->
       <div class="admin-card" style="margin-bottom:16px;">
         <h3>⛔ Blocked Members</h3>
         <div id="settings-blocklist"></div>
@@ -2872,11 +3237,10 @@ int main() {
         </div>
       </div>
 
+      <!-- APPEARANCE -->
       <div class="admin-card">
         <h3>🎨 Appearance</h3>
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
-          <button class="btn btn-outline" onclick="toggleTheme()">🌙 Toggle Dark/Light Mode</button>
-        </div>
+        <button class="btn btn-outline" onclick="toggleTheme()">🌙 Toggle Dark/Light Mode</button>
       </div>
     </div>
   </div>
@@ -3166,6 +3530,13 @@ function enterApp() {
       if (text) { el.textContent = text; box.classList.add('visible'); }
       else { box.classList.remove('visible'); }
     });
+    initNotifications();
+    // Auto check-in if profile exists
+    const p = localStorage.getItem('rdl_profile');
+    if (p) {
+      const prof = JSON.parse(p);
+      window.FB.checkIn(prof.name).catch(()=>{});
+    }
   }
 }
 
@@ -4379,23 +4750,328 @@ async function clearAllPosts() {
   alert('✅ Posts cleared.');
 }
 
-// ══ OVERRIDE showView TO TRIGGER ALL BUILDS ═══════════════════════════════
+// ══ NOTIFICATIONS ═════════════════════════════════════════════════════════════
+function toggleNotifications() {
+  document.getElementById('notif-dropdown').classList.toggle('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#notif-bell') && !e.target.closest('#notif-dropdown'))
+    document.getElementById('notif-dropdown').classList.remove('open');
+});
+
+async function sendNotification() {
+  const msg = document.getElementById('notif-msg').value.trim();
+  if (!msg) return;
+  if (window.FB_READY) await window.FB.pushNotification(msg);
+  document.getElementById('notif-msg').value = '';
+  alert('✅ Notification sent to all members!');
+}
+
+function initNotifications() {
+  if (!window.FB_READY) return;
+  window.FB.onNotifications(notifs => {
+    const unread = notifs.filter(n => !n.read).length;
+    const badge = document.getElementById('notif-count');
+    const list  = document.getElementById('notif-list');
+    badge.style.display = unread > 0 ? 'flex' : 'none';
+    badge.textContent   = unread;
+    if (!notifs.length) {
+      list.innerHTML = '<div style="padding:16px;color:var(--text3);font-size:12px;text-align:center;">No notifications</div>';
+      return;
+    }
+    list.innerHTML = notifs.slice().reverse().map(n => `
+      <div class="notif-item ${!n.read ? 'unread' : ''}" onclick="markNotifRead('${n._key}')">
+        ${n.msg}
+        <div class="notif-time">${new Date(n.ts).toLocaleString('en-UG')}</div>
+      </div>`).join('');
+  });
+}
+
+async function markNotifRead(key) {
+  if (window.FB_READY) await window.FB.markRead(key);
+}
+
+// ══ PHOTO UPLOAD ═══════════════════════════════════════════════════════════════
+async function uploadPhotos() {
+  if (!window.FB_READY) { alert('Firebase not connected.'); return; }
+  const files   = document.getElementById('photo-file').files;
+  const caption = document.getElementById('photo-caption').value.trim() || 'TheRealists';
+  if (!files.length) return;
+  const prog   = document.getElementById('photo-progress');
+  const fill   = document.getElementById('photo-progress-fill');
+  const status = document.getElementById('photo-status');
+  prog.classList.add('visible');
+  let done = 0;
+  for (const file of files) {
+    status.textContent = `Uploading ${file.name}...`;
+    await window.FB.uploadPhoto(file, caption + (files.length > 1 ? ` (${done+1}/${files.length})` : ''));
+    done++;
+    fill.style.width = (done/files.length*100)+'%';
+  }
+  status.textContent = `✅ ${done} photo${done>1?'s':''} uploaded successfully!`;
+  document.getElementById('photo-caption').value = '';
+  document.getElementById('photo-file').value = '';
+  loadPhotoManage();
+}
+
+async function loadPhotoManage() {
+  if (!window.FB_READY) return;
+  const photos = await window.FB.getPhotos();
+  const el = document.getElementById('photo-manage');
+  if (!el || !photos.length) return;
+  el.innerHTML = `<div class="section-title" style="margin-top:16px;">Uploaded Photos (${photos.length})</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;">
+    ${photos.map(p => `
+      <div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;">
+        <img src="${p.src}" style="width:100%;height:100%;object-fit:cover;">
+        <button onclick="deleteUploadedPhoto('${p._key}','${p.path||''}')"
+          style="position:absolute;top:4px;right:4px;background:rgba(220,38,38,0.8);border:none;color:white;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:11px;">✕</button>
+      </div>`).join('')}
+    </div>`;
+}
+
+async function deleteUploadedPhoto(key, path) {
+  if (!confirm('Delete this photo?')) return;
+  await window.FB.deletePhoto(key, path);
+  loadPhotoManage();
+}
+
+// ══ FILE UPLOAD ════════════════════════════════════════════════════════════════
+async function uploadCourseFile() {
+  if (!window.FB_READY) { alert('Firebase not connected.'); return; }
+  const file   = document.getElementById('file-upload').files[0];
+  const course = document.getElementById('upload-course').value;
+  const label  = document.getElementById('upload-label').value.trim() || file.name;
+  if (!file) return;
+  const prog   = document.getElementById('file-progress');
+  const fill   = document.getElementById('file-progress-fill');
+  const status = document.getElementById('file-status');
+  prog.classList.add('visible');
+  fill.style.width = '30%';
+  status.textContent = `Uploading ${file.name}...`;
+  try {
+    await window.FB.uploadFile(file, course, label);
+    fill.style.width = '100%';
+    status.textContent = `✅ ${label} uploaded to ${course}!`;
+    document.getElementById('upload-label').value = '';
+    document.getElementById('file-upload').value = '';
+    loadFileManage();
+  } catch(e) {
+    status.textContent = '❌ Upload failed: ' + e.message;
+  }
+}
+
+async function loadFileManage() {
+  if (!window.FB_READY) return;
+  const course = document.getElementById('upload-course').value;
+  const files  = await window.FB.getFiles(course);
+  const el = document.getElementById('file-manage');
+  if (!el) return;
+  el.innerHTML = files.length
+    ? `<div class="section-title" style="margin-top:16px;">Files in ${course}</div>` +
+      files.map(f => `<div class="resource-item" style="margin-bottom:6px;">
+        <div class="resource-icon" style="background:rgba(108,99,255,0.1)">📄</div>
+        <div><div class="resource-name">${f.name}</div></div>
+        <div class="resource-actions">
+          <a href="${f.url}" target="_blank" class="btn btn-outline" style="font-size:11px;padding:4px 10px;">View</a>
+          <button class="btn btn-red" style="font-size:11px;padding:4px 10px;" onclick="deleteUploadedFile('${course}','${f._key}','${f.path||''}')">🗑️</button>
+        </div></div>`).join('')
+    : '';
+}
+
+async function deleteUploadedFile(course, key, path) {
+  if (!confirm('Delete this file?')) return;
+  await window.FB.deleteFile(course, key, path);
+  loadFileManage();
+}
+
+// ══ ADD QUIZ QUESTION ═══════════════════════════════════════════════════════
+async function addQuizQuestion() {
+  if (!window.FB_READY) { alert('Firebase not connected.'); return; }
+  const qid = document.getElementById('add-q-quiz').value;
+  const q   = document.getElementById('add-q-text').value.trim();
+  const a   = document.getElementById('add-q-a').value.trim();
+  const b   = document.getElementById('add-q-b').value.trim();
+  const c   = document.getElementById('add-q-c').value.trim();
+  const d   = document.getElementById('add-q-d').value.trim();
+  const ans = parseInt(document.getElementById('add-q-ans').value);
+  const exp = document.getElementById('add-q-exp').value.trim();
+  if (!q||!a||!b||!c||!d) { alert('Fill in all fields.'); return; }
+  await window.FB.saveQuestion(qid, { q, options:[a,b,c,d], answer:ans, explanation:exp||'No explanation provided.' });
+  ['add-q-text','add-q-a','add-q-b','add-q-c','add-q-d','add-q-exp'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('quiz-add-status').textContent = '✅ Question added! It will appear in the quiz.';
+  setTimeout(()=>document.getElementById('quiz-add-status').textContent='', 3000);
+}
+
+// ══ ADD FLASHCARD ══════════════════════════════════════════════════════════════
+async function addFlashcard() {
+  if (!window.FB_READY) { alert('Firebase not connected.'); return; }
+  const course = document.getElementById('add-fc-course').value;
+  const q      = document.getElementById('add-fc-q').value.trim();
+  const a      = document.getElementById('add-fc-a').value.trim();
+  if (!q||!a) { alert('Fill in question and answer.'); return; }
+  await window.FB.saveFlashcard({ course, q, a });
+  document.getElementById('add-fc-q').value = '';
+  document.getElementById('add-fc-a').value = '';
+  document.getElementById('fc-add-status').textContent = '✅ Flashcard added!';
+  setTimeout(()=>document.getElementById('fc-add-status').textContent='', 3000);
+}
+
+// ══ TIMETABLE FROM SETTINGS ════════════════════════════════════════════════════
+async function loadTimetableToSettings() {
+  const el = document.getElementById('timetable-json');
+  if (!el) return;
+  const t = window.FB_READY ? await window.FB.getTimetable() : null;
+  el.value = JSON.stringify(t || TIMETABLE, null, 2);
+}
+
+async function saveTimetableFromSettings() {
+  const el = document.getElementById('timetable-json');
+  try {
+    const data = JSON.parse(el.value);
+    if (window.FB_READY) await window.FB.saveTimetable(data);
+    alert('✅ Timetable saved!');
+  } catch(e) { alert('❌ Invalid JSON: ' + e.message); }
+}
+
+// ══ MEMBER PROFILES ═══════════════════════════════════════════════════════════
+let currentProfile = null;
+
+async function saveProfile() {
+  const name   = document.getElementById('profile-name-input').value.trim();
+  const nick   = document.getElementById('profile-nick-input').value.trim();
+  const course = document.getElementById('profile-course-input').value;
+  if (!name) { alert('Please enter your name.'); return; }
+  const profile = { name, nick: nick||name, course, joined: new Date().toLocaleDateString('en-UG'), ts: Date.now() };
+  if (window.FB_READY) await window.FB.saveProfile(name, profile);
+  localStorage.setItem('rdl_profile', JSON.stringify(profile));
+  currentProfile = profile;
+  renderProfileDisplay(profile);
+}
+
+async function buildProfile() {
+  const saved = localStorage.getItem('rdl_profile');
+  if (saved) {
+    currentProfile = JSON.parse(saved);
+    renderProfileDisplay(currentProfile);
+  }
+}
+
+async function renderProfileDisplay(profile) {
+  document.getElementById('profile-setup').style.display = 'none';
+  document.getElementById('profile-display').style.display = 'block';
+  const results  = window.FB_READY ? await window.FB.getAllResults() : getAllResults();
+  const myResults = results.filter(r => r.name.toLowerCase() === profile.name.toLowerCase());
+  const streak   = window.FB_READY ? await window.FB.getStreak(profile.name) : 0;
+  const best     = myResults.length ? Math.max(...myResults.map(r => r.percent)) : 0;
+  document.getElementById('profile-display').innerHTML = `
+    <div class="profile-card">
+      <div class="profile-avatar-lg">${profile.name[0].toUpperCase()}</div>
+      <div class="profile-name">${profile.name}</div>
+      <div class="profile-nickname">${profile.nick} · ${profile.course}</div>
+      <div class="profile-stats">
+        <div class="profile-stat"><div class="profile-stat-num" style="color:var(--accent3)">${streak}</div><div class="profile-stat-label">Day Streak 🔥</div></div>
+        <div class="profile-stat"><div class="profile-stat-num" style="color:var(--accent)">${myResults.length}</div><div class="profile-stat-label">Tests Taken</div></div>
+        <div class="profile-stat"><div class="profile-stat-num" style="color:var(--accent2)">${best}%</div><div class="profile-stat-label">Best Score</div></div>
+      </div>
+      <div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">Member since ${profile.joined}</div>
+    </div>
+    <button class="btn btn-outline" style="margin-bottom:16px" onclick="document.getElementById('profile-setup').style.display='block';document.getElementById('profile-display').style.display='none'">✏️ Edit Profile</button>
+    <div class="section-title">My Quiz History</div>
+    ${myResults.length
+      ? myResults.slice().reverse().map(r => `<div class="resource-item" style="margin-bottom:6px;"><div class="resource-icon" style="background:rgba(108,99,255,0.1)">📋</div><div><div class="resource-name">${r.quiz}</div><div class="resource-meta">${r.date}</div></div><div style="font-weight:800;color:var(--accent);font-family:'Space Mono',monospace">${r.percent}%</div></div>`).join('')
+      : '<div style="color:var(--text3);font-size:13px;font-family:\'JetBrains Mono\',monospace;">No quiz attempts yet. Take a test!</div>'
+    }`;
+}
+
+// ══ ATTENDANCE ════════════════════════════════════════════════════════════════
+async function doCheckIn() {
+  const name = document.getElementById('checkin-name').value.trim();
+  if (!name) { alert('Enter your name first.'); return; }
+  if (window.FB_READY) await window.FB.checkIn(name);
+  alert(`✅ ${name} checked in for today!`);
+  buildAttendance();
+}
+
+async function buildAttendance() {
+  const grid = document.getElementById('attendance-grid');
+  if (!grid || !window.FB_READY) return;
+  const att = await window.FB.getAttendance();
+  const today = new Date().toISOString().split('T')[0];
+  const members = Object.entries(att);
+  if (!members.length) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:13px;font-family:\'JetBrains Mono\',monospace;padding:20px;">No attendance records yet.</div>';
+    return;
+  }
+  grid.innerHTML = members.map(([key, days]) => {
+    const dayList  = Object.keys(days).sort().reverse();
+    const checkedToday = dayList[0] === today;
+    const streak = (() => { let s=0, d=new Date(); for(const day of dayList){ if(day===d.toISOString().split('T')[0]){s++;d.setDate(d.getDate()-1);}else break;} return s; })();
+    const name   = days[dayList[0]].name || key.replace(/_/g,' ');
+    return `<div class="attendance-card">
+      <div class="attendance-avatar" style="background:${checkedToday?'linear-gradient(135deg,var(--accent3),#06d6a0)':'linear-gradient(135deg,var(--text3),#444)'}">${name[0].toUpperCase()}</div>
+      <div>
+        <div class="attendance-name">${name} ${checkedToday?'✅':''}</div>
+        <div class="attendance-streak">🔥 ${streak} day streak</div>
+        <div class="attendance-last">Last: ${dayList[0]}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══ GALLERY — load from Firebase if available ══════════════════════════════════
+async function buildGallery() {
+  const grid = document.getElementById('gallery-grid');
+  if (!grid) return;
+  let photos = PHOTOS; // default from hardcoded array
+  if (window.FB_READY) {
+    const fbPhotos = await window.FB.getPhotos();
+    if (fbPhotos.length) photos = [...photos, ...fbPhotos];
+  }
+  if (!photos.length) {
+    grid.innerHTML = `<div class="gallery-empty">📸 No photos yet.<br>Upload from Settings or add to the photos/ folder in GitHub.</div>`;
+    return;
+  }
+  grid.innerHTML = photos.map((p,i) => `
+    <div class="gallery-item fade-in" onclick="openLightbox(${i})">
+      <img src="${p.src}" alt="${p.caption}" loading="lazy" onerror="this.parentElement.style.display='none'">
+      <div class="gallery-item-overlay"><div class="gallery-item-caption">${p.caption}</div></div>
+    </div>`).join('');
+  // Update global PHOTOS for lightbox
+  window._allPhotos = photos;
+}
+
+// Override lightbox to use _allPhotos
+function openLightbox(index) {
+  const photos = window._allPhotos || PHOTOS;
+  if (!photos.length) return;
+  currentPhotoIndex = index;
+  const p = photos[index];
+  document.getElementById('lightbox-img').src = p.src;
+  document.getElementById('lightbox-caption').textContent = `${p.caption} (${index+1}/${photos.length})`;
+  document.getElementById('lightbox-dl').onclick = () => { const a=document.createElement('a');a.href=p.src;a.download=p.src.split('/').pop();a.click(); };
+  document.getElementById('lightbox').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+// ══ OVERRIDE showView — add new views ══════════════════════════════════════════
+// ══ OVERRIDE showView ════════════════════════════════════════════════════════
 const _sv = window.showView || showView;
 window.showView = function(name, el) {
-  // Hide settings view if open
   const sv = document.getElementById('view-settings');
   if (sv) sv.style.display = 'none';
-  // Settings is special — full screen overlay
   if (name === 'settings') { if (isAdmin) showSettings(); return; }
   _sv(name, el);
-  if (name === 'flashcards') buildFlashcards();
-  if (name === 'gallery') buildGallery();
+  if (name === 'flashcards')  buildFlashcards();
+  if (name === 'gallery')     buildGallery();
   if (name === 'leaderboard') buildLeaderboard();
-  if (name === 'daily') buildDailyChallenge();
-  if (name === 'timetable') buildTimetable();
-  if (name === 'progress') buildProgress();
-  if (name === 'discuss') renderPosts();
-  if (name === 'admin') buildAdminPanel();
+  if (name === 'daily')       buildDailyChallenge();
+  if (name === 'timetable')   buildTimetable();
+  if (name === 'progress')    buildProgress();
+  if (name === 'discuss')     renderPosts();
+  if (name === 'admin')       buildAdminPanel();
+  if (name === 'profile')     buildProfile();
+  if (name === 'attendance')  buildAttendance();
   if (name === 'quiz') {
     document.getElementById('quiz-lobby').style.display = 'block';
     document.getElementById('quiz-active').style.display = 'none';
