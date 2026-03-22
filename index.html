@@ -15,8 +15,6 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getDatabase, ref, set, get, onValue, push, remove, update, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-  import { getStorage, ref as sref, uploadBytes, getDownloadURL, deleteObject, listAll }
-    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyDgwfW0y5RaTj7XDLfvFUkueiU_OC1uamw",
@@ -28,9 +26,23 @@
     appId: "1:174775227684:web:221575868fbb00e254cfb1"
   };
 
-  const fbApp   = initializeApp(firebaseConfig);
-  const db      = getDatabase(fbApp);
-  const storage = getStorage(fbApp);
+  const fbApp = initializeApp(firebaseConfig);
+  const db    = getDatabase(fbApp);
+
+  // ── Cloudinary config ──────────────────────────────────────────────────────
+  const CLOUD_NAME    = 'dze1ff3s9';
+  const UPLOAD_PRESET = 'rdl_uploads';
+
+  async function cloudinaryUpload(file) {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('upload_preset', UPLOAD_PRESET);
+    form.append('folder', 'therealistdevlab');
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method:'POST', body:form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Upload failed');
+    return { url: data.secure_url, public_id: data.public_id };
+  }
 
   window.FB = {
     // ── Auth / Config ──────────────────────────────────────────────────────
@@ -115,26 +127,27 @@
     markRead: (k) => update(ref(db,'notifications/'+k), { read: true }),
 
     // ── File Storage ──────────────────────────────────────────────────────
+    // ── File Storage (Cloudinary) ─────────────────────────────────────────
     uploadPhoto: async (file, caption) => {
-      const r = sref(storage, 'photos/'+Date.now()+'_'+file.name);
-      await uploadBytes(r, file);
-      const url = await getDownloadURL(r);
-      await push(ref(db,'gallery'), { src: url, caption, path: r.fullPath, ts: Date.now() });
+      const { url, public_id } = await cloudinaryUpload(file);
+      await push(ref(db,'gallery'), { src: url, caption, public_id, ts: Date.now() });
       return url;
     },
     getPhotos: async () => { const s = await get(ref(db,'gallery')); if (!s.exists()) return []; const a=[]; s.forEach(c=>a.push({...c.val(),_key:c.key})); return a; },
-    deletePhoto: async (key, path) => { await remove(ref(db,'gallery/'+key)); if(path) await deleteObject(sref(storage,path)).catch(()=>{}); },
+    deletePhoto: async (key, public_id) => {
+      await remove(ref(db,'gallery/'+key));
+      // Note: Cloudinary deletion from frontend requires signed requests
+      // Files can be deleted from Cloudinary dashboard if needed
+    },
     onGallery: (cb) => onValue(ref(db,'gallery'), s => { const a=[]; if(s.exists()) s.forEach(c=>a.push({...c.val(),_key:c.key})); cb(a); }),
 
     uploadFile: async (file, course, label) => {
-      const r = sref(storage, 'files/'+course+'/'+Date.now()+'_'+file.name);
-      await uploadBytes(r, file);
-      const url = await getDownloadURL(r);
-      await push(ref(db,'files/'+course.replace(/\s/g,'_')), { name: label||file.name, url, path: r.fullPath, ts: Date.now() });
+      const { url, public_id } = await cloudinaryUpload(file);
+      await push(ref(db,'files/'+course.replace(/\s/g,'_')), { name: label||file.name, url, public_id, ts: Date.now() });
       return url;
     },
     getFiles: async (course) => { const s = await get(ref(db,'files/'+course.replace(/\s/g,'_'))); if (!s.exists()) return []; const a=[]; s.forEach(c=>a.push({...c.val(),_key:c.key})); return a; },
-    deleteFile: async (course, key, path) => { await remove(ref(db,'files/'+course.replace(/\s/g,'_')+'/'+key)); if(path) await deleteObject(sref(storage,path)).catch(()=>{}); },
+    deleteFile: async (course, key) => { await remove(ref(db,'files/'+course.replace(/\s/g,'_')+'/'+key)); },
   };
 
   window.FB_READY = true;
@@ -4803,11 +4816,18 @@ async function uploadPhotos() {
   prog.classList.add('visible');
   let done = 0;
   for (const file of files) {
-    status.textContent = `Uploading ${file.name}...`;
-    await window.FB.uploadPhoto(file, caption + (files.length > 1 ? ` (${done+1}/${files.length})` : ''));
-    done++;
-    fill.style.width = (done/files.length*100)+'%';
+    status.textContent = `⏳ Uploading ${file.name} (${done+1}/${files.length})...`;
+    fill.style.width = ((done/files.length)*100)+'%';
+    try {
+      await window.FB.uploadPhoto(file, caption + (files.length > 1 ? ` (${done+1}/${files.length})` : ''));
+      done++;
+      fill.style.width = (done/files.length*100)+'%';
+    } catch(e) {
+      status.textContent = `❌ Failed to upload ${file.name}: ${e.message}`;
+      return;
+    }
   }
+  fill.style.width = '100%';
   status.textContent = `✅ ${done} photo${done>1?'s':''} uploaded successfully!`;
   document.getElementById('photo-caption').value = '';
   document.getElementById('photo-file').value = '';
@@ -4824,15 +4844,15 @@ async function loadPhotoManage() {
     ${photos.map(p => `
       <div style="position:relative;border-radius:8px;overflow:hidden;aspect-ratio:1;">
         <img src="${p.src}" style="width:100%;height:100%;object-fit:cover;">
-        <button onclick="deleteUploadedPhoto('${p._key}','${p.path||''}')"
+        <button onclick="deleteUploadedPhoto('${p._key}','${p.public_id||''}')"
           style="position:absolute;top:4px;right:4px;background:rgba(220,38,38,0.8);border:none;color:white;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:11px;">✕</button>
       </div>`).join('')}
     </div>`;
 }
 
-async function deleteUploadedPhoto(key, path) {
+async function deleteUploadedPhoto(key, public_id) {
   if (!confirm('Delete this photo?')) return;
-  await window.FB.deletePhoto(key, path);
+  await window.FB.deletePhoto(key, public_id);
   loadPhotoManage();
 }
 
@@ -4874,14 +4894,14 @@ async function loadFileManage() {
         <div><div class="resource-name">${f.name}</div></div>
         <div class="resource-actions">
           <a href="${f.url}" target="_blank" class="btn btn-outline" style="font-size:11px;padding:4px 10px;">View</a>
-          <button class="btn btn-red" style="font-size:11px;padding:4px 10px;" onclick="deleteUploadedFile('${course}','${f._key}','${f.path||''}')">🗑️</button>
+          <button class="btn btn-red" style="font-size:11px;padding:4px 10px;" onclick="deleteUploadedFile('${course}','${f._key}','${f.public_id||''}')">🗑️</button>
         </div></div>`).join('')
     : '';
 }
 
-async function deleteUploadedFile(course, key, path) {
+async function deleteUploadedFile(course, key, public_id) {
   if (!confirm('Delete this file?')) return;
-  await window.FB.deleteFile(course, key, path);
+  await window.FB.deleteFile(course, key);
   loadFileManage();
 }
 
