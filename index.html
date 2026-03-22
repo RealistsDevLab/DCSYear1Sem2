@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TheRealistDevLab — DCS Study Portal</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6c63ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RealistDevLab">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -22,6 +27,18 @@
   --text3: #5a5a80;
   --sidebar-w: 280px;
   --header-h: 60px;
+}
+
+body.light-mode {
+  --bg: #f0f2ff;
+  --bg2: #ffffff;
+  --bg3: #e8eaf6;
+  --card: #ffffff;
+  --border: #dde0f0;
+  --border2: #c5c9e8;
+  --text: #1a1a2e;
+  --text2: #4a4a6a;
+  --text3: #8a8aaa;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -1604,6 +1621,374 @@ body {
   #code-editor { min-height: 240px; }
   #code-output { min-height: 160px; }
 }
+/* ── ADMIN PANEL ── */
+.admin-badge {
+  background: linear-gradient(135deg, var(--accent2), #f72585);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+  margin-left: 6px;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+
+.admin-card h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.blocklist-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.blocklist-item button {
+  background: rgba(255,101,132,0.15);
+  border: 1px solid rgba(255,101,132,0.3);
+  color: var(--accent2);
+  border-radius: 6px;
+  padding: 3px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+}
+
+.announcement-box {
+  background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(255,101,132,0.1));
+  border: 1px solid rgba(108,99,255,0.3);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.announcement-box.visible { display: block; }
+
+.announcement-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.announcement-text {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ── TIMETABLE ── */
+.timetable-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .timetable-grid { grid-template-columns: repeat(3, 1fr); }
+  .admin-grid { grid-template-columns: 1fr; }
+}
+
+.timetable-day {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 10px;
+  text-align: center;
+  transition: border-color 0.2s;
+}
+
+.timetable-day.today {
+  border-color: var(--accent);
+  background: rgba(108,99,255,0.08);
+}
+
+.timetable-day-name {
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text3);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.timetable-day.today .timetable-day-name { color: var(--accent); }
+
+.timetable-subject {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.timetable-time {
+  font-size: 10px;
+  color: var(--text3);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.exam-countdown {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.countdown-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  border-left: 4px solid var(--accent);
+}
+
+.countdown-course { font-size: 12px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+.countdown-days { font-size: 28px; font-weight: 800; font-family: 'Space Mono', monospace; color: var(--accent); }
+.countdown-label { font-size: 11px; color: var(--text3); }
+
+/* ── DAILY CHALLENGE ── */
+.daily-challenge-card {
+  background: linear-gradient(135deg, rgba(108,99,255,0.1), rgba(67,233,123,0.05));
+  border: 1px solid rgba(108,99,255,0.3);
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.daily-challenge-card::before {
+  content: '🎯';
+  position: absolute;
+  right: 20px; top: 16px;
+  font-size: 48px;
+  opacity: 0.15;
+}
+
+.daily-tag {
+  background: var(--accent);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 1px;
+  display: inline-block;
+  margin-bottom: 12px;
+}
+
+.daily-q { font-size: 18px; font-weight: 700; margin-bottom: 20px; line-height: 1.4; }
+
+.daily-options { display: grid; gap: 8px; margin-bottom: 16px; }
+
+.daily-result {
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 14px 18px;
+  font-size: 14px;
+  display: none;
+  margin-top: 12px;
+}
+
+.daily-result.visible { display: block; }
+
+/* ── DISCUSSION BOARD ── */
+.discussion-post {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 12px;
+  transition: border-color 0.2s;
+}
+
+.discussion-post:hover { border-color: var(--border2); }
+
+.discussion-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.discussion-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+  font-family: 'Space Mono', monospace;
+}
+
+.discussion-author { font-size: 13px; font-weight: 700; }
+.discussion-time { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+.discussion-body { font-size: 14px; color: var(--text2); line-height: 1.6; }
+.discussion-tag { margin-left: auto; }
+
+.post-form {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.post-textarea {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+
+.post-textarea:focus { border-color: var(--accent); }
+
+/* ── PROGRESS TRACKER ── */
+.progress-course-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+
+.progress-course-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.progress-bar-wrap {
+  height: 8px;
+  background: var(--bg3);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.progress-topics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 6px;
+}
+
+.progress-topic {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg3);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.progress-topic:hover { background: var(--border2); }
+
+.progress-topic.done {
+  background: rgba(67,233,123,0.1);
+  border: 1px solid rgba(67,233,123,0.2);
+}
+
+.progress-check {
+  width: 16px; height: 16px;
+  border-radius: 4px;
+  border: 1.5px solid var(--border2);
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  transition: all 0.15s;
+}
+
+.progress-topic.done .progress-check {
+  background: var(--accent3);
+  border-color: var(--accent3);
+}
+
+/* ── THEME TOGGLE ── */
+.theme-toggle {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-toggle:hover { border-color: var(--accent); }
+
+/* ── INSTALL PWA BANNER ── */
+.pwa-banner {
+  background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(67,233,123,0.1));
+  border: 1px solid rgba(108,99,255,0.3);
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: none;
+  align-items: center;
+  gap: 14px;
+}
+
+.pwa-banner.visible { display: flex; }
+.pwa-banner-text { flex: 1; font-size: 13px; color: var(--text2); }
+.pwa-banner-text strong { color: var(--text); display: block; margin-bottom: 2px; }
 </style>
 </head>
 <body>
@@ -1655,6 +2040,8 @@ body {
     </div>
     <div class="header-right">
       <div class="header-badge">● Online</div>
+      <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 Dark</button>
+      <button class="header-btn" id="pwa-install-btn" style="display:none" onclick="installPWA()">📲 Install App</button>
       <button class="header-btn" onclick="logout()">Sign Out</button>
     </div>
   </header>
@@ -1750,9 +2137,30 @@ body {
 
       <div class="sidebar-section">
         <div class="sidebar-section-header">Quick Links</div>
+        <div class="sidebar-item" onclick="showView('daily', this)">
+          <div class="sidebar-item-icon" style="background:rgba(108,99,255,0.15)">🎯</div>
+          Daily Challenge
+        </div>
+        <div class="sidebar-item" onclick="showView('timetable', this)">
+          <div class="sidebar-item-icon" style="background:rgba(67,233,123,0.15)">📅</div>
+          Timetable & Exams
+        </div>
+        <div class="sidebar-item" onclick="showView('progress', this)">
+          <div class="sidebar-item-icon" style="background:rgba(247,151,30,0.15)">📊</div>
+          Progress Tracker
+        </div>
+        <div class="sidebar-item" onclick="showView('discuss', this)">
+          <div class="sidebar-item-icon" style="background:rgba(255,101,132,0.15)">💬</div>
+          Discussion Board
+        </div>
         <div class="sidebar-item" onclick="showView('howto', this)">
           <div class="sidebar-item-icon">➕</div>
           How to Add Content
+        </div>
+        <div class="sidebar-item" id="admin-sidebar-item" style="display:none" onclick="showView('admin', this)">
+          <div class="sidebar-item-icon" style="background:rgba(255,101,132,0.15)">🛡️</div>
+          Admin Panel
+          <span class="admin-badge">ADMIN</span>
         </div>
       </div>
     </aside>
@@ -1762,6 +2170,19 @@ body {
 
       <!-- HOME VIEW -->
       <div class="view active" id="view-home">
+        <div class="announcement-box" id="announcement-box">
+          <div class="announcement-title">📢 ANNOUNCEMENT</div>
+          <div class="announcement-text" id="announcement-text"></div>
+        </div>
+        <div class="pwa-banner" id="pwa-banner">
+          <span style="font-size:28px">📲</span>
+          <div class="pwa-banner-text">
+            <strong>Install TheRealistDevLab as an App</strong>
+            Works offline · Opens like a real app · No browser needed
+          </div>
+          <button class="btn btn-primary" onclick="installPWA()">Install</button>
+          <button class="btn btn-outline" onclick="document.getElementById('pwa-banner').classList.remove('visible')">✕</button>
+        </div>
         <div class="home-greeting fade-in">
           <h1>Good day, Realists 👋</h1>
           <p>DCS Year 1 · Semester 2 · <span>UICT 2026</span> · TheRealistDevLab</p>
@@ -1824,6 +2245,42 @@ body {
             </div>
             <div class="course-tags"><span class="tag">All Tests</span><span class="tag">Rankings</span><span class="tag">Medals</span></div>
             <div class="course-actions"><button class="btn btn-primary" style="width:100%">View Rankings →</button></div>
+          </div>
+          <div class="course-card" onclick="showView('daily')">
+            <div class="course-card-accent" style="background:linear-gradient(90deg,#6c63ff,#43e97b)"></div>
+            <div class="course-card-header">
+              <div class="course-icon" style="background:rgba(108,99,255,0.15)">🎯</div>
+              <div><div class="course-code">DAILY</div><div class="course-name">Daily Challenge</div></div>
+            </div>
+            <div class="course-tags"><span class="tag">1 Question/Day</span><span class="tag">All Courses</span></div>
+            <div class="course-actions"><button class="btn btn-primary" style="width:100%">Today's Challenge →</button></div>
+          </div>
+          <div class="course-card" onclick="showView('timetable')">
+            <div class="course-card-accent" style="background:linear-gradient(90deg,#43e97b,#06d6a0)"></div>
+            <div class="course-card-header">
+              <div class="course-icon" style="background:rgba(67,233,123,0.15)">📅</div>
+              <div><div class="course-code">SCHEDULE</div><div class="course-name">Timetable & Exam Countdown</div></div>
+            </div>
+            <div class="course-tags"><span class="tag">Weekly Plan</span><span class="tag">Countdown</span></div>
+            <div class="course-actions"><button class="btn btn-primary" style="width:100%">View Schedule →</button></div>
+          </div>
+          <div class="course-card" onclick="showView('progress')">
+            <div class="course-card-accent" style="background:linear-gradient(90deg,#f7971e,#f7c948)"></div>
+            <div class="course-card-header">
+              <div class="course-icon" style="background:rgba(247,151,30,0.15)">📊</div>
+              <div><div class="course-code">PROGRESS</div><div class="course-name">Progress Tracker</div></div>
+            </div>
+            <div class="course-tags"><span class="tag">Topic Checklist</span><span class="tag">5 Courses</span></div>
+            <div class="course-actions"><button class="btn btn-primary" style="width:100%">Track Progress →</button></div>
+          </div>
+          <div class="course-card" onclick="showView('discuss')">
+            <div class="course-card-accent" style="background:linear-gradient(90deg,#ff6584,#f72585)"></div>
+            <div class="course-card-header">
+              <div class="course-icon" style="background:rgba(255,101,132,0.15)">💬</div>
+              <div><div class="course-code">DISCUSS</div><div class="course-name">Discussion Board</div></div>
+            </div>
+            <div class="course-tags"><span class="tag">Q&A</span><span class="tag">Study Tips</span></div>
+            <div class="course-actions"><button class="btn btn-primary" style="width:100%">Join Discussion →</button></div>
           </div>
         </div>
 
@@ -2166,6 +2623,109 @@ int main() {
         <div class="flashcards-grid fade-in" id="flashcards-grid"></div>
       </div>
 
+      <!-- DAILY CHALLENGE VIEW -->
+      <div class="view" id="view-daily">
+        <div class="home-greeting fade-in">
+          <h1>Daily Challenge 🎯</h1>
+          <p>One question per day — <span>test yourself</span></p>
+        </div>
+        <div id="daily-challenge-content" class="fade-in"></div>
+      </div>
+
+      <!-- TIMETABLE VIEW -->
+      <div class="view" id="view-timetable">
+        <div class="home-greeting fade-in">
+          <h1>Timetable & Exams 📅</h1>
+          <p>Study schedule + exam countdown — <span>stay on track</span></p>
+        </div>
+        <div class="section-title fade-in">📆 Weekly Study Schedule</div>
+        <div class="timetable-grid fade-in" id="timetable-grid"></div>
+        <div class="section-title fade-in">⏳ Exam Countdown</div>
+        <div class="exam-countdown fade-in" id="exam-countdown"></div>
+      </div>
+
+      <!-- PROGRESS TRACKER VIEW -->
+      <div class="view" id="view-progress">
+        <div class="home-greeting fade-in">
+          <h1>Progress Tracker 📊</h1>
+          <p>Track what you've covered — <span>tick off topics as you study</span></p>
+        </div>
+        <div id="progress-content" class="fade-in"></div>
+      </div>
+
+      <!-- DISCUSSION BOARD VIEW -->
+      <div class="view" id="view-discuss">
+        <div class="home-greeting fade-in">
+          <h1>Discussion Board 💬</h1>
+          <p>Ask questions · share tips · help each other — <span>TheRealists</span></p>
+        </div>
+        <div class="post-form fade-in">
+          <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+            <input type="text" id="post-name" class="form-input" placeholder="Your name..." style="max-width:200px;padding:8px 12px;">
+            <select id="post-tag" style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:8px 12px;color:var(--text);font-family:'Syne',sans-serif;font-size:13px;">
+              <option>CSC 122</option><option>CSC 121</option><option>CSC 123</option>
+              <option>ICT 121</option><option>BSM 121</option><option>General</option>
+            </select>
+          </div>
+          <textarea class="post-textarea" id="post-body" placeholder="Ask a question or share a study tip..."></textarea>
+          <button class="btn btn-primary" onclick="submitPost()">Post →</button>
+        </div>
+        <div id="posts-list" class="fade-in"></div>
+      </div>
+
+      <!-- ADMIN PANEL VIEW -->
+      <div class="view" id="view-admin">
+        <div class="home-greeting fade-in">
+          <h1>Admin Panel 🛡️ <span class="admin-badge">ADMIN</span></h1>
+          <p>Manage members, announcements and site content — <span>Bravehart only</span></p>
+        </div>
+        <div class="admin-grid fade-in">
+
+          <div class="admin-card">
+            <h3>📢 Post Announcement</h3>
+            <textarea class="post-textarea" id="admin-announcement" placeholder="Write an announcement for all members..." style="min-height:80px;margin-bottom:10px;"></textarea>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary" onclick="postAnnouncement()">Post →</button>
+              <button class="btn btn-outline" onclick="clearAnnouncement()">Clear</button>
+            </div>
+          </div>
+
+          <div class="admin-card">
+            <h3>⛔ Block a Member</h3>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:'JetBrains Mono',monospace;">Blocked members cannot use quizzes or post — even with the right access code.</p>
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+              <input type="text" id="block-name" class="form-input" placeholder="Member name..." style="padding:8px 12px;">
+              <button class="btn btn-red" onclick="blockMember()">Block</button>
+            </div>
+            <div id="blocklist"></div>
+          </div>
+
+          <div class="admin-card">
+            <h3>📋 All Quiz Attempts</h3>
+            <div id="admin-attempts" style="max-height:300px;overflow-y:auto;"></div>
+          </div>
+
+          <div class="admin-card">
+            <h3>🗑️ Manage Leaderboard</h3>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:'JetBrains Mono',monospace;">Remove specific entries from the leaderboard.</p>
+            <button class="btn btn-red" onclick="clearLeaderboard()">🗑️ Clear All Results</button>
+            <br><br>
+            <button class="btn btn-outline" onclick="exportResults()">📤 Export Results as PDF</button>
+          </div>
+
+          <div class="admin-card">
+            <h3>💬 Manage Posts</h3>
+            <button class="btn btn-red" onclick="clearAllPosts()">🗑️ Clear All Posts</button>
+          </div>
+
+          <div class="admin-card">
+            <h3>📊 Site Stats</h3>
+            <div id="admin-stats"></div>
+          </div>
+
+        </div>
+      </div>
+
     </main>
   </div>
 
@@ -2368,13 +2928,26 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ══ LOGIN ═════════════════════════════════════════════════════════════════════
+const ADMIN_CODE = 'RDLBRAVE2026'; // Keep this secret — admin only
+let isAdmin = false;
+let currentUser = '';
+
 function doLogin() {
   const code = document.getElementById('access-code').value.trim();
   const err = document.getElementById('login-error');
-  if (code === 'UICTR2026') {
+
+  if (code === 'UICTR2026' || code === ADMIN_CODE) {
+    isAdmin = code === ADMIN_CODE;
     document.getElementById('login-page').style.display = 'none';
     document.getElementById('app').style.display = 'block';
+    if (isAdmin) {
+      document.getElementById('admin-sidebar-item').style.display = 'flex';
+    }
     buildPapersGrid();
+    loadAnnouncement();
+    loadTheme();
+    registerSW();
+    showPWABanner();
   } else {
     err.style.display = 'block';
     document.getElementById('access-code').style.borderColor = 'var(--accent2)';
@@ -2656,6 +3229,11 @@ const SEARCH_INDEX = [
   { text: "CSC 122 Flashcards", sub: "C programming study cards", action: () => { showView('flashcards'); filterFlashcards('CSC 122'); }, icon: "🃏" },
   { text: "CSC 121 Flashcards", sub: "Hardware study cards", action: () => { showView('flashcards'); filterFlashcards('CSC 121'); }, icon: "🃏" },
   { text: "CSC 123 Flashcards", sub: "Database study cards", action: () => { showView('flashcards'); filterFlashcards('CSC 123'); }, icon: "🃏" },
+  { text: "Daily Challenge", sub: "One question per day · test yourself", action: () => showView('daily'), icon: "🎯" },
+  { text: "Timetable", sub: "Weekly study schedule · exam countdown", action: () => showView('timetable'), icon: "📅" },
+  { text: "Exam Countdown", sub: "Days left to exams · timetable", action: () => showView('timetable'), icon: "⏳" },
+  { text: "Progress Tracker", sub: "Track topics covered per course", action: () => showView('progress'), icon: "📊" },
+  { text: "Discussion Board", sub: "Ask questions · share tips · Q&A", action: () => showView('discuss'), icon: "💬" },
 ];
 
 function handleSearch(q) {
@@ -2913,6 +3491,10 @@ function getAllResults() {
 function startQuizLobby() {
   const name = document.getElementById('quiz-name-input').value.trim();
   if (!name) { alert('Please enter your name first!'); return; }
+  if (isBlocked(name)) {
+    alert('⛔ Your access has been revoked by the admin. Contact Bravehart.');
+    return;
+  }
   quizState.name = name;
   document.getElementById('quiz-list').innerHTML = QUIZZES.map(q => `
     <div class="quiz-card" onclick="startQuiz('${q.id}')">
@@ -3157,13 +3739,372 @@ function flipCard(el) {
   el.classList.toggle('flipped');
 }
 
-// Override showView to trigger new views
+// ══ THEME TOGGLE ══════════════════════════════════════════════════════════════
+function toggleTheme() {
+  const light = document.body.classList.toggle('light-mode');
+  localStorage.setItem('rdl_theme', light ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = light ? '☀️ Light' : '🌙 Dark';
+}
+
+function loadTheme() {
+  const t = localStorage.getItem('rdl_theme');
+  if (t === 'light') {
+    document.body.classList.add('light-mode');
+    document.getElementById('theme-btn').textContent = '☀️ Light';
+  }
+}
+
+// ══ PWA ═══════════════════════════════════════════════════════════════════════
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('pwa-install-btn').style.display = 'block';
+});
+
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    document.getElementById('pwa-install-btn').style.display = 'none';
+    document.getElementById('pwa-banner').classList.remove('visible');
+  });
+}
+
+function showPWABanner() {
+  if (deferredPrompt) {
+    setTimeout(() => document.getElementById('pwa-banner').classList.add('visible'), 2000);
+  }
+}
+
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+
+// ══ ANNOUNCEMENTS ════════════════════════════════════════════════════════════
+function postAnnouncement() {
+  const text = document.getElementById('admin-announcement').value.trim();
+  if (!text) return;
+  localStorage.setItem('rdl_announcement', text);
+  loadAnnouncement();
+  alert('✅ Announcement posted!');
+}
+
+function clearAnnouncement() {
+  localStorage.removeItem('rdl_announcement');
+  loadAnnouncement();
+}
+
+function loadAnnouncement() {
+  const text = localStorage.getItem('rdl_announcement');
+  const box = document.getElementById('announcement-box');
+  const el = document.getElementById('announcement-text');
+  if (text) {
+    el.textContent = text;
+    box.classList.add('visible');
+  } else {
+    box.classList.remove('visible');
+  }
+}
+
+// ══ ADMIN ════════════════════════════════════════════════════════════════════
+function blockMember() {
+  const name = document.getElementById('block-name').value.trim();
+  if (!name) return;
+  let blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
+  if (!blocked.includes(name)) { blocked.push(name); localStorage.setItem('rdl_blocked', JSON.stringify(blocked)); }
+  document.getElementById('block-name').value = '';
+  renderBlocklist();
+}
+
+function unblockMember(name) {
+  let blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
+  blocked = blocked.filter(b => b !== name);
+  localStorage.setItem('rdl_blocked', JSON.stringify(blocked));
+  renderBlocklist();
+}
+
+function isBlocked(name) {
+  const blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
+  return blocked.some(b => b.toLowerCase() === name.toLowerCase());
+}
+
+function renderBlocklist() {
+  const blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
+  const el = document.getElementById('blocklist');
+  if (!el) return;
+  if (!blocked.length) { el.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No blocked members</div>'; return; }
+  el.innerHTML = blocked.map(b => `
+    <div class="blocklist-item">
+      <span>⛔ ${b}</span>
+      <button onclick="unblockMember('${b}')">Unblock</button>
+    </div>`).join('');
+}
+
+function buildAdminPanel() {
+  renderBlocklist();
+  // All attempts
+  const results = getAllResults();
+  const attEl = document.getElementById('admin-attempts');
+  if (attEl) {
+    if (!results.length) {
+      attEl.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No attempts yet</div>';
+    } else {
+      attEl.innerHTML = results.slice().reverse().map(r => `
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">
+          <strong>${r.name}</strong> — ${r.quiz}<br>
+          <span style="color:var(--accent);font-family:'Space Mono',monospace">${r.percent}%</span>
+          <span style="color:var(--text3);font-family:'JetBrains Mono',monospace"> · ${r.date}</span>
+        </div>`).join('');
+    }
+  }
+  // Stats
+  const statsEl = document.getElementById('admin-stats');
+  if (statsEl) {
+    const posts = JSON.parse(localStorage.getItem('rdl_posts') || '[]');
+    const blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
+    statsEl.innerHTML = `
+      <div style="display:grid;gap:8px;font-size:13px;">
+        <div>📋 Quiz attempts: <strong style="color:var(--accent)">${results.length}</strong></div>
+        <div>💬 Discussion posts: <strong style="color:var(--accent3)">${posts.length}</strong></div>
+        <div>⛔ Blocked members: <strong style="color:var(--accent2)">${blocked.length}</strong></div>
+        <div>📸 Photos: <strong style="color:var(--accent4)">${PHOTOS.length}</strong></div>
+        <div>🃏 Flashcards: <strong style="color:var(--accent)">${FLASHCARD_DATA.length}</strong></div>
+      </div>`;
+  }
+}
+
+function clearLeaderboard() {
+  if (confirm('Clear ALL quiz results? This cannot be undone.')) {
+    localStorage.removeItem('rdl_results');
+    alert('✅ Leaderboard cleared.');
+  }
+}
+
+function exportResults() {
+  const results = getAllResults();
+  if (!results.length) { alert('No results to export.'); return; }
+  let text = 'TheRealistDevLab — Quiz Results\n';
+  text += '='.repeat(40) + '\n\n';
+  results.forEach(r => {
+    text += `Name: ${r.name}\nQuiz: ${r.quiz}\nScore: ${r.percent}% (${r.score}/${r.total})\nGrade: ${r.grade}\nDate: ${r.date}\n\n`;
+  });
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'quiz_results.txt';
+  a.click();
+}
+
+// ══ DAILY CHALLENGE ═══════════════════════════════════════════════════════════
+function buildDailyChallenge() {
+  const el = document.getElementById('daily-challenge-content');
+  if (!el) return;
+
+  // Pick card based on day of year so everyone gets same question
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const card = FLASHCARD_DATA[dayOfYear % FLASHCARD_DATA.length];
+  const today = new Date().toLocaleDateString('en-UG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Check if already answered today
+  const savedDay = localStorage.getItem('rdl_daily_day');
+  const savedAnswer = localStorage.getItem('rdl_daily_answer');
+  const alreadyDone = savedDay === String(dayOfYear);
+
+  el.innerHTML = `
+    <div class="daily-challenge-card">
+      <div class="daily-tag">🎯 DAILY CHALLENGE — ${today}</div>
+      <div class="daily-q">${card.q}</div>
+      <div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:16px;">${card.course}</div>
+      ${alreadyDone
+        ? `<div class="daily-result visible" style="border-left:4px solid var(--accent3);">
+            ✅ You already answered today!<br><br>
+            <strong>Answer:</strong> ${card.a}
+           </div>`
+        : `<button class="btn btn-primary" onclick="revealDaily(${JSON.stringify(card.a).replace(/'/g,"\\'")})" style="margin-bottom:12px;">
+             Reveal Answer →
+           </button>
+           <div class="daily-result" id="daily-result-box">
+             <strong style="color:var(--accent3);">Answer:</strong><br>${card.a}
+           </div>`
+      }
+    </div>
+    <div class="section-title">Previous Challenges</div>
+    <div style="color:var(--text3);font-size:13px;font-family:'JetBrains Mono',monospace;padding:20px 0;">
+      Come back tomorrow for a new challenge! A new question appears every day. 🔁
+    </div>
+  `;
+}
+
+function revealDaily(answer) {
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  localStorage.setItem('rdl_daily_day', String(dayOfYear));
+  localStorage.setItem('rdl_daily_answer', answer);
+  const box = document.getElementById('daily-result-box');
+  if (box) box.classList.add('visible');
+}
+
+// ══ TIMETABLE ════════════════════════════════════════════════════════════════
+const TIMETABLE = [
+  { day: 'Mon', subject: 'CSC 122', topic: 'C Programming', time: '8:00–10:00' },
+  { day: 'Tue', subject: 'CSC 121', topic: 'Hardware', time: '10:00–12:00' },
+  { day: 'Wed', subject: 'CSC 123', topic: 'Databases', time: '8:00–10:00' },
+  { day: 'Thu', subject: 'ICT 121', topic: 'Workshop', time: '2:00–5:00' },
+  { day: 'Fri', subject: 'BSM 121', topic: 'Research', time: '10:00–12:00' },
+  { day: 'Sat', subject: 'Revision', topic: 'All Units', time: 'Self-study' },
+  { day: 'Sun', subject: 'Rest', topic: 'Recharge', time: '—' },
+];
+
+const EXAMS = [
+  { course: 'CSC 122', name: 'Structured Software Dev', date: '2026-06-27', color: 'var(--accent)' },
+  { course: 'CSC 121', name: 'Computer Hardware', date: '2026-06-28', color: 'var(--accent3)' },
+  { course: 'CSC 123', name: 'Database Systems', date: '2026-07-01', color: 'var(--accent4)' },
+  { course: 'ICT 121', name: 'Workshop Practice', date: '2026-07-02', color: 'var(--accent2)' },
+  { course: 'BSM 121', name: 'Research Methods', date: '2026-07-03', color: '#f0c419' },
+];
+
+function buildTimetable() {
+  const grid = document.getElementById('timetable-grid');
+  const countdown = document.getElementById('exam-countdown');
+  if (!grid) return;
+
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'short' });
+
+  grid.innerHTML = TIMETABLE.map(t => `
+    <div class="timetable-day ${t.day === today ? 'today' : ''}">
+      <div class="timetable-day-name">${t.day}${t.day === today ? ' 📍' : ''}</div>
+      <div class="timetable-subject">${t.subject}</div>
+      <div class="timetable-time">${t.topic}</div>
+      <div class="timetable-time">${t.time}</div>
+    </div>`).join('');
+
+  const now = new Date();
+  countdown.innerHTML = EXAMS.map(e => {
+    const examDate = new Date(e.date);
+    const diff = Math.ceil((examDate - now) / 86400000);
+    const label = diff < 0 ? 'days ago' : diff === 0 ? 'TODAY!' : 'days left';
+    const days = Math.abs(diff);
+    return `
+      <div class="countdown-card" style="border-left-color:${e.color}">
+        <div class="countdown-course">${e.course} — ${e.name}</div>
+        <div class="countdown-days" style="color:${e.color}">${days}</div>
+        <div class="countdown-label">${label} · ${e.date}</div>
+      </div>`;
+  }).join('');
+}
+
+// ══ PROGRESS TRACKER ════════════════════════════════════════════════════════
+const TOPICS = {
+  'CSC 122': ['Algorithms & Flowcharts','Program Structure','Data Types & Variables','Operators','If/Else Statements','Switch Case','For Loop','While Loop','Do-While Loop','Functions','Arrays','Strings','Pointers','Structures','File I/O','Sorting Algorithms'],
+  'CSC 121': ['Computer Classification','Input/Output Devices','Motherboard & CPU','Memory Types','Storage Devices','Operating Systems','DOS Commands','Troubleshooting','Maintenance Types'],
+  'CSC 123': ['Database Concepts','Relational Model','ER Diagrams','Normalisation 1NF','Normalisation 2NF','Normalisation 3NF','SQL DDL','SQL DML','SQL SELECT','JOINs','Views & Indexes','Transactions'],
+  'ICT 121': ['Workshop Tools','Safety Rules','First Aid','ESD & Anti-static','Resistor Colour Code','Multimeter Usage','Printer Types','E-Waste Management'],
+  'BSM 121': ['Research Concepts','Research Types','Research Process','Objectives & Hypothesis','Literature Review','Data Collection','Sampling Methods','Data Analysis','APA Referencing'],
+};
+
+function buildProgress() {
+  const el = document.getElementById('progress-content');
+  if (!el) return;
+  const saved = JSON.parse(localStorage.getItem('rdl_progress') || '{}');
+  const colors = { 'CSC 122': 'var(--accent)', 'CSC 121': 'var(--accent3)', 'CSC 123': 'var(--accent4)', 'ICT 121': 'var(--accent2)', 'BSM 121': '#f0c419' };
+
+  el.innerHTML = Object.entries(TOPICS).map(([course, topics]) => {
+    const done = topics.filter(t => saved[course + '_' + t]).length;
+    const pct = Math.round((done / topics.length) * 100);
+    const color = colors[course];
+    return `
+      <div class="progress-course-card">
+        <div class="progress-course-header">
+          <div>
+            <div style="font-size:15px;font-weight:700;">${course}</div>
+            <div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${done} / ${topics.length} topics covered</div>
+          </div>
+          <div style="font-size:24px;font-weight:800;font-family:'Space Mono',monospace;color:${color}">${pct}%</div>
+        </div>
+        <div class="progress-bar-wrap">
+          <div class="progress-bar-fill" style="width:${pct}%;background:${color}"></div>
+        </div>
+        <div class="progress-topics">
+          ${topics.map(t => {
+            const key = course + '_' + t;
+            const isDone = saved[key];
+            return `<div class="progress-topic ${isDone ? 'done' : ''}" onclick="toggleTopic('${key}')">
+              <div class="progress-check">${isDone ? '✓' : ''}</div>
+              <span>${t}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleTopic(key) {
+  const saved = JSON.parse(localStorage.getItem('rdl_progress') || '{}');
+  saved[key] = !saved[key];
+  localStorage.setItem('rdl_progress', JSON.stringify(saved));
+  buildProgress();
+}
+
+// ══ DISCUSSION BOARD ════════════════════════════════════════════════════════
+function submitPost() {
+  const name = document.getElementById('post-name').value.trim();
+  const body = document.getElementById('post-body').value.trim();
+  const tag = document.getElementById('post-tag').value;
+  if (!name || !body) { alert('Please enter your name and message.'); return; }
+  if (isBlocked(name)) { alert('⛔ You have been blocked by the admin.'); return; }
+  const posts = JSON.parse(localStorage.getItem('rdl_posts') || '[]');
+  posts.unshift({ name, body, tag, time: new Date().toLocaleString('en-UG') });
+  localStorage.setItem('rdl_posts', JSON.stringify(posts));
+  document.getElementById('post-body').value = '';
+  renderPosts();
+}
+
+function renderPosts() {
+  const posts = JSON.parse(localStorage.getItem('rdl_posts') || '[]');
+  const el = document.getElementById('posts-list');
+  if (!el) return;
+  if (!posts.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-family:\'JetBrains Mono\',monospace;">No posts yet. Be the first to post! 💬</div>';
+    return;
+  }
+  el.innerHTML = posts.map(p => `
+    <div class="discussion-post">
+      <div class="discussion-header">
+        <div class="discussion-avatar">${p.name[0].toUpperCase()}</div>
+        <div>
+          <div class="discussion-author">${p.name}</div>
+          <div class="discussion-time">${p.time}</div>
+        </div>
+        <span class="tag discussion-tag">${p.tag}</span>
+      </div>
+      <div class="discussion-body">${p.body}</div>
+    </div>`).join('');
+}
+
+function clearAllPosts() {
+  if (confirm('Delete ALL discussion posts?')) {
+    localStorage.removeItem('rdl_posts');
+    renderPosts();
+    alert('✅ Posts cleared.');
+  }
+}
+
+// ══ OVERRIDE showView TO TRIGGER ALL BUILDS ═══════════════════════════════
 const _sv = window.showView || showView;
 window.showView = function(name, el) {
   _sv(name, el);
   if (name === 'flashcards') buildFlashcards();
   if (name === 'gallery') buildGallery();
   if (name === 'leaderboard') buildLeaderboard();
+  if (name === 'daily') buildDailyChallenge();
+  if (name === 'timetable') buildTimetable();
+  if (name === 'progress') buildProgress();
+  if (name === 'discuss') renderPosts();
+  if (name === 'admin') buildAdminPanel();
   if (name === 'quiz') {
     document.getElementById('quiz-lobby').style.display = 'block';
     document.getElementById('quiz-active').style.display = 'none';
