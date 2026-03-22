@@ -10,6 +10,64 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="RealistDevLab">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue, push, remove, update }
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDgwfW0y5RaTj7XDLfvFUkueiU_OC1uamw",
+    authDomain: "therealistdevlab.firebaseapp.com",
+    databaseURL: "https://therealistdevlab-default-rtdb.firebaseio.com",
+    projectId: "therealistdevlab",
+    storageBucket: "therealistdevlab.firebasestorage.app",
+    messagingSenderId: "174775227684",
+    appId: "1:174775227684:web:221575868fbb00e254cfb1"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db    = getDatabase(fbApp);
+
+  // ── Expose Firebase helpers to global scope ───────────────────────────────
+  window.FB = {
+    // Codes
+    getMemberCode: async () => { const s = await get(ref(db,'config/memberCode')); return s.exists() ? s.val() : 'UICTR2026'; },
+    getAdminCode:  async () => { const s = await get(ref(db,'config/adminCode'));  return s.exists() ? s.val() : 'RDLBRAVE2026'; },
+    setMemberCode: (code) => set(ref(db,'config/memberCode'), code),
+    setAdminCode:  (code) => set(ref(db,'config/adminCode'),  code),
+
+    // Announcement
+    getAnnouncement: async () => { const s = await get(ref(db,'config/announcement')); return s.exists() ? s.val() : ''; },
+    setAnnouncement: (text) => set(ref(db,'config/announcement'), text),
+
+    // Blocklist
+    getBlocklist: async () => { const s = await get(ref(db,'blocklist')); return s.exists() ? Object.values(s.val()) : []; },
+    addBlock: (name) => set(ref(db,'blocklist/'+name.replace(/\s/g,'_')), name),
+    removeBlock: (name) => remove(ref(db,'blocklist/'+name.replace(/\s/g,'_'))),
+    isBlocked: async (name) => { const s = await get(ref(db,'blocklist/'+name.replace(/\s/g,'_'))); return s.exists(); },
+
+    // Quiz results
+    saveResult: (r) => push(ref(db,'results'), r),
+    getAllResults: async () => { const s = await get(ref(db,'results')); return s.exists() ? Object.values(s.val()) : []; },
+    clearResults: () => remove(ref(db,'results')),
+
+    // Discussion posts
+    savePost: (p) => push(ref(db,'posts'), p),
+    getPosts: async () => { const s = await get(ref(db,'posts')); if (!s.exists()) return []; const arr = []; s.forEach(c => arr.unshift({...c.val(), _key:c.key})); return arr; },
+    deletePost: (key) => remove(ref(db,'posts/'+key)),
+    clearPosts: () => remove(ref(db,'posts')),
+
+    // Live listeners
+    onAnnouncement: (cb) => onValue(ref(db,'config/announcement'), s => cb(s.exists() ? s.val() : '')),
+    onPosts: (cb) => onValue(ref(db,'posts'), s => { const arr = []; if(s.exists()) s.forEach(c => arr.unshift({...c.val(),_key:c.key})); cb(arr); }),
+    onBlocklist: (cb) => onValue(ref(db,'blocklist'), s => cb(s.exists() ? Object.values(s.val()) : [])),
+  };
+
+  window.FB_READY = true;
+  window.dispatchEvent(new Event('fb-ready'));
+  console.log('✅ Firebase connected — TheRealistDevLab');
+</script>
 <style>
 :root {
   --bg: #0a0a0f;
@@ -3026,9 +3084,6 @@ const DEFAULT_MEMBER_CODE = 'UICTR2026';
 const DEFAULT_ADMIN_CODE  = 'RDLBRAVE2026';
 let isAdmin = false;
 
-function getMemberCode() { return localStorage.getItem('rdl_member_code') || DEFAULT_MEMBER_CODE; }
-function getAdminCode()  { return localStorage.getItem('rdl_admin_code')  || DEFAULT_ADMIN_CODE; }
-
 // ── Login page toggles ────────────────────────────────────────────────────────
 function showAdminLogin() {
   document.getElementById('member-login-box').style.display = 'none';
@@ -3041,35 +3096,45 @@ function showMemberLogin() {
 }
 
 // ── Member login ──────────────────────────────────────────────────────────────
-function doLogin() {
+async function doLogin() {
   const code = document.getElementById('access-code').value.trim();
   const err  = document.getElementById('login-error');
-  // Always read fresh from localStorage
-  const correctCode = localStorage.getItem('rdl_member_code') || 'UICTR2026';
-  if (code === correctCode) {
-    isAdmin = false;
-    enterApp();
-  } else {
-    err.style.display = 'block';
-    document.getElementById('access-code').style.borderColor = 'var(--accent2)';
-    setTimeout(() => { err.style.display = 'none'; document.getElementById('access-code').style.borderColor = ''; }, 3000);
-  }
+  const btn  = document.querySelector('#member-login-box .login-btn');
+  btn.textContent = 'Checking...'; btn.disabled = true;
+  try {
+    const correctCode = window.FB_READY ? await window.FB.getMemberCode() : (localStorage.getItem('rdl_member_code') || DEFAULT_MEMBER_CODE);
+    if (code === correctCode) { isAdmin = false; enterApp(); }
+    else {
+      err.style.display = 'block';
+      document.getElementById('access-code').style.borderColor = 'var(--accent2)';
+      setTimeout(() => { err.style.display = 'none'; document.getElementById('access-code').style.borderColor = ''; }, 3000);
+    }
+  } catch(e) {
+    const fallback = localStorage.getItem('rdl_member_code') || DEFAULT_MEMBER_CODE;
+    if (code === fallback) { isAdmin = false; enterApp(); }
+    else { err.style.display = 'block'; setTimeout(() => err.style.display = 'none', 3000); }
+  } finally { btn.textContent = 'Access Study Portal →'; btn.disabled = false; }
 }
 
 // ── Admin login ───────────────────────────────────────────────────────────────
-function doAdminLogin() {
+async function doAdminLogin() {
   const code = document.getElementById('admin-code-input').value.trim();
   const err  = document.getElementById('admin-login-error');
-  // Always read fresh from localStorage — never use cached value
-  const correctCode = localStorage.getItem('rdl_admin_code') || 'RDLBRAVE2026';
-  if (code === correctCode) {
-    isAdmin = true;
-    enterApp();
-  } else {
-    err.style.display = 'block';
-    document.getElementById('admin-code-input').style.borderColor = 'var(--accent2)';
-    setTimeout(() => { err.style.display = 'none'; document.getElementById('admin-code-input').style.borderColor = ''; }, 3000);
-  }
+  const btn  = document.querySelector('#admin-login-box .login-btn');
+  btn.textContent = 'Verifying...'; btn.disabled = true;
+  try {
+    const correctCode = window.FB_READY ? await window.FB.getAdminCode() : (localStorage.getItem('rdl_admin_code') || DEFAULT_ADMIN_CODE);
+    if (code === correctCode) { isAdmin = true; enterApp(); }
+    else {
+      err.style.display = 'block';
+      document.getElementById('admin-code-input').style.borderColor = 'var(--accent2)';
+      setTimeout(() => { err.style.display = 'none'; document.getElementById('admin-code-input').style.borderColor = ''; }, 3000);
+    }
+  } catch(e) {
+    const fallback = localStorage.getItem('rdl_admin_code') || DEFAULT_ADMIN_CODE;
+    if (code === fallback) { isAdmin = true; enterApp(); }
+    else { err.style.display = 'block'; setTimeout(() => err.style.display = 'none', 3000); }
+  } finally { btn.textContent = 'Enter Admin Panel →'; btn.disabled = false; }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -3084,7 +3149,6 @@ function enterApp() {
   if (isAdmin) {
     document.getElementById('admin-sidebar-item').style.display = 'flex';
     document.getElementById('settings-sidebar-item').style.display = 'flex';
-    // Show admin badge in header
     const badge = document.createElement('div');
     badge.innerHTML = '<span class="admin-badge" style="font-size:11px;">🛡️ ADMIN</span>';
     document.querySelector('.header-right').prepend(badge);
@@ -3094,6 +3158,15 @@ function enterApp() {
   loadTheme();
   registerSW();
   showPWABanner();
+  // Live Firebase listeners
+  if (window.FB_READY) {
+    window.FB.onAnnouncement(text => {
+      const box = document.getElementById('announcement-box');
+      const el  = document.getElementById('announcement-text');
+      if (text) { el.textContent = text; box.classList.add('visible'); }
+      else { box.classList.remove('visible'); }
+    });
+  }
 }
 
 function logout() {
@@ -3106,58 +3179,54 @@ function logout() {
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────────
-function showSettings() {
+async function showSettings() {
   document.querySelectorAll('.view').forEach(v => { v.style.display = 'none'; v.classList.remove('active'); });
-  const sv = document.getElementById('view-settings');
-  sv.style.display = 'block';
-  // Show current codes
-  document.getElementById('show-member-code').textContent = getMemberCode();
-  document.getElementById('show-admin-code').textContent  = getAdminCode();
+  document.getElementById('view-settings').style.display = 'block';
+  const mc = window.FB_READY ? await window.FB.getMemberCode() : (localStorage.getItem('rdl_member_code') || DEFAULT_MEMBER_CODE);
+  const ac = window.FB_READY ? await window.FB.getAdminCode()  : (localStorage.getItem('rdl_admin_code')  || DEFAULT_ADMIN_CODE);
+  document.getElementById('show-member-code').textContent = mc;
+  document.getElementById('show-admin-code').textContent  = ac;
   renderSettingsBlocklist();
 }
 
-function changeMemberCode() {
+async function changeMemberCode() {
   const code = document.getElementById('new-member-code').value.trim();
   if (!code || code.length < 4) { alert('Code must be at least 4 characters.'); return; }
+  if (window.FB_READY) await window.FB.setMemberCode(code);
   localStorage.setItem('rdl_member_code', code);
   document.getElementById('show-member-code').textContent = code;
   document.getElementById('new-member-code').value = '';
-  alert('✅ Member access code changed to: ' + code + '\n\nShare this new code with your group.');
+  alert('✅ Member code changed to: ' + code + '\n\nShare this with your group.');
 }
 
-function changeAdminPassword() {
+async function changeAdminPassword() {
   const current = document.getElementById('current-admin-pw').value.trim();
   const newPw   = document.getElementById('new-admin-pw').value.trim();
   const confirm = document.getElementById('confirm-admin-pw').value.trim();
-  if (current !== getAdminCode()) { alert('❌ Current password is wrong.'); return; }
-  if (!newPw || newPw.length < 6) { alert('New password must be at least 6 characters.'); return; }
+  const correctCode = window.FB_READY ? await window.FB.getAdminCode() : (localStorage.getItem('rdl_admin_code') || DEFAULT_ADMIN_CODE);
+  if (current !== correctCode) { alert('❌ Current password is wrong.'); return; }
+  if (!newPw || newPw.length < 6) { alert('Password must be at least 6 characters.'); return; }
   if (newPw !== confirm) { alert('❌ Passwords do not match.'); return; }
+  if (window.FB_READY) await window.FB.setAdminCode(newPw);
   localStorage.setItem('rdl_admin_code', newPw);
   document.getElementById('show-admin-code').textContent = newPw;
-  document.getElementById('current-admin-pw').value = '';
-  document.getElementById('new-admin-pw').value = '';
-  document.getElementById('confirm-admin-pw').value = '';
-  alert('✅ Admin password changed successfully. Remember the new password!');
+  ['current-admin-pw','new-admin-pw','confirm-admin-pw'].forEach(id => document.getElementById(id).value = '');
+  alert('✅ Admin password changed! Works on all devices immediately.');
 }
 
-function renderSettingsBlocklist() {
-  const blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
+async function renderSettingsBlocklist() {
+  const blocked = window.FB_READY ? await window.FB.getBlocklist() : JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
   const el = document.getElementById('settings-blocklist');
   if (!el) return;
-  if (!blocked.length) {
-    el.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;margin-bottom:8px;">No blocked members</div>';
-    return;
-  }
-  el.innerHTML = blocked.map(b => `
-    <div class="blocklist-item">
-      <span>⛔ ${b}</span>
-      <button onclick="unblockFromSettings('${b}')">Unblock</button>
-    </div>`).join('');
+  el.innerHTML = blocked.length
+    ? blocked.map(b => `<div class="blocklist-item"><span>⛔ ${b}</span><button onclick="unblockFromSettings('${b}')">Unblock</button></div>`).join('')
+    : '<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;margin-bottom:8px;">No blocked members</div>';
 }
 
-function blockFromSettings() {
+async function blockFromSettings() {
   const name = document.getElementById('settings-block-name').value.trim();
   if (!name) return;
+  if (window.FB_READY) await window.FB.addBlock(name);
   let blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
   if (!blocked.includes(name)) { blocked.push(name); localStorage.setItem('rdl_blocked', JSON.stringify(blocked)); }
   document.getElementById('settings-block-name').value = '';
@@ -3165,7 +3234,8 @@ function blockFromSettings() {
   renderBlocklist();
 }
 
-function unblockFromSettings(name) {
+async function unblockFromSettings(name) {
+  if (window.FB_READY) await window.FB.removeBlock(name);
   let blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
   blocked = blocked.filter(b => b !== name);
   localStorage.setItem('rdl_blocked', JSON.stringify(blocked));
@@ -3696,16 +3766,18 @@ const QUIZZES = [
 let quizState = { name: '', quiz: null, answers: [], currentQ: 0, submitted: false };
 
 function saveResult(r) {
+  if (window.FB_READY) window.FB.saveResult(r);
+  // Also save locally as backup
   try { let a = JSON.parse(localStorage.getItem('rdl_results')||'[]'); a.push(r); localStorage.setItem('rdl_results', JSON.stringify(a)); } catch(e) {}
 }
 function getAllResults() {
   try { return JSON.parse(localStorage.getItem('rdl_results')||'[]'); } catch(e) { return []; }
 }
 
-function startQuizLobby() {
+async function startQuizLobby() {
   const name = document.getElementById('quiz-name-input').value.trim();
   if (!name) { alert('Please enter your name first!'); return; }
-  if (isBlocked(name)) {
+  if (await isBlocked(name)) {
     alert('⛔ Your access has been revoked by the admin. Contact Bravehart.');
     return;
   }
@@ -3819,11 +3891,13 @@ function backToQuizLobby() {
   document.getElementById('quiz-results').style.display = 'none';
 }
 
-function buildLeaderboard() {
-  const results = getAllResults();
+async function buildLeaderboard() {
   const content = document.getElementById('leaderboard-content');
+  if (!content) return;
+  content.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-family:\'JetBrains Mono\',monospace;">Loading... ⏳</div>';
+  const results = window.FB_READY ? await window.FB.getAllResults() : getAllResults();
   if (!results.length) {
-    content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text3);font-family:'JetBrains Mono',monospace;">No results yet. Be the first to attempt a test! 🚀</div>`;
+    content.innerHTML = `<div style="text-align:center;padding:60px;color:var(--text3);font-family:'JetBrains Mono',monospace;">No results yet. Be the first! 🚀</div>`;
     return;
   }
   const byQuiz = {};
@@ -4000,107 +4074,97 @@ function registerSW() {
 }
 
 // ══ ANNOUNCEMENTS ════════════════════════════════════════════════════════════
-function postAnnouncement() {
+async function postAnnouncement() {
   const text = document.getElementById('admin-announcement').value.trim();
   if (!text) return;
+  if (window.FB_READY) await window.FB.setAnnouncement(text);
   localStorage.setItem('rdl_announcement', text);
   loadAnnouncement();
-  alert('✅ Announcement posted!');
+  alert('✅ Announcement posted to all members!');
 }
 
-function clearAnnouncement() {
+async function clearAnnouncement() {
+  if (window.FB_READY) await window.FB.setAnnouncement('');
   localStorage.removeItem('rdl_announcement');
   loadAnnouncement();
 }
 
-function loadAnnouncement() {
-  const text = localStorage.getItem('rdl_announcement');
+async function loadAnnouncement() {
+  const text = window.FB_READY
+    ? await window.FB.getAnnouncement()
+    : (localStorage.getItem('rdl_announcement') || '');
   const box = document.getElementById('announcement-box');
-  const el = document.getElementById('announcement-text');
-  if (text) {
-    el.textContent = text;
-    box.classList.add('visible');
-  } else {
-    box.classList.remove('visible');
-  }
+  const el  = document.getElementById('announcement-text');
+  if (text) { el.textContent = text; box.classList.add('visible'); }
+  else { box.classList.remove('visible'); }
 }
 
 // ══ ADMIN ════════════════════════════════════════════════════════════════════
-function blockMember() {
+async function blockMember() {
   const name = document.getElementById('block-name').value.trim();
   if (!name) return;
+  if (window.FB_READY) await window.FB.addBlock(name);
   let blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
   if (!blocked.includes(name)) { blocked.push(name); localStorage.setItem('rdl_blocked', JSON.stringify(blocked)); }
   document.getElementById('block-name').value = '';
   renderBlocklist();
 }
 
-function unblockMember(name) {
+async function unblockMember(name) {
+  if (window.FB_READY) await window.FB.removeBlock(name);
   let blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
   blocked = blocked.filter(b => b !== name);
   localStorage.setItem('rdl_blocked', JSON.stringify(blocked));
   renderBlocklist();
 }
 
-function isBlocked(name) {
+async function isBlocked(name) {
+  if (window.FB_READY) return await window.FB.isBlocked(name);
   const blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
   return blocked.some(b => b.toLowerCase() === name.toLowerCase());
 }
 
-function renderBlocklist() {
-  const blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
+async function renderBlocklist() {
+  const blocked = window.FB_READY ? await window.FB.getBlocklist() : JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
   const el = document.getElementById('blocklist');
   if (!el) return;
-  if (!blocked.length) { el.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No blocked members</div>'; return; }
-  el.innerHTML = blocked.map(b => `
-    <div class="blocklist-item">
-      <span>⛔ ${b}</span>
-      <button onclick="unblockMember('${b}')">Unblock</button>
-    </div>`).join('');
+  el.innerHTML = blocked.length
+    ? blocked.map(b => `<div class="blocklist-item"><span>⛔ ${b}</span><button onclick="unblockMember('${b}')">Unblock</button></div>`).join('')
+    : '<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No blocked members</div>';
 }
 
-function buildAdminPanel() {
+async function buildAdminPanel() {
   renderBlocklist();
-  // All attempts
-  const results = getAllResults();
+  const results = window.FB_READY ? await window.FB.getAllResults() : getAllResults();
   const attEl = document.getElementById('admin-attempts');
   if (attEl) {
-    if (!results.length) {
-      attEl.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No attempts yet</div>';
-    } else {
-      attEl.innerHTML = results.slice().reverse().map(r => `
-        <div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">
-          <strong>${r.name}</strong> — ${r.quiz}<br>
-          <span style="color:var(--accent);font-family:'Space Mono',monospace">${r.percent}%</span>
-          <span style="color:var(--text3);font-family:'JetBrains Mono',monospace"> · ${r.date}</span>
-        </div>`).join('');
-    }
+    attEl.innerHTML = results.length
+      ? results.slice().reverse().map(r => `<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;"><strong>${r.name}</strong> — ${r.quiz}<br><span style="color:var(--accent);font-family:'Space Mono',monospace">${r.percent}%</span><span style="color:var(--text3);font-family:'JetBrains Mono',monospace"> · ${r.date}</span></div>`).join('')
+      : '<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No attempts yet</div>';
   }
-  // Stats
+  const posts   = window.FB_READY ? await window.FB.getPosts()     : JSON.parse(localStorage.getItem('rdl_posts')   || '[]');
+  const blocked = window.FB_READY ? await window.FB.getBlocklist() : JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
   const statsEl = document.getElementById('admin-stats');
   if (statsEl) {
-    const posts = JSON.parse(localStorage.getItem('rdl_posts') || '[]');
-    const blocked = JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
-    statsEl.innerHTML = `
-      <div style="display:grid;gap:8px;font-size:13px;">
-        <div>📋 Quiz attempts: <strong style="color:var(--accent)">${results.length}</strong></div>
-        <div>💬 Discussion posts: <strong style="color:var(--accent3)">${posts.length}</strong></div>
-        <div>⛔ Blocked members: <strong style="color:var(--accent2)">${blocked.length}</strong></div>
-        <div>📸 Photos: <strong style="color:var(--accent4)">${PHOTOS.length}</strong></div>
-        <div>🃏 Flashcards: <strong style="color:var(--accent)">${FLASHCARD_DATA.length}</strong></div>
-      </div>`;
+    statsEl.innerHTML = `<div style="display:grid;gap:8px;font-size:13px;">
+      <div>📋 Quiz attempts: <strong style="color:var(--accent)">${results.length}</strong></div>
+      <div>💬 Discussion posts: <strong style="color:var(--accent3)">${posts.length}</strong></div>
+      <div>⛔ Blocked members: <strong style="color:var(--accent2)">${blocked.length}</strong></div>
+      <div>📸 Photos: <strong style="color:var(--accent4)">${PHOTOS.length}</strong></div>
+      <div>🃏 Flashcards: <strong style="color:var(--accent)">${FLASHCARD_DATA.length}</strong></div>
+    </div>`;
   }
 }
 
-function clearLeaderboard() {
-  if (confirm('Clear ALL quiz results? This cannot be undone.')) {
-    localStorage.removeItem('rdl_results');
-    alert('✅ Leaderboard cleared.');
-  }
+async function clearLeaderboard() {
+  if (!confirm('Clear ALL quiz results?')) return;
+  if (window.FB_READY) await window.FB.clearResults();
+  localStorage.removeItem('rdl_results');
+  alert('✅ Leaderboard cleared.');
 }
 
-function exportResults() {
-  const results = getAllResults();
+async function exportResults() {
+  const results = window.FB_READY ? await window.FB.getAllResults() : getAllResults();
   if (!results.length) { alert('No results to export.'); return; }
   let text = 'TheRealistDevLab — Quiz Results\n';
   text += '='.repeat(40) + '\n\n';
@@ -4264,47 +4328,55 @@ function toggleTopic(key) {
 }
 
 // ══ DISCUSSION BOARD ════════════════════════════════════════════════════════
-function submitPost() {
+async function submitPost() {
   const name = document.getElementById('post-name').value.trim();
   const body = document.getElementById('post-body').value.trim();
-  const tag = document.getElementById('post-tag').value;
+  const tag  = document.getElementById('post-tag').value;
   if (!name || !body) { alert('Please enter your name and message.'); return; }
-  if (isBlocked(name)) { alert('⛔ You have been blocked by the admin.'); return; }
-  const posts = JSON.parse(localStorage.getItem('rdl_posts') || '[]');
-  posts.unshift({ name, body, tag, time: new Date().toLocaleString('en-UG') });
-  localStorage.setItem('rdl_posts', JSON.stringify(posts));
+  if (await isBlocked(name)) { alert('⛔ You have been blocked by the admin.'); return; }
+  const post = { name, body, tag, time: new Date().toLocaleString('en-UG') };
+  if (window.FB_READY) {
+    await window.FB.savePost(post);
+  } else {
+    const posts = JSON.parse(localStorage.getItem('rdl_posts') || '[]');
+    posts.unshift(post);
+    localStorage.setItem('rdl_posts', JSON.stringify(posts));
+  }
   document.getElementById('post-body').value = '';
   renderPosts();
 }
 
-function renderPosts() {
-  const posts = JSON.parse(localStorage.getItem('rdl_posts') || '[]');
+async function renderPosts() {
   const el = document.getElementById('posts-list');
   if (!el) return;
+  const posts = window.FB_READY ? await window.FB.getPosts() : JSON.parse(localStorage.getItem('rdl_posts') || '[]');
   if (!posts.length) {
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-family:\'JetBrains Mono\',monospace;">No posts yet. Be the first to post! 💬</div>';
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-family:\'JetBrains Mono\',monospace;">No posts yet. Be the first! 💬</div>';
     return;
   }
   el.innerHTML = posts.map(p => `
     <div class="discussion-post">
       <div class="discussion-header">
         <div class="discussion-avatar">${p.name[0].toUpperCase()}</div>
-        <div>
-          <div class="discussion-author">${p.name}</div>
-          <div class="discussion-time">${p.time}</div>
-        </div>
+        <div><div class="discussion-author">${p.name}</div><div class="discussion-time">${p.time}</div></div>
         <span class="tag discussion-tag">${p.tag}</span>
+        ${isAdmin && p._key ? `<button class="btn btn-red" style="padding:4px 10px;font-size:11px;margin-left:8px" onclick="deletePost('${p._key}')">🗑️</button>` : ''}
       </div>
       <div class="discussion-body">${p.body}</div>
     </div>`).join('');
 }
 
-function clearAllPosts() {
-  if (confirm('Delete ALL discussion posts?')) {
-    localStorage.removeItem('rdl_posts');
-    renderPosts();
-    alert('✅ Posts cleared.');
-  }
+async function deletePost(key) {
+  if (window.FB_READY) await window.FB.deletePost(key);
+  renderPosts();
+}
+
+async function clearAllPosts() {
+  if (!confirm('Delete ALL discussion posts?')) return;
+  if (window.FB_READY) await window.FB.clearPosts();
+  localStorage.removeItem('rdl_posts');
+  renderPosts();
+  alert('✅ Posts cleared.');
 }
 
 // ══ OVERRIDE showView TO TRIGGER ALL BUILDS ═══════════════════════════════
