@@ -41,9 +41,7 @@
     form.append('file', file);
     form.append('upload_preset', UPLOAD_PRESET);
     form.append('folder', 'therealistdevlab');
-    // Force a unique public_id so each upload is never overwritten
-    const uniqueId = `rdl_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
-    form.append('public_id', uniqueId);
+    form.append('public_id', `rdl_${Date.now()}_${Math.random().toString(36).slice(2,7)}`);
     const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method:'POST', body:form });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'Upload failed');
@@ -2612,7 +2610,7 @@ body {
           </div>
           <div class="stat-card">
             <div class="stat-num" style="color:var(--accent4)" id="stat-flashcards">30+</div>
-            <div class="stat-label">Flashcards</div>
+            <div class="stat-label">Flashcards</div
           </div>
         </div>
 
@@ -4316,19 +4314,10 @@ async function updateHomeStats() {
   const statEl = document.getElementById('stat-photos');
   const tagEl  = document.getElementById('tag-photos');
   if (statEl) statEl.textContent = photoCount;
-  if (tagEl)  tagEl.textContent  = `${photoCount} Photos`;
-
+  if (tagEl)  tagEl.textContent  = photoCount + ' Photos';
   if (window.FB_READY) {
-    try {
-      const quizzes = await window.FB.getQuizzes();
-      const qEl = document.getElementById('stat-quizzes');
-      if (qEl && quizzes.length) qEl.textContent = quizzes.length;
-    } catch(e) {}
-    try {
-      const cards = await window.FB.getFlashcards();
-      const fEl = document.getElementById('stat-flashcards');
-      if (fEl && cards.length) fEl.textContent = cards.length >= 30 ? '30+' : cards.length;
-    } catch(e) {}
+    try { const q = await window.FB.getQuizzes(); const qEl = document.getElementById('stat-quizzes'); if (qEl && q.length) qEl.textContent = q.length; } catch(e) {}
+    try { const c = await window.FB.getFlashcards(); const fEl = document.getElementById('stat-flashcards'); if (fEl && c.length) fEl.textContent = c.length >= 30 ? '30+' : c.length; } catch(e) {}
   }
 }
 
@@ -4348,8 +4337,6 @@ async function buildGallery() {
   }
 
   window._allPhotos = allPhotos;
-
-  // Always sync the home dashboard counter
   updateHomeStats();
 
   if (!allPhotos.length) {
@@ -5196,21 +5183,25 @@ async function uploadPhotos() {
   const fill   = document.getElementById('photo-progress-fill');
   const status = document.getElementById('photo-status');
   prog.classList.add('visible');
-  let done = 0;
+  let done = 0, failed = 0;
   for (const file of files) {
+    // Skip non-image files silently
+    if (!file.type.startsWith('image/')) { failed++; continue; }
     status.textContent = `⏳ Uploading ${file.name} (${done+1}/${files.length})...`;
-    fill.style.width = ((done/files.length)*100)+'%';
+    fill.style.width = ((done / files.length) * 100) + '%';
     try {
       await window.FB.uploadPhoto(file, caption + (files.length > 1 ? ` (${done+1}/${files.length})` : ''));
       done++;
-      fill.style.width = (done/files.length*100)+'%';
+      fill.style.width = (done / files.length * 100) + '%';
     } catch(e) {
-      status.textContent = `❌ Failed to upload ${file.name}: ${e.message}`;
-      return;
+      failed++;
+      status.textContent = `⚠️ Skipped ${file.name}: ${e.message}`;
+      await new Promise(r => setTimeout(r, 800));
     }
   }
   fill.style.width = '100%';
-  status.textContent = `✅ ${done} photo${done>1?'s':''} uploaded successfully!`;
+  const skippedMsg = failed ? ` (${failed} skipped)` : '';
+  status.textContent = `✅ ${done} photo${done>1?'s':''} uploaded successfully!${skippedMsg}`;
   document.getElementById('photo-caption').value = '';
   document.getElementById('photo-file').value = '';
   updateHomeStats();
