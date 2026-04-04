@@ -3887,10 +3887,49 @@ function logout() {
 
 // ══ NAVIGATION ════════════════════════════════════════════════════════════════
 function showView(name, el) {
-  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  // Settings is a special full-screen overlay
+  if (name === 'settings') {
+    if (typeof isAdmin !== 'undefined' && isAdmin) showSettings();
+    return;
+  }
+
+  // Hide settings overlay if open
+  const sv = document.getElementById('view-settings');
+  if (sv) sv.style.display = 'none';
+
+  // Restore app layout (in case settings hid it)
+  const app = document.getElementById('app');
+  if (app) app.style.display = 'block';
+  const layout = document.querySelector('.layout');
+  if (layout) layout.style.display = 'flex';
+  const mainEl = document.querySelector('.main');
+  if (mainEl) mainEl.style.display = 'block';
+
+  // Switch active view
+  document.querySelectorAll('.view').forEach(v => {
+    v.classList.remove('active');
+    v.style.display = ''; // clear any inline display styles
+  });
   document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
   if (el) el.classList.add('active');
+
+  // Trigger view-specific builders
+  if (name === 'gallery')     buildGallery();
+  if (name === 'flashcards')  buildFlashcards();
+  if (name === 'leaderboard') buildLeaderboard();
+  if (name === 'daily')       buildDailyChallenge();
+  if (name === 'timetable')   buildTimetable();
+  if (name === 'progress')    buildProgress();
+  if (name === 'discuss')     renderPosts();
+  if (name === 'admin')       buildAdminPanel();
+  if (name === 'profile')     buildProfile();
+  if (name === 'attendance')  buildAttendance();
+  if (name === 'quiz') {
+    document.getElementById('quiz-lobby').style.display = 'block';
+    document.getElementById('quiz-active').style.display = 'none';
+    document.getElementById('quiz-results').style.display = 'none';
+  }
 }
 
 function showCourse(id, el) {
@@ -5351,83 +5390,7 @@ async function buildAttendance() {
   }).join('');
 }
 
-// ══ GALLERY — load from Firebase if available ══════════════════════════════════
-async function buildGallery() {
-  const grid = document.getElementById('gallery-grid');
-  if (!grid) return;
-  let photos = PHOTOS; // default from hardcoded array
-  if (window.FB_READY) {
-    const fbPhotos = await window.FB.getPhotos();
-    if (fbPhotos.length) photos = [...photos, ...fbPhotos];
-  }
-  if (!photos.length) {
-    grid.innerHTML = `<div class="gallery-empty">📸 No photos yet.<br>Upload from Settings or add to the photos/ folder in GitHub.</div>`;
-    return;
-  }
-  grid.innerHTML = photos.map((p,i) => `
-    <div class="gallery-item fade-in" onclick="openLightbox(${i})">
-      <img src="${p.src}" alt="${p.caption}" loading="lazy" onerror="this.parentElement.style.display='none'">
-      <div class="gallery-item-overlay"><div class="gallery-item-caption">${p.caption}</div></div>
-    </div>`).join('');
-  // Update global PHOTOS for lightbox
-  window._allPhotos = photos;
-}
 
-// Override lightbox to use _allPhotos
-function openLightbox(index) {
-  const photos = window._allPhotos || PHOTOS;
-  if (!photos.length) return;
-  currentPhotoIndex = index;
-  const p = photos[index];
-  document.getElementById('lightbox-img').src = p.src;
-  document.getElementById('lightbox-caption').textContent = `${p.caption} (${index+1}/${photos.length})`;
-  document.getElementById('lightbox-dl').onclick = () => { const a=document.createElement('a');a.href=p.src;a.download=p.src.split('/').pop();a.click(); };
-  document.getElementById('lightbox').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-// ══ OVERRIDE showView ════════════════════════════════════════════════════════
-const _sv = window.showView || showView;
-window.showView = function(name, el) {
-  // Always hide settings overlay
-  const sv = document.getElementById('view-settings');
-  if (sv) sv.style.display = 'none';
-
-  // Settings is a special full-screen overlay
-  if (name === 'settings') {
-    if (isAdmin) showSettings();
-    return;
-  }
-
-  // Restore app layout
-  const app = document.getElementById('app');
-  if (app) app.style.display = 'block';
-  const layout = document.querySelector('.layout');
-  if (layout) layout.style.display = 'flex';
-  const mainEl = document.querySelector('.main');
-  if (mainEl) mainEl.style.display = 'block';
-
-  // Clear any inline display styles that may have been set — let CSS classes control visibility
-  document.querySelectorAll('.view').forEach(v => v.style.display = '');
-
-  _sv(name, el);
-
-  if (name === 'flashcards')  buildFlashcards();
-  if (name === 'gallery')     buildGallery();
-  if (name === 'leaderboard') buildLeaderboard();
-  if (name === 'daily')       buildDailyChallenge();
-  if (name === 'timetable')   buildTimetable();
-  if (name === 'progress')    buildProgress();
-  if (name === 'discuss')     renderPosts();
-  if (name === 'admin')       buildAdminPanel();
-  if (name === 'profile')     buildProfile();
-  if (name === 'attendance')  buildAttendance();
-  if (name === 'quiz') {
-    document.getElementById('quiz-lobby').style.display = 'block';
-    document.getElementById('quiz-active').style.display = 'none';
-    document.getElementById('quiz-results').style.display = 'none';
-  }
-};
 </script>
 </body>
 </html>
