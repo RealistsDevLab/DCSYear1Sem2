@@ -155,6 +155,10 @@
 
   window.FB_READY = true;
   window.dispatchEvent(new Event('fb-ready'));
+  // Update home stats now that Firebase is available
+  if (document.getElementById('app') && document.getElementById('app').style.display !== 'none') {
+    updateHomeStats();
+  }
   console.log('✅ Firebase connected — TheRealistDevLab 🚀');
 </script>
 <style>
@@ -2600,15 +2604,15 @@ body {
             <div class="stat-label">Course Units</div>
           </div>
           <div class="stat-card">
-            <div class="stat-num" style="color:var(--accent3)">74</div>
+            <div class="stat-num" style="color:var(--accent3)" id="stat-photos">74</div>
             <div class="stat-label">Group Photos</div>
           </div>
           <div class="stat-card">
-            <div class="stat-num" style="color:var(--accent2)">3</div>
+            <div class="stat-num" style="color:var(--accent2)" id="stat-quizzes">3</div>
             <div class="stat-label">Quizzes</div>
           </div>
           <div class="stat-card">
-            <div class="stat-num" style="color:var(--accent4)">30+</div>
+            <div class="stat-num" style="color:var(--accent4)" id="stat-flashcards">30+</div>
             <div class="stat-label">Flashcards</div>
           </div>
         </div>
@@ -2621,7 +2625,7 @@ body {
               <div class="course-icon" style="background:rgba(255,101,132,0.15)">📸</div>
               <div><div class="course-code">GALLERY</div><div class="course-name">Group Photo Gallery</div></div>
             </div>
-            <div class="course-tags"><span class="tag">74 Photos</span><span class="tag">Slideshow</span><span class="tag">Download</span></div>
+            <div class="course-tags"><span class="tag" id="tag-photos">74 Photos</span><span class="tag">Slideshow</span><span class="tag">Download</span></div>
             <div class="course-actions"><button class="btn btn-primary" style="width:100%">Open Gallery →</button></div>
           </div>
           <div class="course-card" onclick="showView('quiz')">
@@ -3764,6 +3768,7 @@ function enterApp() {
   loadTheme();
   registerSW();
   showPWABanner();
+  updateHomeStats();
   // Live Firebase listeners
   if (window.FB_READY) {
     window.FB.onAnnouncement(text => {
@@ -4304,6 +4309,39 @@ const PHOTOS = [
 
 let currentPhotoIndex = 0;
 
+async function updateHomeStats() {
+  // Photo count — PHOTOS (from GitHub) + Firebase uploaded photos
+  let photoCount = PHOTOS.length;
+  if (window.FB_READY) {
+    try {
+      const fbPhotos = await window.FB.getPhotos();
+      photoCount += fbPhotos.length;
+    } catch(e) {}
+  }
+  const statEl   = document.getElementById('stat-photos');
+  const tagEl    = document.getElementById('tag-photos');
+  if (statEl) statEl.textContent = photoCount;
+  if (tagEl)  tagEl.textContent  = `${photoCount} Photos`;
+
+  // Quiz count
+  if (window.FB_READY) {
+    try {
+      const quizzes = await window.FB.getQuizzes();
+      const qEl = document.getElementById('stat-quizzes');
+      if (qEl && quizzes.length) qEl.textContent = quizzes.length;
+    } catch(e) {}
+  }
+
+  // Flashcard count
+  if (window.FB_READY) {
+    try {
+      const cards = await window.FB.getFlashcards();
+      const fEl = document.getElementById('stat-flashcards');
+      if (fEl && cards.length) fEl.textContent = cards.length >= 30 ? '30+' : cards.length;
+    } catch(e) {}
+  }
+}
+
 async function buildGallery() {
   const grid = document.getElementById('gallery-grid');
   if (!grid) return;
@@ -4320,6 +4358,9 @@ async function buildGallery() {
   }
 
   window._allPhotos = allPhotos;
+
+  // Update home stats to reflect latest count
+  updateHomeStats();
 
   if (!allPhotos.length) {
     grid.innerHTML = `<div class="gallery-empty">📸 No photos yet.<br><br>Upload via Settings or add to the photos/ folder in GitHub.</div>`;
