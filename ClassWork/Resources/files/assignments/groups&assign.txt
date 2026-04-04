@@ -1,0 +1,18 @@
+group a --- MLA CITATION STYLE
+group b --- APA CITATION STYLE
+group c --- IEE CITATION STYLE
+group d --- CSE CITATION STYLE
+group e --- CHICAGO CITATION STYLE
+group f --- CMS CITATION STYLE
+group g --- AMA CITATION STYLE
+group h --- application of research in academia
+group i --- application of research in politics
+group j --- application of research in economics
+group k --- application of research in social sciences
+group l --- application of research in technology	
+group m --- application of research in agriculture
+group n --- application of research in education
+group o --- application of research in transport
+group p --- application of research in health
+group q --- application of research in manufucturing
+group r --- application of research in management

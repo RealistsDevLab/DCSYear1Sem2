@@ -3793,23 +3793,26 @@ function logout() {
 
 // ── Settings ──────────────────────────────────────────────────────────────────
 function closeSettings() {
+  // Hide settings overlay
   document.getElementById('view-settings').style.display = 'none';
-  // Restore app layout
+  // Restore app layout visibility
   document.getElementById('app').style.display = 'block';
-  document.querySelector('.layout').style.display = 'flex';
-  // Re-show the last active view or default to home
+  const layout = document.querySelector('.layout');
+  if (layout) layout.style.display = 'flex';
+  const mainEl = document.querySelector('.main');
+  if (mainEl) mainEl.style.display = 'block';
+  // Remove any inline display:none that was set on views
+  document.querySelectorAll('.view').forEach(v => v.style.display = '');
+  // If no view is active, go home
   const activeView = document.querySelector('.view.active');
-  if (!activeView || activeView.id === 'view-settings') {
+  if (!activeView) {
     showView('home');
   }
 }
 
 async function showSettings() {
-  // Hide all views but keep app visible
-  document.querySelectorAll('.view').forEach(v => {
-    v.classList.remove('active');
-    v.style.display = 'none';
-  });
+  // IMPORTANT: Never set display:none on views directly — use classes only
+  // Just overlay the settings panel on top — app stays intact underneath
   document.getElementById('view-settings').style.display = 'flex';
   document.getElementById('view-settings').style.flexDirection = 'column';
   const mc = window.FB_READY ? await window.FB.getMemberCode() : (localStorage.getItem('rdl_member_code') || DEFAULT_MEMBER_CODE);
@@ -5383,11 +5386,10 @@ function openLightbox(index) {
   document.body.style.overflow = 'hidden';
 }
 
-// ══ OVERRIDE showView — add new views ══════════════════════════════════════════
 // ══ OVERRIDE showView ════════════════════════════════════════════════════════
 const _sv = window.showView || showView;
 window.showView = function(name, el) {
-  // Always hide settings overlay first
+  // Always hide settings overlay
   const sv = document.getElementById('view-settings');
   if (sv) sv.style.display = 'none';
 
@@ -5397,13 +5399,16 @@ window.showView = function(name, el) {
     return;
   }
 
-  // Make sure app is visible and layout is restored
+  // Restore app layout
   const app = document.getElementById('app');
   if (app) app.style.display = 'block';
   const layout = document.querySelector('.layout');
   if (layout) layout.style.display = 'flex';
   const mainEl = document.querySelector('.main');
   if (mainEl) mainEl.style.display = 'block';
+
+  // Clear any inline display styles that may have been set — let CSS classes control visibility
+  document.querySelectorAll('.view').forEach(v => v.style.display = '');
 
   _sv(name, el);
 
