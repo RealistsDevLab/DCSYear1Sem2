@@ -2943,22 +2943,38 @@ int main() {
         <div class="pp-header fade-in">
           <div>
             <div class="pp-title">📋 Past Paper Flashcards</div>
-            <div class="pp-sub">Upload a past paper PDF → AI extracts Q&amp;A → Study as flashcards</div>
+            <div class="pp-sub">Paste AI-answered text → auto-split into flashcards → Study</div>
           </div>
         </div>
 
-        <!-- Admin upload section (shown to admins only) -->
+        <!-- Admin section (shown to admins only) -->
         <div id="pp-admin-upload" style="display:none">
-          <div class="pp-upload-zone" id="pp-dropzone">
-            <input type="file" id="pp-file-input" accept=".pdf" onchange="ppOnFileSelected(this)" />
-            <span class="pp-upload-icon" id="pp-upload-icon">📥</span>
-            <div class="pp-upload-title" id="pp-upload-title">Drop a past paper PDF here</div>
-            <div class="pp-upload-hint" id="pp-upload-hint">or click to browse · PDF only · max 10MB</div>
+
+          <!-- HOW IT WORKS banner -->
+          <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:14px;padding:16px 20px;margin-bottom:20px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:10px;">💡 HOW TO CREATE A DECK</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
+              <div style="font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;line-height:1.7;">
+                <span style="color:var(--accent);">Step 1</span><br>
+                Go to Claude, ChatGPT or any AI. Upload your past paper PDF and say:<br>
+                <span style="color:var(--accent3);font-style:italic;">"Answer every question. Format each as Q: ... A: ..."</span>
+              </div>
+              <div style="font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;line-height:1.7;">
+                <span style="color:var(--accent);">Step 2</span><br>
+                Copy the AI response (Ctrl+A, Ctrl+C)
+              </div>
+              <div style="font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;line-height:1.7;">
+                <span style="color:var(--accent);">Step 3</span><br>
+                Paste it below, name your deck, pick the course and hit Save.
+              </div>
+            </div>
           </div>
-          <div class="pp-meta-row">
+
+          <!-- Deck name + course -->
+          <div class="pp-meta-row" style="margin-bottom:16px;">
             <div class="form-group">
               <label class="form-label">Deck Name</label>
-              <input class="form-input" id="pp-deck-name" placeholder="e.g. CSC122 Mock 2024" style="letter-spacing:0" />
+              <input class="form-input" id="pp-deck-name" placeholder="e.g. CSC121 Hardware 2024" style="letter-spacing:0" />
             </div>
             <div class="form-group">
               <label class="form-label">Course</label>
@@ -2971,17 +2987,31 @@ int main() {
                 <option value="General">General</option>
               </select>
             </div>
-            <button class="btn btn-primary" id="pp-generate-btn" onclick="ppGenerate()" style="height:48px;align-self:flex-end;white-space:nowrap">
-              ✨ Generate Flashcards
-            </button>
           </div>
-        </div>
 
-        <!-- Processing indicator -->
-        <div class="pp-processing" id="pp-processing">
-          <div class="pp-processing-spinner"></div>
-          <div class="pp-processing-text">AI is reading your past paper…</div>
-          <div class="pp-processing-step" id="pp-step-text">Extracting text from PDF</div>
+          <!-- Paste area -->
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:8px;">📋 PASTE AI RESPONSE HERE</div>
+            <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px;">Must use Q: / A: format &nbsp;|&nbsp; One Q&amp;A pair per card</div>
+            <textarea id="pp-paste-input" class="form-input" rows="12"
+              placeholder="Q: Which of the following is not an input device?&#10;A: C. Monitor — A monitor is an output device, not an input device. VDU, Keyboard, and Light Pen are all input devices.&#10;&#10;Q: What is a scanner?&#10;A: A light-sensitive device that converts printed text, drawings or images into digital form.&#10;&#10;(paste your full AI response here...)"
+              style="letter-spacing:0;resize:vertical;width:100%;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;"></textarea>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-outline" onclick="ppPreviewPaste()" style="flex:1;">👁 Preview Cards</button>
+              <button class="btn btn-primary" onclick="ppSaveFromPaste()" style="flex:1;">💾 Save Deck</button>
+            </div>
+          </div>
+
+          <!-- Preview of detected cards -->
+          <div id="pp-paste-preview" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+              <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);font-family:'JetBrains Mono',monospace;">✅ <span id="pp-paste-count">0</span> CARDS DETECTED</div>
+              <button class="btn btn-outline" style="padding:4px 12px;font-size:11px;color:var(--accent2);border-color:var(--accent2);" onclick="document.getElementById('pp-paste-preview').style.display='none'">✕ Close</button>
+            </div>
+            <div id="pp-paste-cards-list" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;"></div>
+            <button class="btn btn-primary" onclick="ppSaveFromPaste()" style="width:100%;margin-top:14px;">💾 Save All Cards as Deck</button>
+          </div>
+
         </div>
 
         <!-- Saved decks -->
@@ -2993,7 +3023,7 @@ int main() {
           </div>
         </div>
 
-        <!-- Also show original downloadable papers below -->
+        <!-- Downloadable papers -->
         <div class="section-title fade-in">📥 Download Past Papers</div>
         <div class="papers-grid fade-in" id="papers-grid"></div>
       </div>
@@ -5409,147 +5439,132 @@ async function deleteUploadedFile(course, key, public_id) {
   loadFileManage();
 }
 
-// ══ PAST PAPERS AI FLASHCARDS ════════════════════════════════════════════════
+// ══ PAST PAPERS FLASHCARDS ══════════════════════════════════════════════════
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let ppCurrentDeck  = [];
-let ppCurrentIndex = 0;
-let ppShuffled     = false;
-let ppShuffleOrder = [];
-let ppIsFlipped    = false;
+var ppCurrentDeck  = [];
+var ppCurrentIndex = 0;
+var ppShuffled     = false;
+var ppShuffleOrder = [];
+var ppIsFlipped    = false;
+var ppParsedCards  = [];
 
-// ── Show/init when view opens ──────────────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────────────────────────────
 async function ppInit() {
   document.getElementById('pp-admin-upload').style.display = isAdmin ? 'block' : 'none';
   await ppLoadDecks();
-
-  // Drag & drop
-  const dz = document.getElementById('pp-dropzone');
-  if (dz && !dz._ppDragSetup) {
-    dz._ppDragSetup = true;
-    dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('dragover'); });
-    dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
-    dz.addEventListener('drop', e => {
-      e.preventDefault(); dz.classList.remove('dragover');
-      const f = e.dataTransfer.files[0];
-      if (f && f.type === 'application/pdf') {
-        document.getElementById('pp-file-input').files = e.dataTransfer.files;
-        ppOnFileSelected(document.getElementById('pp-file-input'));
-      }
-    });
-  }
 }
 
-// ── Load decks from Firebase ───────────────────────────────────────────────────
+// ── Load decks ─────────────────────────────────────────────────────────────────
 async function ppLoadDecks() {
-  const grid = document.getElementById('pp-decks-grid');
+  var grid = document.getElementById('pp-decks-grid');
   if (!grid) return;
   grid.innerHTML = '<div class="pp-empty"><span class="pp-empty-icon">⏳</span><div class="pp-empty-text">Loading…</div></div>';
-  if (!window.FB_READY) { grid.innerHTML = '<div class="pp-empty"><span class="pp-empty-icon">🔌</span><div class="pp-empty-text">Firebase not connected</div></div>'; return; }
-  const decks = await window.FB.getPaperDecks();
-  if (!decks.length) {
-    grid.innerHTML = '<div class="pp-empty"><span class="pp-empty-icon">🗂️</span><div class="pp-empty-text">No decks yet.' + (isAdmin ? ' Upload a past paper above to get started.' : ' Ask your admin to upload a past paper.') + '</div></div>';
+  if (!window.FB_READY) {
+    grid.innerHTML = '<div class="pp-empty"><span class="pp-empty-icon">🔌</span><div class="pp-empty-text">Firebase not connected</div></div>';
     return;
   }
-  grid.innerHTML = decks.map(d => `
-    <div class="pp-deck-card fade-in" onclick="ppOpenStudy('${d._key}')">
-      <span class="pp-deck-icon">📚</span>
-      <div class="pp-deck-name">${escHtml(d.name)}</div>
-      <div class="pp-deck-meta">${escHtml(d.course||'')} · ${d.cards?.length||0} cards · ${new Date(d.ts).toLocaleDateString()}</div>
-      <div class="pp-deck-footer">
-        <span class="pp-deck-count">${d.cards?.length||0} flashcards</span>
-        ${isAdmin ? `<button class="pp-deck-delete" onclick="event.stopPropagation();ppDeleteDeck('${d._key}')" title="Delete">🗑</button>` : ''}
-      </div>
-    </div>
-  `).join('');
+  var decks = await window.FB.getPaperDecks();
+  if (!decks.length) {
+    grid.innerHTML = '<div class="pp-empty"><span class="pp-empty-icon">🗂️</span><div class="pp-empty-text">No decks yet.' +
+      (isAdmin ? ' Paste an AI-answered paper above to get started.' : ' Ask your admin to create a deck.') + '</div></div>';
+    return;
+  }
+  grid.innerHTML = decks.map(function(d) {
+    return '<div class="pp-deck-card fade-in" onclick="ppOpenStudy(\'' + d._key + '\')">' +
+      '<span class="pp-deck-icon">📚</span>' +
+      '<div class="pp-deck-name">' + escHtml(d.name) + '</div>' +
+      '<div class="pp-deck-meta">' + escHtml(d.course || '') + ' · ' + (d.cards ? d.cards.length : 0) + ' cards · ' + new Date(d.ts).toLocaleDateString() + '</div>' +
+      '<div class="pp-deck-footer">' +
+        '<span class="pp-deck-count">' + (d.cards ? d.cards.length : 0) + ' flashcards</span>' +
+        (isAdmin ? '<button class="pp-deck-delete" onclick="event.stopPropagation();ppDeleteDeck(\'' + d._key + '\')" title="Delete">🗑</button>' : '') +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
-// ── Generate flashcards from PDF via Claude API ────────────────────────────────
-async function ppGenerate() {
-  if (!window.FB_READY) { alert('Firebase not connected.'); return; }
-  const fi    = document.getElementById('pp-file-input');
-  const name  = document.getElementById('pp-deck-name').value.trim();
-  const course= document.getElementById('pp-deck-course').value;
-  if (!fi.files[0])  { alert('Please select a PDF file first.'); return; }
-  if (!name)         { alert('Please enter a deck name.'); return; }
-  if (fi.files[0].size > 10*1024*1024) { alert('File too large — max 10MB.'); return; }
-
-  ppSetProcessing(true, 'Reading PDF…');
-  try {
-    ppSetStep('Converting PDF to base64…');
-    const b64 = await ppFileToBase64(fi.files[0]);
-
-    ppSetStep('AI is extracting questions & answers…');
-    const cards = await ppCallClaude(b64);
-
-    if (!cards || !cards.length) {
-      alert('AI could not find Q&A pairs in this PDF. Try a clearer past paper file.');
-      ppSetProcessing(false); return;
+// ── Parse pasted Q:/A: text into cards ────────────────────────────────────────
+function ppParseQA(text) {
+  var cards = [];
+  // Split on Q: markers
+  var blocks = text.split(/\n(?=Q\s*[:.])/i);
+  blocks.forEach(function(block) {
+    block = block.trim();
+    if (!block) return;
+    // Find Q: line and A: line
+    var qMatch = block.match(/^Q\s*[:.]\s*(.+?)(?=\nA\s*[:.])|\bQ\s*[:.]\s*(.+)/is);
+    var aMatch = block.match(/A\s*[:.]\s*([\s\S]+)/i);
+    if (qMatch && aMatch) {
+      var q = (qMatch[1] || qMatch[2] || '').trim();
+      var a = aMatch[1].trim();
+      if (q && a) cards.push({ q: q, a: a });
+    } else if (!aMatch && block.match(/^Q\s*[:.]/i)) {
+      // Q with no A yet — still add with placeholder
+      var q2 = block.replace(/^Q\s*[:.]\s*/i,'').trim();
+      if (q2) cards.push({ q: q2, a: '(No answer provided)' });
     }
-
-    ppSetStep(`Saving ${cards.length} flashcards to Firebase…`);
-    await window.FB.savePaperDeck({ name, course, cards, ts: Date.now() });
-
-    ppSetProcessing(false);
-    fi.value = '';
-    document.getElementById('pp-deck-name').value = '';
-    alert('✅ ' + cards.length + ' flashcards generated and saved!');
-    ppLoadDecks();
-  } catch(err) {
-    console.error('ppGenerate:', err);
-    ppSetProcessing(false);
-    alert('Error: ' + err.message);
-  }
-}
-
-// ── Gemini API call ────────────────────────────────────────────────────────────
-const GEMINI_API_KEY = 'AIzaSyASeW6_YvV-5oO71Mk9Zx0VcQJr5Q_LiNs';
-async function ppCallClaude(base64Pdf) {
-  const prompt = 'You are an expert at extracting exam questions and model answers from past papers. ' +
-    'Extract ALL questions and their answers from the past paper PDF provided. ' +
-    'Respond ONLY with a valid JSON array — no markdown, no preamble, no explanation, no code fences. ' +
-    'Format exactly: [{"q":"Full question text","a":"Full model answer"},...] ' +
-    'If a question has parts (a,b,c), combine them into one card with a full answer. ' +
-    'If no explicit answer/mark scheme exists, write a concise correct model answer.';
-
-  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: 'application/pdf', data: base64Pdf } },
-          { text: 'Extract every exam question and its model answer as a JSON array of {q,a} objects. Return ONLY the JSON array.' }
-        ]
-      }],
-      generationConfig: { maxOutputTokens: 8192, temperature: 0.1 }
-    })
   });
-  if (!res.ok) {
-    const e = await res.json();
-    throw new Error(e.error ? e.error.message : ('Gemini API error ' + res.status));
-  }
-  const data  = await res.json();
-  const raw   = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts)
-    ? data.candidates[0].content.parts.map(function(p){ return p.text || ''; }).join('')
-    : '';
-  const clean = raw.replace(/```json|```/gi, '').trim();
-  return JSON.parse(clean);
+  return cards;
 }
 
-// ── Open study mode ────────────────────────────────────────────────────────────
+// ── Preview parsed cards ───────────────────────────────────────────────────────
+function ppPreviewPaste() {
+  var text = document.getElementById('pp-paste-input').value.trim();
+  if (!text) { alert('Please paste your AI response first.'); return; }
+  ppParsedCards = ppParseQA(text);
+  if (!ppParsedCards.length) {
+    alert('No Q:/A: pairs found.\n\nMake sure your text uses this format:\n\nQ: Your question here\nA: Your answer here');
+    return;
+  }
+  document.getElementById('pp-paste-count').textContent = ppParsedCards.length;
+  var list = document.getElementById('pp-paste-cards-list');
+  list.innerHTML = ppParsedCards.map(function(c, i) {
+    return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;">' +
+      '<div style="font-size:10px;color:var(--accent);font-family:\'JetBrains Mono\',monospace;margin-bottom:4px;letter-spacing:1px;">CARD ' + (i+1) + '</div>' +
+      '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;">' + escHtml(c.q) + '</div>' +
+      '<div style="font-size:12px;color:var(--text2);line-height:1.5;">' + escHtml(c.a) + '</div>' +
+    '</div>';
+  }).join('');
+  document.getElementById('pp-paste-preview').style.display = 'block';
+}
+
+// ── Save parsed cards as a deck ───────────────────────────────────────────────
+async function ppSaveFromPaste() {
+  if (!window.FB_READY) { alert('Firebase not connected.'); return; }
+  var name   = document.getElementById('pp-deck-name').value.trim();
+  var course = document.getElementById('pp-deck-course').value;
+  if (!name) { alert('Please enter a deck name first.'); return; }
+  // Parse if not already previewed
+  if (!ppParsedCards.length) {
+    var text = document.getElementById('pp-paste-input').value.trim();
+    if (!text) { alert('Please paste your AI response first.'); return; }
+    ppParsedCards = ppParseQA(text);
+  }
+  if (!ppParsedCards.length) {
+    alert('No Q:/A: pairs found. Make sure your AI used the Q: / A: format.');
+    return;
+  }
+  await window.FB.savePaperDeck({ name: name, course: course, cards: ppParsedCards, ts: Date.now() });
+  var saved = ppParsedCards.length;
+  ppParsedCards = [];
+  document.getElementById('pp-paste-input').value = '';
+  document.getElementById('pp-paste-preview').style.display = 'none';
+  document.getElementById('pp-deck-name').value = '';
+  alert('✅ ' + saved + ' flashcards saved to deck "' + name + '"!');
+  ppLoadDecks();
+}
+
+// ── Open study overlay ────────────────────────────────────────────────────────
 async function ppOpenStudy(deckKey) {
   if (!window.FB_READY) return;
-  const decks = await window.FB.getPaperDecks();
-  const deck  = decks.find(d => d._key === deckKey);
-  if (!deck || !deck.cards?.length) { alert('This deck is empty.'); return; }
+  var decks = await window.FB.getPaperDecks();
+  var deck  = decks.find(function(d) { return d._key === deckKey; });
+  if (!deck || !deck.cards || !deck.cards.length) { alert('This deck is empty.'); return; }
 
   ppCurrentDeck  = deck.cards;
   ppCurrentIndex = 0;
   ppShuffled     = false;
-  ppShuffleOrder = [...Array(deck.cards.length).keys()];
+  ppShuffleOrder = Array.from({length: deck.cards.length}, function(_, i){ return i; });
   ppIsFlipped    = false;
 
   document.getElementById('pp-study-deck-name').textContent = deck.name;
@@ -5564,19 +5579,19 @@ async function ppOpenStudy(deckKey) {
 }
 
 function ppRenderCard() {
-  const total = ppCurrentDeck.length;
-  const idx   = ppShuffleOrder[ppCurrentIndex];
-  const card  = ppCurrentDeck[idx];
+  var total = ppCurrentDeck.length;
+  var idx   = ppShuffleOrder[ppCurrentIndex];
+  var card  = ppCurrentDeck[idx];
   ppIsFlipped = false;
   document.getElementById('pp-card-inner').classList.remove('flipped');
   document.getElementById('pp-card-q').textContent = card.q;
   document.getElementById('pp-card-a').textContent = card.a;
-  const label = `${ppCurrentIndex+1} / ${total}`;
+  var label = (ppCurrentIndex + 1) + ' / ' + total;
   document.getElementById('pp-card-num').textContent  = label;
   document.getElementById('pp-card-num2').textContent = label;
-  document.getElementById('pp-progress-bar').style.width = ((ppCurrentIndex+1)/total*100) + '%';
+  document.getElementById('pp-progress-bar').style.width = ((ppCurrentIndex + 1) / total * 100) + '%';
   document.getElementById('pp-prev-btn').disabled = (ppCurrentIndex === 0);
-  document.getElementById('pp-next-btn').textContent = ppCurrentIndex === total-1 ? 'Finish ✓' : 'Next →';
+  document.getElementById('pp-next-btn').textContent = ppCurrentIndex === total - 1 ? 'Finish ✓' : 'Next →';
 }
 
 function ppFlipCard() {
@@ -5585,7 +5600,7 @@ function ppFlipCard() {
 }
 
 function ppNext() {
-  if (ppCurrentIndex >= ppCurrentDeck.length-1) {
+  if (ppCurrentIndex >= ppCurrentDeck.length - 1) {
     document.getElementById('pp-card-scene').style.display = 'none';
     document.getElementById('pp-study-nav').style.display  = 'none';
     document.getElementById('pp-done-screen').classList.add('active');
@@ -5604,14 +5619,17 @@ function ppPrev() {
 
 function ppToggleShuffle() {
   ppShuffled = !ppShuffled;
-  const btn = document.getElementById('pp-shuffle-btn');
+  var btn = document.getElementById('pp-shuffle-btn');
   if (ppShuffled) {
-    const arr = [...Array(ppCurrentDeck.length).keys()];
-    for (let i = arr.length-1; i > 0; i--) { const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; }
+    var arr = Array.from({length: ppCurrentDeck.length}, function(_, i){ return i; });
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
     ppShuffleOrder = arr;
     btn.textContent = '⚡ Shuffle: ON'; btn.classList.add('on');
   } else {
-    ppShuffleOrder = [...Array(ppCurrentDeck.length).keys()];
+    ppShuffleOrder = Array.from({length: ppCurrentDeck.length}, function(_, i){ return i; });
     btn.textContent = '⚡ Shuffle: OFF'; btn.classList.remove('on');
   }
   ppCurrentIndex = 0; ppRenderCard();
@@ -5632,49 +5650,23 @@ function ppCloseStudy() {
 }
 
 async function ppDeleteDeck(key) {
-  if (!confirm('Delete this deck? Cannot be undone.')) return;
+  if (!confirm('Delete this deck? This cannot be undone.')) return;
   await window.FB.deletePaperDeck(key);
   ppLoadDecks();
 }
 
-// Keyboard shortcuts for study mode
-document.addEventListener('keydown', e => {
-  const overlay = document.getElementById('pp-study-overlay');
+document.addEventListener('keydown', function(e) {
+  var overlay = document.getElementById('pp-study-overlay');
   if (!overlay || !overlay.classList.contains('active')) return;
-  if (e.key==='ArrowRight') ppNext();
-  if (e.key==='ArrowLeft')  ppPrev();
-  if (e.key===' ')          { e.preventDefault(); ppFlipCard(); }
-  if (e.key==='Escape')     ppCloseStudy();
+  if (e.key === 'ArrowRight') ppNext();
+  if (e.key === 'ArrowLeft')  ppPrev();
+  if (e.key === ' ')          { e.preventDefault(); ppFlipCard(); }
+  if (e.key === 'Escape')     ppCloseStudy();
 });
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function ppFileToBase64(file) {
-  return new Promise((res,rej) => {
-    const r = new FileReader();
-    r.onload  = () => res(r.result.split(',')[1]);
-    r.onerror = () => rej(new Error('File read failed'));
-    r.readAsDataURL(file);
-  });
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function ppOnFileSelected(input) {
-  const f = input.files[0];
-  if (!f) return;
-  const sizeMB = (f.size / (1024*1024)).toFixed(1);
-  document.getElementById('pp-upload-icon').textContent = '✅';
-  document.getElementById('pp-upload-title').textContent = f.name;
-  document.getElementById('pp-upload-hint').textContent = `${sizeMB} MB · PDF ready · Click to change`;
-  document.getElementById('pp-dropzone').style.borderColor = 'var(--accent3)';
-  document.getElementById('pp-dropzone').style.background  = 'rgba(67,233,123,0.05)';
-}
-function ppSetProcessing(active, text) {
-  document.getElementById('pp-processing').classList.toggle('active', active);
-  const btn = document.getElementById('pp-generate-btn');
-  if (btn) btn.disabled = active;
-  if (text) document.getElementById('pp-processing-text').textContent = text;
-}
-function ppSetStep(text) { document.getElementById('pp-step-text').textContent = text; }
-function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
 
 async function addQuizQuestion() {
   if (!window.FB_READY) { alert('Firebase not connected.'); return; }
