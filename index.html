@@ -5505,34 +5505,37 @@ async function ppGenerate() {
 // ── Gemini API call ────────────────────────────────────────────────────────────
 const GEMINI_API_KEY = 'AIzaSyASeW6_YvV-5oO71Mk9Zx0VcQJr5Q_LiNs';
 async function ppCallClaude(base64Pdf) {
-  const prompt = `You are an expert at extracting exam questions and model answers from past papers.
-Extract ALL questions and their answers from the past paper PDF provided.
-Respond ONLY with a valid JSON array — no markdown, no preamble, no explanation, no code fences.
-Format exactly: [{"q":"Full question text","a":"Full model answer"},...]
-If a question has parts (a,b,c), combine them into one card with a full answer.
-If no explicit answer/mark scheme exists, write a concise correct model answer.`;
+  const prompt = 'You are an expert at extracting exam questions and model answers from past papers. ' +
+    'Extract ALL questions and their answers from the past paper PDF provided. ' +
+    'Respond ONLY with a valid JSON array — no markdown, no preamble, no explanation, no code fences. ' +
+    'Format exactly: [{"q":"Full question text","a":"Full model answer"},...] ' +
+    'If a question has parts (a,b,c), combine them into one card with a full answer. ' +
+    'If no explicit answer/mark scheme exists, write a concise correct model answer.';
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inline_data: { mime_type: 'application/pdf', data: base64Pdf } },
-            { text: 'Extract every exam question and its model answer as a JSON array of {q,a} objects. Return ONLY the JSON array.' }
-          ]
-        }],
-        generationConfig: { maxOutputTokens: 8192, temperature: 0.1 }
-      })
-    }
-  );
-  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'Gemini API error ' + res.status); }
+  const url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + GEMINI_API_KEY;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          { text: prompt },
+          { inline_data: { mime_type: 'application/pdf', data: base64Pdf } },
+          { text: 'Extract every exam question and its model answer as a JSON array of {q,a} objects. Return ONLY the JSON array.' }
+        ]
+      }],
+      generationConfig: { maxOutputTokens: 8192, temperature: 0.1 }
+    })
+  });
+  if (!res.ok) {
+    const e = await res.json();
+    throw new Error(e.error ? e.error.message : ('Gemini API error ' + res.status));
+  }
   const data  = await res.json();
-  const raw   = data.candidates?.[0]?.content?.parts?.map(p => p.text||'').join('') || '';
-  const clean = raw.replace(/```json|```/gi,'').trim();
+  const raw   = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts)
+    ? data.candidates[0].content.parts.map(function(p){ return p.text || ''; }).join('')
+    : '';
+  const clean = raw.replace(/```json|```/gi, '').trim();
   return JSON.parse(clean);
 }
 
