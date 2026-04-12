@@ -5467,7 +5467,6 @@ async function ppLoadDecks() {
 // ── Generate flashcards from PDF via Claude API ────────────────────────────────
 async function ppGenerate() {
   if (!window.FB_READY) { alert('Firebase not connected.'); return; }
-  }
   const fi    = document.getElementById('pp-file-input');
   const name  = document.getElementById('pp-deck-name').value.trim();
   const course= document.getElementById('pp-deck-course').value;
@@ -5514,7 +5513,7 @@ If a question has parts (a,b,c), combine them into one card with a full answer.
 If no explicit answer/mark scheme exists, write a concise correct model answer.`;
 
   const res = await fetch(
-    \`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\${GEMINI_API_KEY}\`,
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
