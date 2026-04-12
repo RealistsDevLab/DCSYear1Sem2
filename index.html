@@ -2950,10 +2950,10 @@ int main() {
         <!-- Admin upload section (shown to admins only) -->
         <div id="pp-admin-upload" style="display:none">
           <div class="pp-upload-zone" id="pp-dropzone">
-            <input type="file" id="pp-file-input" accept=".pdf" />
-            <span class="pp-upload-icon">📥</span>
-            <div class="pp-upload-title">Drop a past paper PDF here</div>
-            <div class="pp-upload-hint">or click to browse · PDF only · max 10MB</div>
+            <input type="file" id="pp-file-input" accept=".pdf" onchange="ppOnFileSelected(this)" />
+            <span class="pp-upload-icon" id="pp-upload-icon">📥</span>
+            <div class="pp-upload-title" id="pp-upload-title">Drop a past paper PDF here</div>
+            <div class="pp-upload-hint" id="pp-upload-hint">or click to browse · PDF only · max 10MB</div>
           </div>
           <div class="pp-meta-row">
             <div class="form-group">
@@ -3879,6 +3879,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function enterApp() {
   document.getElementById('login-page').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+
+
   if (isAdmin) {
     document.getElementById('admin-sidebar-item').style.display = 'flex';
     document.getElementById('settings-sidebar-item').style.display = 'flex';
@@ -5430,7 +5432,10 @@ async function ppInit() {
     dz.addEventListener('drop', e => {
       e.preventDefault(); dz.classList.remove('dragover');
       const f = e.dataTransfer.files[0];
-      if (f && f.type === 'application/pdf') document.getElementById('pp-file-input').files = e.dataTransfer.files;
+      if (f && f.type === 'application/pdf') {
+        document.getElementById('pp-file-input').files = e.dataTransfer.files;
+        ppOnFileSelected(document.getElementById('pp-file-input'));
+      }
     });
   }
 }
@@ -5462,6 +5467,7 @@ async function ppLoadDecks() {
 // ── Generate flashcards from PDF via Claude API ────────────────────────────────
 async function ppGenerate() {
   if (!window.FB_READY) { alert('Firebase not connected.'); return; }
+  }
   const fi    = document.getElementById('pp-file-input');
   const name  = document.getElementById('pp-deck-name').value.trim();
   const course= document.getElementById('pp-deck-course').value;
@@ -5497,32 +5503,36 @@ async function ppGenerate() {
   }
 }
 
-// ── Claude API call ────────────────────────────────────────────────────────────
+// ── Gemini API call ────────────────────────────────────────────────────────────
+const GEMINI_API_KEY = 'AIzaSyASeW6_YvV-5oO71Mk9Zx0VcQJr5Q_LiNs';
 async function ppCallClaude(base64Pdf) {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4000,
-      system: `You are an expert at extracting exam questions and model answers from past papers.
+  const prompt = `You are an expert at extracting exam questions and model answers from past papers.
 Extract ALL questions and their answers from the past paper PDF provided.
 Respond ONLY with a valid JSON array — no markdown, no preamble, no explanation, no code fences.
 Format exactly: [{"q":"Full question text","a":"Full model answer"},...]
 If a question has parts (a,b,c), combine them into one card with a full answer.
-If no explicit answer/mark scheme exists, write a concise correct model answer.`,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64Pdf } },
-          { type: 'text', text: 'Extract every exam question and its model answer as a JSON array of {q,a} objects. Return ONLY the JSON array.' }
-        ]
-      }]
-    })
-  });
-  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'Claude API error ' + res.status); }
-  const data = await res.json();
-  const raw  = data.content.map(b => b.text||'').join('');
+If no explicit answer/mark scheme exists, write a concise correct model answer.`;
+
+  const res = await fetch(
+    \`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\${GEMINI_API_KEY}\`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: 'application/pdf', data: base64Pdf } },
+            { text: 'Extract every exam question and its model answer as a JSON array of {q,a} objects. Return ONLY the JSON array.' }
+          ]
+        }],
+        generationConfig: { maxOutputTokens: 8192, temperature: 0.1 }
+      })
+    }
+  );
+  if (!res.ok) { const e = await res.json(); throw new Error(e.error?.message || 'Gemini API error ' + res.status); }
+  const data  = await res.json();
+  const raw   = data.candidates?.[0]?.content?.parts?.map(p => p.text||'').join('') || '';
   const clean = raw.replace(/```json|```/gi,'').trim();
   return JSON.parse(clean);
 }
@@ -5643,6 +5653,16 @@ function ppFileToBase64(file) {
     r.onerror = () => rej(new Error('File read failed'));
     r.readAsDataURL(file);
   });
+}
+function ppOnFileSelected(input) {
+  const f = input.files[0];
+  if (!f) return;
+  const sizeMB = (f.size / (1024*1024)).toFixed(1);
+  document.getElementById('pp-upload-icon').textContent = '✅';
+  document.getElementById('pp-upload-title').textContent = f.name;
+  document.getElementById('pp-upload-hint').textContent = `${sizeMB} MB · PDF ready · Click to change`;
+  document.getElementById('pp-dropzone').style.borderColor = 'var(--accent3)';
+  document.getElementById('pp-dropzone').style.background  = 'rgba(67,233,123,0.05)';
 }
 function ppSetProcessing(active, text) {
   document.getElementById('pp-processing').classList.toggle('active', active);
