@@ -4280,6 +4280,70 @@ function clearEditor() {
   document.getElementById('code-output').innerHTML = '<span class="output-info">// Output cleared</span>';
 }
 
+// ── Compiler helpers ──────────────────────────────────────────────────────────
+
+async function tryWandbox(code) {
+  const res = await fetch('https://wandbox.org/api/compile.json', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ compiler: 'gcc-head', code, options: '-Wall', stdin: '' })
+  });
+  if (!res.ok) throw new Error(`Wandbox ${res.status}`);
+  const d = await res.json();
+  // Wandbox returns: compiler_error, program_output, program_error, status
+  let html = '';
+  if (d.compiler_error) {
+    html += `<span class="output-error">⚠️ Compilation Error:\n${escapeHtml(d.compiler_error)}\n\n</span>`;
+  }
+  if (d.program_output) {
+    html += `<span style="color:var(--accent3)">${escapeHtml(d.program_output)}</span>`;
+  }
+  if (d.program_error) {
+    html += `<span class="output-error">\n⚠️ Runtime Error:\n${escapeHtml(d.program_error)}</span>`;
+  }
+  if (!d.compiler_error && !d.program_output && !d.program_error) {
+    html += `<span class="output-info">// Program ran with no output.\n// Add printf() statements to see results.</span>`;
+  }
+  const exitCode = d.status !== undefined ? Number(d.status) : (d.compiler_error ? 1 : 0);
+  html += `\n<span class="output-info">\n// ─────────────────────────────\n// Exit code: ${exitCode} ${exitCode === 0 ? '✅ Success' : '❌ Error'}\n// Powered by Wandbox (gcc-head)</span>`;
+  return html;
+}
+
+async function tryGodbolt(code) {
+  // Godbolt compile-and-execute: use x86-64 gcc with -xc flag to treat input as C
+  const body = {
+    source: code,
+    options: {
+      userArguments: '-xc -O0 -Wall',
+      executeParameters: { args: [], stdin: '' },
+      compilerOptions: { executorRequest: true },
+      filters: { execute: true },
+      tools: [],
+      libraries: []
+    },
+    lang: 'c',
+    allowStoreCodeDebug: false
+  };
+  const res = await fetch('https://godbolt.org/api/compiler/cg122/compile', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`Godbolt ${res.status}`);
+  const d = await res.json();
+  let html = '';
+  const stderr = (d.stderr || []).map(l => l.text).join('\n').trim();
+  const stdout = (d.execResult?.stdout || []).map(l => l.text).join('\n').trim();
+  const execStderr = (d.execResult?.stderr || []).map(l => l.text).join('\n').trim();
+  if (stderr) html += `<span class="output-error">⚠️ Compilation Error:\n${escapeHtml(stderr)}\n\n</span>`;
+  if (stdout) html += `<span style="color:var(--accent3)">${escapeHtml(stdout)}</span>`;
+  if (execStderr) html += `<span class="output-error">\n⚠️ Runtime Error:\n${escapeHtml(execStderr)}</span>`;
+  if (!stderr && !stdout && !execStderr) html += `<span class="output-info">// Program ran with no output.\n// Add printf() statements to see results.</span>`;
+  const exitCode = d.execResult?.code ?? (stderr ? 1 : 0);
+  html += `\n<span class="output-info">\n// ─────────────────────────────\n// Exit code: ${exitCode} ${exitCode === 0 ? '✅ Success' : '❌ Error'}\n// Powered by Godbolt (gcc)</span>`;
+  return html;
+}
+
 async function runCode() {
   const rawCode = getCMCode();
   const code = sanitizeCode(rawCode);
@@ -4293,60 +4357,37 @@ async function runCode() {
 
   runBtn.textContent = '⏳ Running...';
   runBtn.disabled = true;
-  output.innerHTML = '<span class="output-info">// Compiling and running your C code...\n// Please wait ⚙️</span>';
+  output.innerHTML = '<span class="output-info">// Compiling your C code...\n// Please wait ⚙️</span>';
 
-  try {
-    const response = await fetch('https://emkc.org/api/v2/piston/execute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        language: 'c',
-        version: '*',
-        files: [{ name: 'main.c', content: code }],
-        stdin: '',
-        args: [],
-        compile_timeout: 10000,
-        run_timeout: 5000
-      })
-    });
+  // Try Wandbox first, then Godbolt, then show helpful error
+  const apis = [
+    { name: 'Wandbox', fn: () => tryWandbox(code) },
+    { name: 'Godbolt', fn: () => tryGodbolt(code) },
+  ];
 
-    if (!response.ok) {
-      throw new Error(`Server returned ${response.status} — the compiler API may be temporarily down.`);
+  let lastErr = null;
+  for (const api of apis) {
+    try {
+      output.innerHTML = `<span class="output-info">// Trying ${api.name}... ⚙️</span>`;
+      const html = await api.fn();
+      output.innerHTML = html;
+      runBtn.textContent = '▶ Run';
+      runBtn.disabled = false;
+      return;
+    } catch (err) {
+      lastErr = err;
     }
-
-    const data = await response.json();
-    let html = '';
-
-    if (data.compile && data.compile.stderr) {
-      html += `<span class="output-error">⚠️ Compilation Error:\n${escapeHtml(data.compile.stderr)}\n\n</span>`;
-    }
-
-    if (data.run) {
-      if (data.run.stdout) {
-        html += `<span style="color:var(--accent3)">${escapeHtml(data.run.stdout)}</span>`;
-      }
-      if (data.run.stderr) {
-        html += `<span class="output-error">\n⚠️ Runtime Error:\n${escapeHtml(data.run.stderr)}</span>`;
-      }
-      if (!data.run.stdout && !data.run.stderr && !data.compile?.stderr) {
-        html += `<span class="output-info">// Program ran with no output.\n// Add printf() statements to see results.</span>`;
-      }
-    }
-
-    if (!html) html = '<span class="output-info">// No output returned. Check your code.</span>';
-
-    if (data.run?.code !== undefined) {
-      html += `\n<span class="output-info">\n// ─────────────────────────────\n// Exit code: ${data.run.code} ${data.run.code === 0 ? '✅ Success' : '❌ Error'}\n// Powered by Piston API</span>`;
-    }
-
-    output.innerHTML = html;
-
-  } catch (err) {
-    output.innerHTML = `<span class="output-error">// ❌ Could not reach the compiler.\n// ${escapeHtml(err.message)}\n\n</span><span class="output-info">// 💡 Tips:\n//  1. Check your internet connection.\n//  2. The Piston API (emkc.org) may be down — try again in a moment.\n//  3. As a fallback, paste your code into: https://onecompiler.com/c\n//     or run locally:  gcc main.c -o out && ./out</span>`;
-  } finally {
-    runBtn.textContent = '▶ Run';
-    runBtn.disabled = false;
   }
+
+  // All APIs failed
+  output.innerHTML = `<span class="output-error">// ❌ All compiler APIs are unreachable right now.\n// Last error: ${escapeHtml(lastErr?.message || 'unknown')}\n\n</span>` +
+    `<span class="output-info">// 💡 Alternatives while APIs are down:\n` +
+    `//  • Online:  https://onecompiler.com/c\n` +
+    `//  • Online:  https://replit.com/languages/c\n` +
+    `//  • Local:   gcc main.c -o out && ./out</span>`;
+
+  runBtn.textContent = '▶ Run';
+  runBtn.disabled = false;
 }
 
 function escapeHtml(text) {
