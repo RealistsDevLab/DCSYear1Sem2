@@ -13,6 +13,19 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="RealistDevLab">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<!-- CodeMirror 6 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/theme/dracula.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/comment/comment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/hint/show-hint.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/hint/anyword-hint.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/hint/show-hint.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/addon/display/autorefresh.min.js"></script>
 <!-- Firebase -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -1018,19 +1031,34 @@ body {
 
 .editor-clear-btn:hover { border-color: var(--accent2); color: var(--accent2); }
 
-#code-editor {
+/* CodeMirror host */
+#code-editor-cm {
   flex: 1;
-  background: #0d1117;
-  color: #c9d1d9;
+  overflow: auto;
+  min-height: 300px;
+}
+
+#code-editor-cm .CodeMirror {
+  height: 100%;
+  min-height: 300px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   line-height: 1.7;
-  padding: 16px;
+  background: #0d1117;
+  color: #c9d1d9;
   border: none;
-  outline: none;
-  resize: none;
-  tab-size: 4;
 }
+
+#code-editor-cm .CodeMirror-scroll { min-height: 300px; }
+#code-editor-cm .CodeMirror-gutters { background: #0d1117; border-right: 1px solid #1e2030; }
+#code-editor-cm .CodeMirror-linenumber { color: #3d4466; padding: 0 8px; }
+#code-editor-cm .CodeMirror-activeline-background { background: rgba(108,99,255,0.07) !important; }
+#code-editor-cm .CodeMirror-cursor { border-left: 2px solid #6c63ff; }
+#code-editor-cm .CodeMirror-selected { background: rgba(108,99,255,0.25) !important; }
+.CodeMirror-hints { background: #131320; border: 1px solid #2a2a4a; font-family: 'JetBrains Mono',monospace; font-size:12px; color:#c9d1d9; }
+.CodeMirror-hint { padding: 3px 10px; }
+.CodeMirror-hint-active { background: #6c63ff; color: #fff; }
+#code-editor { display: none; }
 
 #code-output {
   flex: 1;
@@ -2934,15 +2962,8 @@ body {
                 <button class="editor-run-btn" onclick="runCode()">▶ Run</button>
               </div>
             </div>
-            <textarea id="code-editor" spellcheck="false" placeholder="// Write your C code here...
-// Click a snippet above to get started
-
-#include &lt;stdio.h&gt;
-
-int main() {
-    printf(&quot;Hello, TheRealists!\\n&quot;);
-    return 0;
-}"></textarea>
+            <div id="code-editor-cm"></div>
+            <textarea id="code-editor" style="display:none"></textarea>
           </div>
           <div class="editor-panel">
             <div class="editor-panel-header">
@@ -3917,6 +3938,8 @@ function enterApp() {
   registerSW();
   showPWABanner();
   updateHomeStats();
+  // Init CodeMirror editor (defer slightly so the DOM is fully visible)
+  setTimeout(initCodeMirror, 200);
   // Live Firebase listeners
   if (window.FB_READY) {
     window.FB.onAnnouncement(text => {
@@ -4079,6 +4102,7 @@ function showView(name, el) {
   if (name === 'profile')     buildProfile();
   if (name === 'attendance')  buildAttendance();
   if (name === 'papers')      ppInit();
+  if (name === 'code' && cmEditor) setTimeout(() => { cmEditor.refresh(); cmEditor.focus(); }, 50);
   if (name === 'quiz') {
     document.getElementById('quiz-lobby').style.display = 'block';
     document.getElementById('quiz-active').style.display = 'none';
@@ -4188,13 +4212,52 @@ function buildPapersGrid() {
   `).join('');
 }
 
-// ══ CODE EDITOR ═══════════════════════════════════════════════════════════════
+// ══ CODE EDITOR (CodeMirror 6) ════════════════════════════════════════════════
+let cmEditor = null;
+
+function initCodeMirror() {
+  const defaultCode = `#include <stdio.h>\n\nint main() {\n    printf("Hello, TheRealists!\\n");\n    return 0;\n}\n`;
+  cmEditor = CodeMirror(document.getElementById('code-editor-cm'), {
+    value: defaultCode,
+    mode: 'text/x-csrc',
+    theme: 'default',
+    lineNumbers: true,
+    matchBrackets: true,
+    autoCloseBrackets: true,
+    styleActiveLine: true,
+    autoRefresh: true,
+    indentUnit: 4,
+    tabSize: 4,
+    indentWithTabs: false,
+    lineWrapping: false,
+    extraKeys: {
+      'Tab': function(cm) {
+        if (cm.somethingSelected()) { cm.indentSelection('add'); }
+        else { cm.replaceSelection('    ', 'end'); }
+      },
+      'Ctrl-Space': 'autocomplete',
+      'Ctrl-/': 'toggleComment',
+    },
+    hintOptions: { hint: CodeMirror.hint.anyword, completeSingle: false }
+  });
+
+  // Auto-trigger autocomplete while typing (after letters/underscore)
+  cmEditor.on('inputRead', function(cm, change) {
+    if (change.text[0] && /[\w_]/.test(change.text[0])) {
+      CodeMirror.commands.autocomplete(cm, CodeMirror.hint.anyword, { completeSingle: false });
+    }
+  });
+}
+
+function getCMCode() {
+  return cmEditor ? cmEditor.getValue() : document.getElementById('code-editor').value;
+}
+
 function loadSnippet(name) {
-  const editor = document.getElementById('code-editor');
   let code = SNIPPETS[name] || '';
-  // Replace any Unicode math symbols with proper ASCII operators
   code = code.replace(/\u2264/g, '<=').replace(/\u2265/g, '>=').replace(/\u2260/g, '!=').replace(/\u2212/g, '-');
-  editor.value = code;
+  if (cmEditor) { cmEditor.setValue(code); cmEditor.focus(); }
+  else { document.getElementById('code-editor').value = code; }
 }
 
 function sanitizeCode(code) {
@@ -4212,12 +4275,13 @@ function sanitizeCode(code) {
 }
 
 function clearEditor() {
-  document.getElementById('code-editor').value = '';
+  if (cmEditor) cmEditor.setValue('');
+  else document.getElementById('code-editor').value = '';
   document.getElementById('code-output').innerHTML = '<span class="output-info">// Output cleared</span>';
 }
 
 async function runCode() {
-  const rawCode = document.getElementById('code-editor').value;
+  const rawCode = getCMCode();
   const code = sanitizeCode(rawCode);
   const output = document.getElementById('code-output');
   const runBtn = document.querySelector('.editor-run-btn');
@@ -4227,7 +4291,6 @@ async function runCode() {
     return;
   }
 
-  // Show loading state
   runBtn.textContent = '⏳ Running...';
   runBtn.disabled = true;
   output.innerHTML = '<span class="output-info">// Compiling and running your C code...\n// Please wait ⚙️</span>';
@@ -4247,17 +4310,17 @@ async function runCode() {
       })
     });
 
-    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(`Server returned ${response.status} — the compiler API may be temporarily down.`);
+    }
 
-    // Build output
+    const data = await response.json();
     let html = '';
 
-    // Compile errors
     if (data.compile && data.compile.stderr) {
       html += `<span class="output-error">⚠️ Compilation Error:\n${escapeHtml(data.compile.stderr)}\n\n</span>`;
     }
 
-    // Runtime output
     if (data.run) {
       if (data.run.stdout) {
         html += `<span style="color:var(--accent3)">${escapeHtml(data.run.stdout)}</span>`;
@@ -4270,11 +4333,8 @@ async function runCode() {
       }
     }
 
-    if (!html) {
-      html = '<span class="output-info">// No output returned. Check your code.</span>';
-    }
+    if (!html) html = '<span class="output-info">// No output returned. Check your code.</span>';
 
-    // Add exit code
     if (data.run?.code !== undefined) {
       html += `\n<span class="output-info">\n// ─────────────────────────────\n// Exit code: ${data.run.code} ${data.run.code === 0 ? '✅ Success' : '❌ Error'}\n// Powered by Piston API</span>`;
     }
@@ -4282,7 +4342,7 @@ async function runCode() {
     output.innerHTML = html;
 
   } catch (err) {
-    output.innerHTML = `<span class="output-error">// ❌ Could not connect to compiler.\n// Check your internet connection.\n\n// Error: ${err.message}\n\n</span><span class="output-info">// Fallback: run in your terminal:\n// gcc -Wall main.c -o /tmp/out && /tmp/out</span>`;
+    output.innerHTML = `<span class="output-error">// ❌ Could not reach the compiler.\n// ${escapeHtml(err.message)}\n\n</span><span class="output-info">// 💡 Tips:\n//  1. Check your internet connection.\n//  2. The Piston API (emkc.org) may be down — try again in a moment.\n//  3. As a fallback, paste your code into: https://onecompiler.com/c\n//     or run locally:  gcc main.c -o out && ./out</span>`;
   } finally {
     runBtn.textContent = '▶ Run';
     runBtn.disabled = false;
@@ -4297,16 +4357,7 @@ function escapeHtml(text) {
     .replace(/"/g, '&quot;');
 }
 
-// Tab key in editor
-document.getElementById('code-editor').addEventListener('keydown', function(e) {
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    const start = this.selectionStart;
-    const end = this.selectionEnd;
-    this.value = this.value.substring(0, start) + '    ' + this.value.substring(end);
-    this.selectionStart = this.selectionEnd = start + 4;
-  }
-});
+// Tab handling is now inside CodeMirror extraKeys config above
 
 // ══ SEARCH ════════════════════════════════════════════════════════════════════
 const SEARCH_INDEX = [
