@@ -1574,7 +1574,7 @@ body {
 }
 
 .flashcard {
-  height: 200px;
+  height: 280px;
   perspective: 1000px;
   cursor: pointer;
 }
@@ -1592,23 +1592,25 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 14px;
-  padding: 22px;
+  padding: 20px;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  overflow: hidden;
 }
 
 .flashcard-front {
   background: var(--card);
   border: 1px solid var(--border);
+  justify-content: center;
 }
 
 .flashcard-back {
   background: var(--bg3);
   border: 1px solid var(--accent);
   transform: rotateY(180deg);
+  justify-content: flex-start;
 }
 
 .flashcard-label {
@@ -1616,32 +1618,46 @@ body {
   font-family: 'JetBrains Mono', monospace;
   letter-spacing: 2px;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .flashcard-front .flashcard-label { color: var(--text3); }
 .flashcard-back .flashcard-label { color: var(--accent); }
 
 .flashcard-q {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text);
   line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
 }
 
 .flashcard-a {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text2);
   line-height: 1.6;
   font-family: 'JetBrains Mono', monospace;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
+  white-space: pre-wrap;
 }
 
+.flashcard-a::-webkit-scrollbar { width: 3px; }
+.flashcard-a::-webkit-scrollbar-track { background: transparent; }
+.flashcard-a::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
+
 .flashcard-hint {
-  margin-top: auto;
+  margin-top: 8px;
   font-size: 10px;
   color: var(--text3);
   font-family: 'JetBrains Mono', monospace;
   text-align: right;
+  flex-shrink: 0;
 }
 
 .flashcard-filter {
@@ -2942,12 +2958,58 @@ int main() {
       <div class="view" id="view-papers">
         <div class="pp-header fade-in">
           <div>
-            <div class="pp-title">📋 Past Papers</div>
-            <div class="pp-sub">Download past papers · Study answers in the Flashcards section</div>
+            <div class="pp-title">📋 Past Paper Flashcards</div>
+            <div class="pp-sub">Download past papers · Study flashcards in the Flashcards section</div>
           </div>
         </div>
 
-        <!-- Downloadable papers -->
+        <!-- Admin upload section (shown to admins only) -->
+        <div id="pp-admin-upload" style="display:none">
+          <div class="pp-upload-zone" id="pp-dropzone">
+            <input type="file" id="pp-file-input" accept=".pdf" onchange="ppOnFileSelected(this)" />
+            <span class="pp-upload-icon" id="pp-upload-icon">📥</span>
+            <div class="pp-upload-title" id="pp-upload-title">Drop a past paper PDF here</div>
+            <div class="pp-upload-hint" id="pp-upload-hint">or click to browse · PDF only · max 10MB</div>
+          </div>
+          <div class="pp-meta-row">
+            <div class="form-group">
+              <label class="form-label">Deck Name</label>
+              <input class="form-input" id="pp-deck-name" placeholder="e.g. CSC122 Mock 2024" style="letter-spacing:0" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Course</label>
+              <select id="pp-deck-course" class="form-input" style="letter-spacing:0;cursor:pointer;">
+                <option value="CSC 122">CSC 122 — Structured Software Dev</option>
+                <option value="CSC 121">CSC 121 — Computer Hardware</option>
+                <option value="CSC 123">CSC 123 — Database Systems</option>
+                <option value="ICT 121">ICT 121 — Workshop Practice</option>
+                <option value="BSM 121">BSM 121 — Research Methods</option>
+                <option value="General">General</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="pp-generate-btn" onclick="ppGenerate()" style="height:48px;align-self:flex-end;white-space:nowrap">
+              ✨ Generate Flashcards
+            </button>
+          </div>
+        </div>
+
+        <!-- Processing indicator -->
+        <div class="pp-processing" id="pp-processing">
+          <div class="pp-processing-spinner"></div>
+          <div class="pp-processing-text">AI is reading your past paper…</div>
+          <div class="pp-processing-step" id="pp-step-text">Extracting text from PDF</div>
+        </div>
+
+        <!-- Saved decks -->
+        <div class="section-title fade-in">Saved Decks</div>
+        <div class="pp-decks-grid fade-in" id="pp-decks-grid">
+          <div class="pp-empty">
+            <span class="pp-empty-icon">🗂️</span>
+            <div class="pp-empty-text">Loading decks…</div>
+          </div>
+        </div>
+
+        <!-- Also show original downloadable papers below -->
         <div class="section-title fade-in">📥 Download Past Papers</div>
         <div class="papers-grid fade-in" id="papers-grid"></div>
       </div>
