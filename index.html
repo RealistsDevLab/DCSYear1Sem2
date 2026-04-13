@@ -2475,6 +2475,309 @@ body {
 .pp-empty { text-align:center; padding:60px 20px; color:var(--text3); }
 .pp-empty-icon { font-size:48px; margin-bottom:14px; display:block; }
 .pp-empty-text { font-size:13px; font-family:'JetBrains Mono',monospace; }
+
+/* ══════════════════════════════════════════
+   CODE PRACTICE TABS
+══════════════════════════════════════════ */
+.code-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  width: fit-content;
+}
+.code-tab {
+  padding: 8px 18px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+}
+.code-tab:hover { color: var(--text); }
+.code-tab.active {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 2px 12px rgba(108,99,255,0.4);
+}
+.code-tab-panel { display: none; }
+.code-tab-panel.active { display: block; }
+
+/* ══════════════════════════════════════════
+   FEATURE 1 — CODING CHALLENGES
+══════════════════════════════════════════ */
+.challenges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.challenge-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.challenge-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+.challenge-card.easy::before   { background: var(--accent3); }
+.challenge-card.medium::before { background: var(--accent4); }
+.challenge-card.hard::before   { background: var(--accent2); }
+.challenge-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.challenge-card.solved { border-color: var(--accent3); background: rgba(67,233,123,0.05); }
+.challenge-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.challenge-desc  { font-size: 12px; color: var(--text2); font-family: 'JetBrains Mono', monospace; line-height: 1.5; margin-bottom: 12px; }
+.challenge-meta  { display: flex; align-items: center; gap: 8px; }
+.difficulty-badge {
+  font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+  padding: 3px 8px; border-radius: 20px; letter-spacing: 1px;
+}
+.difficulty-badge.easy   { background: rgba(67,233,123,0.15);  color: var(--accent3); }
+.difficulty-badge.medium { background: rgba(247,151,30,0.15);  color: var(--accent4); }
+.difficulty-badge.hard   { background: rgba(255,101,132,0.15); color: var(--accent2); }
+.solved-badge { font-size: 10px; color: var(--accent3); font-family: 'JetBrains Mono', monospace; margin-left: auto; }
+
+/* Challenge active panel */
+.challenge-active-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  display: none;
+}
+.challenge-active-panel.visible { display: block; }
+.challenge-problem-title { font-size: 18px; font-weight: 800; margin-bottom: 8px; }
+.challenge-problem-desc  { font-size: 13px; color: var(--text2); font-family: 'JetBrains Mono', monospace; line-height: 1.6; margin-bottom: 14px; white-space: pre-wrap; }
+.challenge-examples {
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+.challenge-example-label { color: var(--accent); font-weight: 700; margin-bottom: 4px; font-size: 11px; letter-spacing: 1px; }
+.challenge-io { color: var(--text2); margin-bottom: 8px; }
+.challenge-io:last-child { margin-bottom: 0; }
+.challenge-verdict {
+  padding: 14px 18px;
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  margin-top: 12px;
+  display: none;
+  line-height: 1.6;
+}
+.challenge-verdict.visible { display: block; }
+.challenge-verdict.pass { background: rgba(67,233,123,0.1); border: 1px solid rgba(67,233,123,0.3); color: var(--accent3); }
+.challenge-verdict.fail { background: rgba(255,101,132,0.1); border: 1px solid rgba(255,101,132,0.3); color: var(--accent2); }
+.challenge-verdict.partial { background: rgba(247,151,30,0.1); border: 1px solid rgba(247,151,30,0.3); color: var(--accent4); }
+
+/* ══════════════════════════════════════════
+   FEATURE 2 — DEBUG MODE
+══════════════════════════════════════════ */
+.debug-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.debug-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 3px solid var(--accent2);
+}
+.debug-card:hover { border-color: var(--accent2); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+.debug-card.solved { border-left-color: var(--accent3); background: rgba(67,233,123,0.04); }
+.debug-card-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+.debug-card-hint  { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; }
+.debug-active-panel {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  display: none;
+}
+.debug-active-panel.visible { display: block; }
+.debug-bug-label {
+  display: inline-block;
+  background: rgba(255,101,132,0.15);
+  color: var(--accent2);
+  font-size: 10px; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+  padding: 3px 10px; border-radius: 20px; letter-spacing: 1px; margin-bottom: 14px;
+}
+.debug-instructions {
+  font-size: 13px; color: var(--text2); font-family: 'JetBrains Mono', monospace;
+  line-height: 1.6; margin-bottom: 14px; white-space: pre-wrap;
+}
+.debug-hint-box {
+  background: rgba(247,151,30,0.08);
+  border: 1px solid rgba(247,151,30,0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 12px; font-family: 'JetBrains Mono', monospace;
+  color: var(--accent4);
+  margin-bottom: 14px;
+  display: none;
+}
+.debug-hint-box.visible { display: block; }
+.debug-reveal-box {
+  background: rgba(67,233,123,0.08);
+  border: 1px solid rgba(67,233,123,0.25);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 12px; font-family: 'JetBrains Mono', monospace;
+  color: var(--accent3);
+  margin-top: 12px;
+  display: none;
+  white-space: pre-wrap;
+  line-height: 1.6;
+}
+.debug-reveal-box.visible { display: block; }
+
+/* ══════════════════════════════════════════
+   FEATURE 3 — ERROR EXPLAINER
+══════════════════════════════════════════ */
+.error-explain-box {
+  margin-top: 12px;
+  background: rgba(108,99,255,0.07);
+  border: 1px solid rgba(108,99,255,0.25);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  display: none;
+  line-height: 1.7;
+}
+.error-explain-box.visible { display: block; }
+.error-explain-title { color: var(--accent); font-weight: 700; font-size: 11px; letter-spacing: 1px; margin-bottom: 8px; }
+.error-explain-item { margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.error-explain-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.error-raw  { color: var(--accent2); font-size: 11px; margin-bottom: 4px; }
+.error-plain { color: var(--text); font-size: 12px; }
+.error-tip  { color: var(--accent3); font-size: 11px; margin-top: 3px; }
+
+/* ══════════════════════════════════════════
+   FEATURE 4 — ROADMAP
+══════════════════════════════════════════ */
+.roadmap-wrap {
+  position: relative;
+  padding-bottom: 20px;
+}
+.roadmap-track {
+  position: absolute;
+  left: 23px;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: var(--border2);
+  z-index: 0;
+}
+.roadmap-stage {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 10px;
+}
+.roadmap-stage-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-left: 0;
+}
+.roadmap-stage-header:hover { border-color: var(--accent); }
+.roadmap-stage-header.unlocked { border-color: var(--accent); }
+.roadmap-stage-header.completed { border-color: var(--accent3); background: rgba(67,233,123,0.05); }
+.roadmap-node {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bg3); border: 2px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+  transition: all 0.3s;
+}
+.roadmap-stage-header.unlocked  .roadmap-node { border-color: var(--accent);  background: rgba(108,99,255,0.15); }
+.roadmap-stage-header.completed .roadmap-node { border-color: var(--accent3); background: rgba(67,233,123,0.2); }
+.roadmap-stage-info { flex: 1; }
+.roadmap-stage-name { font-size: 14px; font-weight: 700; }
+.roadmap-stage-sub  { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+.roadmap-stage-pct  { font-size: 13px; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--text3); }
+.roadmap-stage-header.completed .roadmap-stage-pct { color: var(--accent3); }
+.roadmap-topics {
+  margin-left: 40px;
+  margin-top: 6px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  display: none;
+}
+.roadmap-topics.open { display: block; }
+.roadmap-topic-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.roadmap-topic-item:last-child { border-bottom: none; }
+.roadmap-topic-item:hover { background: var(--bg3); }
+.roadmap-topic-check {
+  width: 18px; height: 18px; border-radius: 4px;
+  border: 2px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; flex-shrink: 0;
+  transition: all 0.2s;
+}
+.roadmap-topic-item.done .roadmap-topic-check {
+  background: var(--accent3); border-color: var(--accent3); color: #0a0a0f; font-weight: 900;
+}
+.roadmap-topic-name { font-size: 13px; flex: 1; }
+.roadmap-topic-item.done .roadmap-topic-name { color: var(--text3); text-decoration: line-through; }
+.roadmap-topic-try {
+  font-size: 10px; color: var(--accent); font-family: 'JetBrains Mono', monospace;
+  padding: 2px 8px; border-radius: 20px;
+  border: 1px solid rgba(108,99,255,0.3);
+  background: rgba(108,99,255,0.07);
+  transition: all 0.15s;
+}
+.roadmap-topic-try:hover { background: rgba(108,99,255,0.2); }
+.roadmap-summary {
+  display: flex; gap: 16px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.roadmap-stat {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 20px; text-align: center; min-width: 100px;
+}
+.roadmap-stat-num  { font-size: 24px; font-weight: 800; font-family: 'Space Mono', monospace; }
+.roadmap-stat-label { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -2932,53 +3235,172 @@ body {
       <div class="view" id="view-code">
         <div class="home-greeting fade-in">
           <h1>Code Practice 💻</h1>
-          <p>Write and run C code right here in the browser. <span>// No setup needed</span></p>
+          <p>Write · challenge · debug · learn C — <span>// all in the browser</span></p>
         </div>
 
-        <div class="section-title">Quick Snippets — Click to Load</div>
-        <div class="snippet-list fade-in">
-          <button class="snippet-btn" onclick="loadSnippet('hello')">👋 Hello World</button>
-          <button class="snippet-btn" onclick="loadSnippet('input')">⌨️ Input / Output</button>
-          <button class="snippet-btn" onclick="loadSnippet('ifelse')">🔀 If / Else</button>
-          <button class="snippet-btn" onclick="loadSnippet('forloop')">🔁 For Loop</button>
-          <button class="snippet-btn" onclick="loadSnippet('whileloop')">🔄 While Loop</button>
-          <button class="snippet-btn" onclick="loadSnippet('switch')">⚡ Switch Case</button>
-          <button class="snippet-btn" onclick="loadSnippet('functions')">📦 Functions</button>
-          <button class="snippet-btn" onclick="loadSnippet('arrays')">📋 Arrays</button>
-          <button class="snippet-btn" onclick="loadSnippet('pointers')">👉 Pointers</button>
+        <!-- TABS -->
+        <div class="code-tabs fade-in">
+          <button class="code-tab active" onclick="switchCodeTab('editor', this)">✏️ Editor</button>
+          <button class="code-tab" onclick="switchCodeTab('challenges', this)">🧩 Challenges</button>
+          <button class="code-tab" onclick="switchCodeTab('debug', this)">🐛 Debug</button>
+          <button class="code-tab" onclick="switchCodeTab('roadmap', this)">🗺️ Roadmap</button>
         </div>
 
-        <div class="editor-layout fade-in">
-          <div class="editor-panel">
-            <div class="editor-panel-header">
-              <div class="editor-dots">
-                <div class="editor-dot" style="background:#ff5f57"></div>
-                <div class="editor-dot" style="background:#ffbd2e"></div>
-                <div class="editor-dot" style="background:#28c840"></div>
-              </div>
-              <span class="editor-panel-title">main.c — C Editor</span>
-              <div class="editor-actions">
-                <button class="editor-clear-btn" onclick="clearEditor()">Clear</button>
-                <button class="editor-run-btn" onclick="runCode()">▶ Run</button>
-              </div>
-            </div>
-            <div id="code-editor-cm"></div>
-            <textarea id="code-editor" style="display:none"></textarea>
+        <!-- ── TAB 1: FREE EDITOR ── -->
+        <div class="code-tab-panel active" id="tab-editor">
+          <div class="section-title">Quick Snippets — Click to Load</div>
+          <div class="snippet-list fade-in">
+            <button class="snippet-btn" onclick="loadSnippet('hello')">👋 Hello World</button>
+            <button class="snippet-btn" onclick="loadSnippet('input')">⌨️ Input / Output</button>
+            <button class="snippet-btn" onclick="loadSnippet('ifelse')">🔀 If / Else</button>
+            <button class="snippet-btn" onclick="loadSnippet('forloop')">🔁 For Loop</button>
+            <button class="snippet-btn" onclick="loadSnippet('whileloop')">🔄 While Loop</button>
+            <button class="snippet-btn" onclick="loadSnippet('switch')">⚡ Switch Case</button>
+            <button class="snippet-btn" onclick="loadSnippet('functions')">📦 Functions</button>
+            <button class="snippet-btn" onclick="loadSnippet('arrays')">📋 Arrays</button>
+            <button class="snippet-btn" onclick="loadSnippet('pointers')">👉 Pointers</button>
           </div>
-          <div class="editor-panel">
-            <div class="editor-panel-header">
-              <div class="editor-dots">
-                <div class="editor-dot" style="background:#ff5f57"></div>
-                <div class="editor-dot" style="background:#ffbd2e"></div>
-                <div class="editor-dot" style="background:#28c840"></div>
+          <div class="editor-layout fade-in">
+            <div class="editor-panel">
+              <div class="editor-panel-header">
+                <div class="editor-dots">
+                  <div class="editor-dot" style="background:#ff5f57"></div>
+                  <div class="editor-dot" style="background:#ffbd2e"></div>
+                  <div class="editor-dot" style="background:#28c840"></div>
+                </div>
+                <span class="editor-panel-title">main.c — C Editor</span>
+                <div class="editor-actions">
+                  <button class="editor-clear-btn" onclick="clearEditor()">Clear</button>
+                  <button class="editor-run-btn" onclick="runCode()">▶ Run</button>
+                </div>
               </div>
-              <span class="editor-panel-title">Output Console</span>
+              <div id="code-editor-cm"></div>
+              <textarea id="code-editor" style="display:none"></textarea>
             </div>
-            <div id="code-output"><span class="output-info">// Output will appear here after clicking Run
-// Note: This simulates C output for learning purposes
-// For full compilation, use gcc in your terminal</span></div>
+            <div class="editor-panel">
+              <div class="editor-panel-header">
+                <div class="editor-dots">
+                  <div class="editor-dot" style="background:#ff5f57"></div>
+                  <div class="editor-dot" style="background:#ffbd2e"></div>
+                  <div class="editor-dot" style="background:#28c840"></div>
+                </div>
+                <span class="editor-panel-title">Output Console</span>
+              </div>
+              <div id="code-output"><span class="output-info">// Output will appear here after clicking Run</span></div>
+              <!-- Feature 3: Error Explainer -->
+              <div class="error-explain-box" id="error-explain-box">
+                <div class="error-explain-title">💡 ERROR EXPLAINER — What these mean in plain English</div>
+                <div id="error-explain-list"></div>
+              </div>
+            </div>
           </div>
         </div>
+
+        <!-- ── TAB 2: CODING CHALLENGES ── -->
+        <div class="code-tab-panel" id="tab-challenges">
+          <div class="challenge-active-panel" id="challenge-active-panel">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+              <button class="editor-clear-btn" onclick="closeChallenge()">← Back</button>
+              <div class="challenge-problem-title" id="ch-title"></div>
+              <span id="ch-difficulty-badge" class="difficulty-badge" style="margin-left:auto"></span>
+            </div>
+            <div class="challenge-problem-desc" id="ch-desc"></div>
+            <div class="challenge-examples" id="ch-examples"></div>
+            <div class="editor-layout" style="height:420px;">
+              <div class="editor-panel">
+                <div class="editor-panel-header">
+                  <div class="editor-dots">
+                    <div class="editor-dot" style="background:#ff5f57"></div>
+                    <div class="editor-dot" style="background:#ffbd2e"></div>
+                    <div class="editor-dot" style="background:#28c840"></div>
+                  </div>
+                  <span class="editor-panel-title" id="ch-editor-title">challenge.c</span>
+                  <div class="editor-actions">
+                    <button class="editor-clear-btn" onclick="clearChallengeEditor()">Clear</button>
+                    <button class="editor-run-btn" onclick="runChallenge()">▶ Submit</button>
+                  </div>
+                </div>
+                <div id="ch-editor-cm"></div>
+              </div>
+              <div class="editor-panel">
+                <div class="editor-panel-header">
+                  <div class="editor-dots">
+                    <div class="editor-dot" style="background:#ff5f57"></div>
+                    <div class="editor-dot" style="background:#ffbd2e"></div>
+                    <div class="editor-dot" style="background:#28c840"></div>
+                  </div>
+                  <span class="editor-panel-title">Test Results</span>
+                </div>
+                <div id="ch-output" style="flex:1;padding:16px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;overflow-y:auto;background:#0d1117;white-space:pre-wrap;color:var(--text3);">// Submit your code to see test results</div>
+              </div>
+            </div>
+            <div class="challenge-verdict" id="ch-verdict"></div>
+          </div>
+          <div id="challenges-list">
+            <div class="section-title">🧩 Coding Challenges — Solve & check your output</div>
+            <div class="challenges-grid" id="challenges-grid"></div>
+          </div>
+        </div>
+
+        <!-- ── TAB 3: DEBUG MODE ── -->
+        <div class="code-tab-panel" id="tab-debug">
+          <div class="debug-active-panel" id="debug-active-panel">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+              <button class="editor-clear-btn" onclick="closeDebug()">← Back</button>
+              <div style="font-size:16px;font-weight:800;" id="dbg-title"></div>
+              <span class="debug-bug-label" style="margin-left:auto">🐛 BUG HUNT</span>
+            </div>
+            <div class="debug-instructions" id="dbg-instructions"></div>
+            <div class="debug-hint-box" id="dbg-hint-box">💡 <span id="dbg-hint-text"></span></div>
+            <div class="editor-layout" style="height:400px;">
+              <div class="editor-panel">
+                <div class="editor-panel-header">
+                  <div class="editor-dots">
+                    <div class="editor-dot" style="background:#ff5f57"></div>
+                    <div class="editor-dot" style="background:#ffbd2e"></div>
+                    <div class="editor-dot" style="background:#28c840"></div>
+                  </div>
+                  <span class="editor-panel-title">buggy.c — Find &amp; fix the bug</span>
+                  <div class="editor-actions">
+                    <button class="editor-clear-btn" onclick="toggleDebugHint()" id="hint-btn">💡 Hint</button>
+                    <button class="editor-run-btn" onclick="runDebug()">▶ Run &amp; Check</button>
+                  </div>
+                </div>
+                <div id="dbg-editor-cm"></div>
+              </div>
+              <div class="editor-panel">
+                <div class="editor-panel-header">
+                  <div class="editor-dots">
+                    <div class="editor-dot" style="background:#ff5f57"></div>
+                    <div class="editor-dot" style="background:#ffbd2e"></div>
+                    <div class="editor-dot" style="background:#28c840"></div>
+                  </div>
+                  <span class="editor-panel-title">Output &amp; Verdict</span>
+                </div>
+                <div id="dbg-output" style="flex:1;padding:16px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;overflow-y:auto;background:#0d1117;white-space:pre-wrap;color:var(--text3);">// Fix the bug then click Run &amp; Check</div>
+              </div>
+            </div>
+            <div class="debug-reveal-box" id="dbg-reveal-box"></div>
+            <div style="margin-top:12px;display:flex;gap:8px;">
+              <button class="editor-clear-btn" onclick="revealDebugSolution()" id="reveal-btn">🔍 Reveal Solution</button>
+            </div>
+          </div>
+          <div id="debug-list">
+            <div class="section-title">🐛 Debug Challenges — Find the bug in broken C code</div>
+            <div class="debug-grid" id="debug-grid"></div>
+          </div>
+        </div>
+
+        <!-- ── TAB 4: ROADMAP ── -->
+        <div class="code-tab-panel" id="tab-roadmap">
+          <div class="section-title">🗺️ C Language Learning Roadmap</div>
+          <div class="roadmap-summary" id="roadmap-summary"></div>
+          <div class="roadmap-wrap">
+            <div class="roadmap-track"></div>
+            <div id="roadmap-content"></div>
+          </div>
+        </div>
+
       </div>
 
       <!-- PAST PAPERS VIEW -->
@@ -4399,6 +4821,673 @@ function escapeHtml(text) {
 }
 
 // Tab handling is now inside CodeMirror extraKeys config above
+
+// ══ CODE PRACTICE TABS ═══════════════════════════════════════════════════════
+function switchCodeTab(tab, el) {
+  document.querySelectorAll('.code-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.code-tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'editor' && cmEditor) setTimeout(() => { cmEditor.refresh(); cmEditor.focus(); }, 50);
+  if (tab === 'challenges') buildChallengesGrid();
+  if (tab === 'debug')      buildDebugGrid();
+  if (tab === 'roadmap')    buildRoadmap();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FEATURE 3 — ERROR EXPLAINER (attached to main editor output)
+// ══════════════════════════════════════════════════════════════════════════════
+const ERROR_PATTERNS = [
+  { pattern: /expected\s+'?;'?\s+before/i,        plain: "You're missing a semicolon `;` at the end of a statement.", tip: "💡 Every statement in C must end with a semicolon." },
+  { pattern: /undeclared\s+identifier|undeclared.*'(\w+)'/i, plain: "You used a variable or function that hasn't been declared yet.", tip: "💡 Declare it before use: `int x;` or add the function prototype above main()." },
+  { pattern: /implicit declaration of function/i, plain: "You called a function before declaring or defining it.", tip: "💡 Add a prototype above main(), e.g. `int add(int a, int b);`" },
+  { pattern: /\[Warning\].*format '%(\w+)' expects.*'(\w+\s*\*?)'/i, plain: "Wrong format specifier in printf/scanf — the type doesn't match.", tip: "💡 Use %d for int, %f for float, %lf for double, %c for char, %s for string." },
+  { pattern: /format '%(\w+)' expects/i,          plain: "Wrong format specifier in printf/scanf.", tip: "💡 Use %d for int, %f for float, %lf for double, %c for char, %s for string." },
+  { pattern: /lvalue required/i,                  plain: "You're trying to assign a value to something that can't be assigned to.", tip: "💡 Check if you wrote `==` (comparison) instead of `=` (assignment)." },
+  { pattern: /incompatible types/i,               plain: "You're mixing incompatible types — e.g. assigning a float to an int pointer.", tip: "💡 Use explicit casting: `(int)myFloat` or make sure types match." },
+  { pattern: /too (few|many) arguments/i,         plain: "You called a function with the wrong number of arguments.", tip: "💡 Check the function definition and make sure the call matches." },
+  { pattern: /expected '\)' before/i,             plain: "A closing parenthesis `)` is missing somewhere.", tip: "💡 Count your opening `(` and closing `)` — they must match." },
+  { pattern: /expected '{' before|expected '}' before/i, plain: "A curly brace `{` or `}` is missing.", tip: "💡 Every `if`, `for`, `while`, and function body needs matching `{` and `}`." },
+  { pattern: /undefined reference to/i,           plain: "The linker can't find a function you called — it's declared but not defined.", tip: "💡 Make sure the function body is written below main(), not just the prototype." },
+  { pattern: /segmentation fault|segfault/i,      plain: "Your program crashed — it tried to access memory it doesn't own.", tip: "💡 Common causes: uninitialized pointer, array out-of-bounds, or missing `&` in scanf." },
+  { pattern: /division by zero/i,                 plain: "Your program tried to divide by zero.", tip: "💡 Add a check: `if (b != 0)` before dividing." },
+  { pattern: /note: '(\w+)' was not declared in this scope/i, plain: "A variable is used outside the block where it was declared.", tip: "💡 Variables in C are scoped to the `{}` block they're declared in." },
+];
+
+function explainErrors(rawOutput) {
+  const box  = document.getElementById('error-explain-box');
+  const list = document.getElementById('error-explain-list');
+  if (!box || !list) return;
+  const matched = [];
+  for (const ep of ERROR_PATTERNS) {
+    if (ep.pattern.test(rawOutput)) {
+      const raw = rawOutput.split('\n').find(l => ep.pattern.test(l)) || '';
+      matched.push({ raw: raw.trim(), plain: ep.plain, tip: ep.tip });
+      if (matched.length >= 4) break; // max 4 explanations
+    }
+  }
+  if (matched.length === 0) { box.classList.remove('visible'); return; }
+  list.innerHTML = matched.map(m => `
+    <div class="error-explain-item">
+      ${m.raw ? `<div class="error-raw">📌 ${escapeHtml(m.raw)}</div>` : ''}
+      <div class="error-plain">➜ ${m.plain}</div>
+      <div class="error-tip">${m.tip}</div>
+    </div>`).join('');
+  box.classList.add('visible');
+}
+
+// Patch the output renderers to also call explainErrors
+const _origRunCode = runCode;
+// We'll hook explainErrors inside the compiler helpers instead
+function maybeExplainFromOutput(htmlContent) {
+  // strip HTML tags to get raw text for pattern matching
+  const raw = htmlContent.replace(/<[^>]+>/g, '');
+  if (/Compilation Error|Runtime Error/i.test(raw)) {
+    explainErrors(raw);
+  } else {
+    const box = document.getElementById('error-explain-box');
+    if (box) box.classList.remove('visible');
+  }
+}
+
+// Patch output rendering — wrap the output.innerHTML setter
+const _origTryWandbox = tryWandbox;
+async function tryWandbox(code) {
+  const html = await _origTryWandbox(code);
+  setTimeout(() => maybeExplainFromOutput(document.getElementById('code-output')?.innerHTML || ''), 50);
+  return html;
+}
+const _origTryGodbolt = tryGodbolt;
+async function tryGodbolt(code) {
+  const html = await _origTryGodbolt(code);
+  setTimeout(() => maybeExplainFromOutput(document.getElementById('code-output')?.innerHTML || ''), 50);
+  return html;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FEATURE 1 — CODING CHALLENGES
+// ══════════════════════════════════════════════════════════════════════════════
+const CHALLENGES = [
+  {
+    id: 'ch1', title: 'Hello, Realist!', difficulty: 'easy',
+    desc: 'Write a C program that prints exactly:\nHello, Realist!\nDCS Year 1',
+    examples: [{ input: '(none)', output: 'Hello, Realist!\nDCS Year 1' }],
+    expected: 'Hello, Realist!\nDCS Year 1',
+    starter: '#include <stdio.h>\n\nint main() {\n    // Your code here\n    return 0;\n}',
+    hint: 'Use printf() twice, once for each line. Use \\n for newline.'
+  },
+  {
+    id: 'ch2', title: 'Sum of Two Numbers', difficulty: 'easy',
+    desc: 'Write a program that:\n1. Declares two integers: a = 15, b = 27\n2. Computes their sum\n3. Prints: Sum = 42',
+    examples: [{ input: '(none)', output: 'Sum = 42' }],
+    expected: 'Sum = 42',
+    starter: '#include <stdio.h>\n\nint main() {\n    int a = 15, b = 27;\n    // compute and print sum\n    return 0;\n}',
+    hint: 'Use int sum = a + b; then printf("Sum = %d\\n", sum);'
+  },
+  {
+    id: 'ch3', title: 'Even or Odd', difficulty: 'easy',
+    desc: 'Write a program that checks if the number 17 is even or odd.\nPrint exactly: 17 is Odd',
+    examples: [{ input: '(none)', output: '17 is Odd' }],
+    expected: '17 is Odd',
+    starter: '#include <stdio.h>\n\nint main() {\n    int n = 17;\n    // check even or odd\n    return 0;\n}',
+    hint: 'Use the modulus operator: if (n % 2 == 0) it\'s even, else odd.'
+  },
+  {
+    id: 'ch4', title: 'Count to 5', difficulty: 'easy',
+    desc: 'Use a for loop to print numbers 1 through 5, each on a new line.\nExpected output:\n1\n2\n3\n4\n5',
+    examples: [{ input: '(none)', output: '1\n2\n3\n4\n5' }],
+    expected: '1\n2\n3\n4\n5',
+    starter: '#include <stdio.h>\n\nint main() {\n    // for loop here\n    return 0;\n}',
+    hint: 'for (int i = 1; i <= 5; i++) { printf("%d\\n", i); }'
+  },
+  {
+    id: 'ch5', title: 'Multiplication Table', difficulty: 'medium',
+    desc: 'Print the 3× multiplication table from 1 to 5:\n3 x 1 = 3\n3 x 2 = 6\n3 x 3 = 9\n3 x 4 = 12\n3 x 5 = 15',
+    examples: [{ input: '(none)', output: '3 x 1 = 3\n3 x 2 = 6\n3 x 3 = 9\n3 x 4 = 12\n3 x 5 = 15' }],
+    expected: '3 x 1 = 3\n3 x 2 = 6\n3 x 3 = 9\n3 x 4 = 12\n3 x 5 = 15',
+    starter: '#include <stdio.h>\n\nint main() {\n    int n = 3;\n    // loop 1 to 5\n    return 0;\n}',
+    hint: 'Use a for loop. printf("%d x %d = %d\\n", n, i, n*i);'
+  },
+  {
+    id: 'ch6', title: 'Sum of Array', difficulty: 'medium',
+    desc: 'Given the array: {10, 20, 30, 40, 50}\nCompute and print the sum.\nExpected: Sum = 150',
+    examples: [{ input: '(none)', output: 'Sum = 150' }],
+    expected: 'Sum = 150',
+    starter: '#include <stdio.h>\n\nint main() {\n    int arr[] = {10, 20, 30, 40, 50};\n    int n = 5, sum = 0;\n    // loop and sum\n    return 0;\n}',
+    hint: 'Loop through the array adding each element to sum. Then printf("Sum = %d\\n", sum);'
+  },
+  {
+    id: 'ch7', title: 'Factorial', difficulty: 'medium',
+    desc: 'Write a function int factorial(int n) that returns n!\nIn main(), print: 5! = 120',
+    examples: [{ input: '(none)', output: '5! = 120' }],
+    expected: '5! = 120',
+    starter: '#include <stdio.h>\n\nint factorial(int n) {\n    // implement factorial\n}\n\nint main() {\n    printf("5! = %d\\n", factorial(5));\n    return 0;\n}',
+    hint: 'Use a loop: int result = 1; for(int i=1;i<=n;i++) result *= i; return result;'
+  },
+  {
+    id: 'ch8', title: 'Pointer Swap', difficulty: 'medium',
+    desc: 'Write a function void swap(int *a, int *b) that swaps two integers using pointers.\nIn main():\n  int x=5, y=10;\n  swap(&x,&y);\nPrint: x=10, y=5',
+    examples: [{ input: '(none)', output: 'x=10, y=5' }],
+    expected: 'x=10, y=5',
+    starter: '#include <stdio.h>\n\nvoid swap(int *a, int *b) {\n    // use a temp variable\n}\n\nint main() {\n    int x = 5, y = 10;\n    swap(&x, &y);\n    printf("x=%d, y=%d\\n", x, y);\n    return 0;\n}',
+    hint: 'int temp = *a; *a = *b; *b = temp;'
+  },
+  {
+    id: 'ch9', title: 'Fibonacci', difficulty: 'hard',
+    desc: 'Print the first 8 Fibonacci numbers separated by spaces:\n0 1 1 2 3 5 8 13',
+    examples: [{ input: '(none)', output: '0 1 1 2 3 5 8 13' }],
+    expected: '0 1 1 2 3 5 8 13',
+    starter: '#include <stdio.h>\n\nint main() {\n    int a = 0, b = 1, n = 8;\n    // print fibonacci sequence\n    return 0;\n}',
+    hint: 'Loop n times. Each iteration: print a, then int c = a+b; a=b; b=c;'
+  },
+  {
+    id: 'ch10', title: 'Count Vowels', difficulty: 'hard',
+    desc: 'Count the number of vowels (a,e,i,o,u) in the string "TheRealists"\nPrint: Vowels: 4',
+    examples: [{ input: '(none)', output: 'Vowels: 4' }],
+    expected: 'Vowels: 4',
+    starter: '#include <stdio.h>\n#include <string.h>\n#include <ctype.h>\n\nint main() {\n    char str[] = "TheRealists";\n    int count = 0;\n    // loop through string checking vowels\n    return 0;\n}',
+    hint: 'Loop with i<strlen(str). Convert to lowercase with tolower(). Check if it\'s a,e,i,o,u.'
+  },
+];
+
+let activeChallengeId  = null;
+let chCmEditor         = null;
+let solvedChallenges   = JSON.parse(localStorage.getItem('rdl_solved_ch') || '[]');
+
+function buildChallengesGrid() {
+  const grid = document.getElementById('challenges-grid');
+  if (!grid) return;
+  grid.innerHTML = CHALLENGES.map(ch => {
+    const solved = solvedChallenges.includes(ch.id);
+    return `<div class="challenge-card ${ch.difficulty} ${solved ? 'solved' : ''}" onclick="openChallenge('${ch.id}')">
+      <div class="challenge-title">${solved ? '✅ ' : ''}${ch.title}</div>
+      <div class="challenge-desc">${ch.examples[0].output.split('\n').slice(0,2).join(' | ')}</div>
+      <div class="challenge-meta">
+        <span class="difficulty-badge ${ch.difficulty}">${ch.difficulty.toUpperCase()}</span>
+        ${solved ? '<span class="solved-badge">SOLVED ✓</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openChallenge(id) {
+  const ch = CHALLENGES.find(c => c.id === id);
+  if (!ch) return;
+  activeChallengeId = id;
+  document.getElementById('ch-title').textContent = ch.title;
+  const badge = document.getElementById('ch-difficulty-badge');
+  badge.textContent = ch.difficulty.toUpperCase();
+  badge.className = `difficulty-badge ${ch.difficulty}`;
+  document.getElementById('ch-desc').textContent = ch.desc;
+  document.getElementById('ch-examples').innerHTML = ch.examples.map(ex => `
+    <div class="challenge-example-label">EXPECTED OUTPUT</div>
+    <div class="challenge-io">➜ ${escapeHtml(ex.output)}</div>`).join('');
+  document.getElementById('ch-editor-title').textContent = `${ch.id}.c`;
+  document.getElementById('challenges-list').style.display = 'none';
+  document.getElementById('challenge-active-panel').classList.add('visible');
+  document.getElementById('ch-verdict').className = 'challenge-verdict';
+  document.getElementById('ch-output').innerHTML = '<span style="color:var(--text3)">// Submit your code to see test results</span>';
+  // Init or update challenge editor
+  setTimeout(() => {
+    const container = document.getElementById('ch-editor-cm');
+    if (!container) return;
+    if (chCmEditor) { chCmEditor.toTextArea(); chCmEditor = null; container.innerHTML = ''; }
+    chCmEditor = CodeMirror(container, {
+      value: ch.starter,
+      mode: 'text/x-csrc',
+      theme: 'default',
+      lineNumbers: true,
+      matchBrackets: true,
+      autoCloseBrackets: true,
+      styleActiveLine: true,
+      indentUnit: 4,
+      tabSize: 4,
+      autoRefresh: true,
+      extraKeys: {
+        'Tab': cm => cm.somethingSelected() ? cm.indentSelection('add') : cm.replaceSelection('    '),
+        'Ctrl-Space': 'autocomplete',
+      },
+      hintOptions: { hint: CodeMirror.hint.anyword, completeSingle: false }
+    });
+    chCmEditor.on('inputRead', cm => {
+      const ch2 = cm.getDoc().getCursor();
+      CodeMirror.commands.autocomplete(cm, CodeMirror.hint.anyword, { completeSingle: false });
+    });
+  }, 80);
+}
+
+function closeChallenge() {
+  document.getElementById('challenge-active-panel').classList.remove('visible');
+  document.getElementById('challenges-list').style.display = 'block';
+  activeChallengeId = null;
+}
+
+function clearChallengeEditor() {
+  if (chCmEditor) chCmEditor.setValue('');
+}
+
+async function runChallenge() {
+  const ch = CHALLENGES.find(c => c.id === activeChallengeId);
+  if (!ch || !chCmEditor) return;
+  const code     = sanitizeCode(chCmEditor.getValue());
+  const outEl    = document.getElementById('ch-output');
+  const verdict  = document.getElementById('ch-verdict');
+  const runBtn   = document.querySelector('#tab-challenges .editor-run-btn');
+  runBtn.textContent = '⏳ Testing...';
+  runBtn.disabled = true;
+  outEl.innerHTML = '<span style="color:var(--text3)">// Running your code against test cases...</span>';
+  verdict.className = 'challenge-verdict';
+
+  let rawOutput = '';
+  try {
+    // Run via Wandbox first
+    const res = await fetch('https://wandbox.org/api/compile.json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ compiler: 'gcc-head', code, options: '-Wall', stdin: '' })
+    });
+    const d = await res.json();
+    if (d.compiler_error) {
+      outEl.innerHTML = `<span style="color:var(--accent2)">⚠️ Compilation Error:\n${escapeHtml(d.compiler_error)}</span>`;
+      verdict.className = 'challenge-verdict fail visible';
+      verdict.innerHTML = '❌ Fix the compilation error first, then submit again.';
+      runBtn.textContent = '▶ Submit'; runBtn.disabled = false;
+      return;
+    }
+    rawOutput = (d.program_output || '').trim();
+  } catch(e) {
+    // Fallback to Godbolt
+    try {
+      const body = { source: code, options: { userArguments: '-xc -O0', executeParameters: { args: [], stdin: '' }, compilerOptions: { executorRequest: true }, filters: { execute: true }, tools: [], libraries: [] }, lang: 'c' };
+      const res2 = await fetch('https://godbolt.org/api/compiler/cg122/compile', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(body) });
+      const d2   = await res2.json();
+      rawOutput  = (d2.execResult?.stdout || []).map(l => l.text).join('\n').trim();
+    } catch(e2) {
+      outEl.innerHTML = `<span style="color:var(--accent2)">// ❌ Compiler unreachable. Check your connection.</span>`;
+      runBtn.textContent = '▶ Submit'; runBtn.disabled = false;
+      return;
+    }
+  }
+
+  const expected = ch.expected.trim();
+  const actual   = rawOutput.trim();
+  outEl.innerHTML = `<span style="color:var(--text2)">Your output:\n</span><span style="color:var(--accent3)">${escapeHtml(actual)}</span>\n\n<span style="color:var(--text2)">Expected:\n</span><span style="color:var(--text3)">${escapeHtml(expected)}</span>`;
+
+  if (actual === expected) {
+    verdict.className = 'challenge-verdict pass visible';
+    verdict.innerHTML = '✅ All test cases passed! Challenge solved!';
+    if (!solvedChallenges.includes(ch.id)) {
+      solvedChallenges.push(ch.id);
+      localStorage.setItem('rdl_solved_ch', JSON.stringify(solvedChallenges));
+    }
+  } else {
+    // Check partial line match
+    const expectedLines = expected.split('\n');
+    const actualLines   = actual.split('\n');
+    const matched = expectedLines.filter((l,i) => l === actualLines[i]).length;
+    if (matched > 0 && matched < expectedLines.length) {
+      verdict.className = 'challenge-verdict partial visible';
+      verdict.innerHTML = `⚠️ Partial: ${matched}/${expectedLines.length} lines match. Check spacing and newlines carefully.`;
+    } else {
+      verdict.className = 'challenge-verdict fail visible';
+      verdict.innerHTML = `❌ Output doesn't match. Look closely at spacing, newlines, and exact wording.`;
+    }
+  }
+  runBtn.textContent = '▶ Submit'; runBtn.disabled = false;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FEATURE 2 — DEBUG MODE
+// ══════════════════════════════════════════════════════════════════════════════
+const DEBUG_CHALLENGES = [
+  {
+    id: 'dbg1', title: 'Missing Semicolon',
+    instructions: 'This program should print "Score: 95" but it won\'t compile.\nFind and fix the bug.',
+    buggy: '#include <stdio.h>\n\nint main() {\n    int score = 95\n    printf("Score: %d\\n", score);\n    return 0;\n}',
+    expected: 'Score: 95',
+    hint: 'Look carefully at the end of each statement line.',
+    solution: 'Line 4 is missing a semicolon: change `int score = 95` to `int score = 95;`\nIn C, every statement must end with a semicolon.'
+  },
+  {
+    id: 'dbg2', title: 'Wrong Format Specifier',
+    instructions: 'This program should print "Average: 87.50" but prints garbage or 0.\nFind the bug.',
+    buggy: '#include <stdio.h>\n\nint main() {\n    float avg = 87.5;\n    printf("Average: %d\\n", avg);\n    return 0;\n}',
+    expected: 'Average: 87.50',
+    hint: 'Look at the format specifier inside printf. What type is avg?',
+    solution: 'Bug: `%d` is for integers but `avg` is a float.\nFix: change `%d` to `%.2f`\nCorrect line: printf("Average: %.2f\\n", avg);'
+  },
+  {
+    id: 'dbg3', title: 'Missing Address-Of',
+    instructions: 'This program should read an integer and print it back, but it crashes.\nFind the bug in the scanf call.',
+    buggy: '#include <stdio.h>\n\nint main() {\n    int num = 42;\n    // Simulating the bug: scanf without &\n    // We\'ll hardcode to show the logic error\n    int x;\n    x = num;  // pretend this was scanf("%d", num)\n    printf("You entered: %d\\n", x);\n    return 0;\n}',
+    expected: 'You entered: 42',
+    hint: 'scanf needs the ADDRESS of the variable to store the value. What operator gives you the address?',
+    solution: 'Bug: scanf("%d", num) is wrong — it passes the VALUE of num, not its address.\nFix: scanf("%d", &num) — the & operator gives the memory address.\nWithout &, scanf tries to write to a random memory location → crash!'
+  },
+  {
+    id: 'dbg4', title: 'Off-by-One Loop',
+    instructions: 'This program should print numbers 1 to 5 but only prints 1 to 4.\nFix the loop condition.',
+    buggy: '#include <stdio.h>\n\nint main() {\n    for (int i = 1; i < 5; i++) {\n        printf("%d\\n", i);\n    }\n    return 0;\n}',
+    expected: '1\n2\n3\n4\n5',
+    hint: 'The loop stops when the condition becomes false. Should 5 be included?',
+    solution: 'Bug: `i < 5` stops the loop at i=5 (4 is the last printed).\nFix: change `i < 5` to `i <= 5`\nThis is called an off-by-one error — very common in C loops!'
+  },
+  {
+    id: 'dbg5', title: 'Assignment vs Comparison',
+    instructions: 'This program should print "x is 10" when x equals 10, but it always prints it regardless of the value.\nFind the bug.',
+    buggy: '#include <stdio.h>\n\nint main() {\n    int x = 5;\n    if (x = 10) {\n        printf("x is 10\\n");\n    } else {\n        printf("x is not 10\\n");\n    }\n    return 0;\n}',
+    expected: 'x is not 10',
+    hint: 'There are two different operators: = (assign) and == (compare). Which should be used in an if condition?',
+    solution: 'Bug: `if (x = 10)` assigns 10 to x, then checks if 10 is truthy (it always is!).\nFix: change `x = 10` to `x == 10` (double equals for comparison).\nThis is one of the most common C bugs — always use == inside if conditions.'
+  },
+  {
+    id: 'dbg6', title: 'Uninitialized Variable',
+    instructions: 'This function should return the sum of 1+2+3+4+5 = 15, but returns garbage.\nFind the uninitialized variable.',
+    buggy: '#include <stdio.h>\n\nint main() {\n    int sum;\n    for (int i = 1; i <= 5; i++) {\n        sum += i;\n    }\n    printf("Sum = %d\\n", sum);\n    return 0;\n}',
+    expected: 'Sum = 15',
+    hint: 'Before adding to sum, does sum have a known starting value?',
+    solution: 'Bug: `int sum;` declares sum without initializing it — it contains a random garbage value.\nFix: `int sum = 0;`\nAlways initialize variables before using them in calculations!'
+  },
+  {
+    id: 'dbg7', title: 'Wrong Return Type',
+    instructions: 'This function should return 2.5 when dividing 5 by 2, but returns 2.\nThe bug is in the division.',
+    buggy: '#include <stdio.h>\n\nfloat divide(int a, int b) {\n    return a / b;\n}\n\nint main() {\n    printf("%.1f\\n", divide(5, 2));\n    return 0;\n}',
+    expected: '2.5',
+    hint: 'When you divide two integers in C, what type is the result?',
+    solution: 'Bug: `a / b` where both a and b are int → integer division → result is 2 (remainder discarded).\nFix: return (float)a / b;  — cast one operand to float first.\nOr: return a / (float)b;\nInteger division truncates — always cast when you need decimal results!'
+  },
+  {
+    id: 'dbg8', title: 'Array Out of Bounds',
+    instructions: 'This program should print the 5 elements of an array, but it accesses memory it shouldn\'t.\nFind the off-by-one in the loop.',
+    buggy: '#include <stdio.h>\n\nint main() {\n    int arr[5] = {10, 20, 30, 40, 50};\n    for (int i = 0; i <= 5; i++) {\n        printf("%d\\n", arr[i]);\n    }\n    return 0;\n}',
+    expected: '10\n20\n30\n40\n50',
+    hint: 'Arrays in C are 0-indexed. An array of size 5 has valid indices 0,1,2,3,4. What is the last valid index?',
+    solution: 'Bug: `i <= 5` goes up to index 5, but the last valid index is 4 (arrays are 0-indexed).\nFix: change `i <= 5` to `i < 5`\nAccessing arr[5] reads memory outside the array — undefined behavior!'
+  },
+];
+
+let activeDebugId  = null;
+let dbgCmEditor    = null;
+let solvedDebugs   = JSON.parse(localStorage.getItem('rdl_solved_dbg') || '[]');
+let hintShown      = false;
+
+function buildDebugGrid() {
+  const grid = document.getElementById('debug-grid');
+  if (!grid) return;
+  grid.innerHTML = DEBUG_CHALLENGES.map(dbg => {
+    const solved = solvedDebugs.includes(dbg.id);
+    return `<div class="debug-card ${solved ? 'solved' : ''}" onclick="openDebug('${dbg.id}')">
+      <div class="debug-card-title">${solved ? '✅ ' : '🐛 '}${dbg.title}</div>
+      <div class="debug-card-hint">${dbg.instructions.split('\n')[0]}</div>
+    </div>`;
+  }).join('');
+}
+
+function openDebug(id) {
+  const dbg = DEBUG_CHALLENGES.find(d => d.id === id);
+  if (!dbg) return;
+  activeDebugId = id;
+  hintShown = false;
+  document.getElementById('dbg-title').textContent = dbg.title;
+  document.getElementById('dbg-instructions').textContent = dbg.instructions;
+  document.getElementById('dbg-hint-text').textContent = dbg.hint;
+  document.getElementById('dbg-hint-box').classList.remove('visible');
+  document.getElementById('dbg-reveal-box').classList.remove('visible');
+  document.getElementById('dbg-output').innerHTML = '<span style="color:var(--text3)">// Fix the bug then click Run & Check</span>';
+  document.getElementById('debug-list').style.display = 'none';
+  document.getElementById('debug-active-panel').classList.add('visible');
+  setTimeout(() => {
+    const container = document.getElementById('dbg-editor-cm');
+    if (!container) return;
+    if (dbgCmEditor) { dbgCmEditor.toTextArea(); dbgCmEditor = null; container.innerHTML = ''; }
+    dbgCmEditor = CodeMirror(container, {
+      value: dbg.buggy,
+      mode: 'text/x-csrc',
+      theme: 'default',
+      lineNumbers: true,
+      matchBrackets: true,
+      autoCloseBrackets: true,
+      styleActiveLine: true,
+      indentUnit: 4,
+      tabSize: 4,
+      autoRefresh: true,
+      extraKeys: {
+        'Tab': cm => cm.somethingSelected() ? cm.indentSelection('add') : cm.replaceSelection('    '),
+        'Ctrl-Space': 'autocomplete',
+      },
+      hintOptions: { hint: CodeMirror.hint.anyword, completeSingle: false }
+    });
+  }, 80);
+}
+
+function closeDebug() {
+  document.getElementById('debug-active-panel').classList.remove('visible');
+  document.getElementById('debug-list').style.display = 'block';
+  activeDebugId = null;
+}
+
+function toggleDebugHint() {
+  const box = document.getElementById('dbg-hint-box');
+  box.classList.toggle('visible');
+}
+
+function revealDebugSolution() {
+  const dbg = DEBUG_CHALLENGES.find(d => d.id === activeDebugId);
+  if (!dbg) return;
+  const box = document.getElementById('dbg-reveal-box');
+  box.innerHTML = '✅ Solution Explanation:\n\n' + escapeHtml(dbg.solution);
+  box.classList.add('visible');
+}
+
+async function runDebug() {
+  const dbg = DEBUG_CHALLENGES.find(d => d.id === activeDebugId);
+  if (!dbg || !dbgCmEditor) return;
+  const code   = sanitizeCode(dbgCmEditor.getValue());
+  const outEl  = document.getElementById('dbg-output');
+  const runBtn = document.querySelector('#tab-debug .editor-run-btn');
+  runBtn.textContent = '⏳ Checking...';
+  runBtn.disabled = true;
+  outEl.innerHTML = '<span style="color:var(--text3)">// Compiling...</span>';
+
+  let rawOutput = '';
+  let compileErr = '';
+  try {
+    const res = await fetch('https://wandbox.org/api/compile.json', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ compiler: 'gcc-head', code, options: '-Wall', stdin: '' })
+    });
+    const d = await res.json();
+    compileErr = d.compiler_error || '';
+    rawOutput  = (d.program_output || '').trim();
+  } catch(e) {
+    try {
+      const body = { source: code, options: { userArguments: '-xc -O0', executeParameters: { args: [], stdin: '' }, compilerOptions: { executorRequest: true }, filters: { execute: true }, tools: [], libraries: [] }, lang: 'c' };
+      const res2 = await fetch('https://godbolt.org/api/compiler/cg122/compile', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify(body) });
+      const d2   = await res2.json();
+      compileErr = (d2.stderr || []).map(l => l.text).join('\n');
+      rawOutput  = (d2.execResult?.stdout || []).map(l => l.text).join('\n').trim();
+    } catch(e2) {
+      outEl.innerHTML = `<span style="color:var(--accent2)">// ❌ Compiler unreachable.</span>`;
+      runBtn.textContent = '▶ Run & Check'; runBtn.disabled = false; return;
+    }
+  }
+
+  if (compileErr) {
+    outEl.innerHTML = `<span style="color:var(--accent2)">⚠️ Still has errors:\n${escapeHtml(compileErr)}\n\n</span><span style="color:var(--text3)">// The bug is still there. Keep looking!</span>`;
+    runBtn.textContent = '▶ Run & Check'; runBtn.disabled = false; return;
+  }
+
+  const expected = dbg.expected.trim();
+  const actual   = rawOutput.trim();
+  if (actual === expected) {
+    outEl.innerHTML = `<span style="color:var(--accent3)">Output: ${escapeHtml(actual)}\n\n✅ CORRECT! You found and fixed the bug!</span>`;
+    if (!solvedDebugs.includes(dbg.id)) {
+      solvedDebugs.push(dbg.id);
+      localStorage.setItem('rdl_solved_dbg', JSON.stringify(solvedDebugs));
+    }
+  } else {
+    outEl.innerHTML = `<span style="color:var(--accent3)">Output: ${escapeHtml(actual)}\n</span><span style="color:var(--text3)">Expected: ${escapeHtml(expected)}\n\n</span><span style="color:var(--accent2)">❌ Not quite right. The bug may still be there.</span>`;
+  }
+  runBtn.textContent = '▶ Run & Check'; runBtn.disabled = false;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FEATURE 4 — C LEARNING ROADMAP
+// ══════════════════════════════════════════════════════════════════════════════
+const ROADMAP_DATA = [
+  {
+    id: 'stage1', name: 'Stage 1 — Foundations', icon: '🏗️',
+    sub: 'Start here — the absolute basics',
+    topics: [
+      { id: 't1',  name: 'What is C? History & uses',              snippet: null },
+      { id: 't2',  name: 'Program structure: #include, main()',    snippet: 'hello' },
+      { id: 't3',  name: 'printf() and format specifiers',         snippet: 'hello' },
+      { id: 't4',  name: 'Variables and data types (int, float, char)', snippet: 'input' },
+      { id: 't5',  name: 'Arithmetic operators (+, -, *, /, %)',   snippet: 'ifelse' },
+      { id: 't6',  name: 'scanf() — reading user input',           snippet: 'input' },
+    ]
+  },
+  {
+    id: 'stage2', name: 'Stage 2 — Control Flow', icon: '🔀',
+    sub: 'Making decisions and repeating actions',
+    topics: [
+      { id: 't7',  name: 'if / else if / else',                    snippet: 'ifelse' },
+      { id: 't8',  name: 'Relational & logical operators',         snippet: 'ifelse' },
+      { id: 't9',  name: 'switch / case / break',                  snippet: 'switch' },
+      { id: 't10', name: 'for loop',                               snippet: 'forloop' },
+      { id: 't11', name: 'while loop',                             snippet: 'whileloop' },
+      { id: 't12', name: 'do-while loop',                          snippet: 'whileloop' },
+      { id: 't13', name: 'break and continue',                     snippet: 'forloop' },
+    ]
+  },
+  {
+    id: 'stage3', name: 'Stage 3 — Functions', icon: '📦',
+    sub: 'Writing reusable blocks of code',
+    topics: [
+      { id: 't14', name: 'Function definition and calling',        snippet: 'functions' },
+      { id: 't15', name: 'Parameters and return values',           snippet: 'functions' },
+      { id: 't16', name: 'Function prototypes',                    snippet: 'functions' },
+      { id: 't17', name: 'void functions',                         snippet: 'functions' },
+      { id: 't18', name: 'Scope: local vs global variables',       snippet: null },
+      { id: 't19', name: 'Storage classes: auto, static, extern',  snippet: null },
+    ]
+  },
+  {
+    id: 'stage4', name: 'Stage 4 — Arrays & Strings', icon: '📋',
+    sub: 'Working with collections of data',
+    topics: [
+      { id: 't20', name: '1D arrays — declaration and access',     snippet: 'arrays' },
+      { id: 't21', name: 'Looping through arrays',                 snippet: 'arrays' },
+      { id: 't22', name: '2D arrays (matrices)',                   snippet: null },
+      { id: 't23', name: 'Strings as char arrays',                 snippet: null },
+      { id: 't24', name: 'String functions: strlen, strcpy, strcat', snippet: null },
+    ]
+  },
+  {
+    id: 'stage5', name: 'Stage 5 — Pointers', icon: '👉',
+    sub: 'The most powerful (and tricky) feature of C',
+    topics: [
+      { id: 't25', name: 'Memory addresses and the & operator',    snippet: 'pointers' },
+      { id: 't26', name: 'Pointer declaration and *',              snippet: 'pointers' },
+      { id: 't27', name: 'Dereferencing pointers',                 snippet: 'pointers' },
+      { id: 't28', name: 'Pointers and arrays',                    snippet: 'pointers' },
+      { id: 't29', name: 'Passing pointers to functions',          snippet: 'pointers' },
+      { id: 't30', name: 'Common pointer bugs (NULL, dangling)',    snippet: null },
+    ]
+  },
+  {
+    id: 'stage6', name: 'Stage 6 — Structures & Files', icon: '🗂️',
+    sub: 'Grouping data and persistent storage',
+    topics: [
+      { id: 't31', name: 'struct — defining and using',            snippet: null },
+      { id: 't32', name: 'typedef with structs',                   snippet: null },
+      { id: 't33', name: 'Arrays of structs',                      snippet: null },
+      { id: 't34', name: 'File I/O: fopen, fclose, fprintf, fscanf', snippet: null },
+      { id: 't35', name: 'Reading and writing text files',         snippet: null },
+    ]
+  },
+];
+
+let roadmapDone    = JSON.parse(localStorage.getItem('rdl_roadmap') || '[]');
+let openStages     = new Set();
+
+function buildRoadmap() {
+  const content = document.getElementById('roadmap-content');
+  const summary = document.getElementById('roadmap-summary');
+  if (!content) return;
+
+  const totalTopics   = ROADMAP_DATA.reduce((s, st) => s + st.topics.length, 0);
+  const doneCount     = roadmapDone.length;
+  const pct           = Math.round((doneCount / totalTopics) * 100);
+  const stagesComplete = ROADMAP_DATA.filter(st => st.topics.every(t => roadmapDone.includes(t.id))).length;
+
+  summary.innerHTML = `
+    <div class="roadmap-stat"><div class="roadmap-stat-num" style="color:var(--accent)">${doneCount}</div><div class="roadmap-stat-label">Topics Done</div></div>
+    <div class="roadmap-stat"><div class="roadmap-stat-num" style="color:var(--accent3)">${pct}%</div><div class="roadmap-stat-label">Complete</div></div>
+    <div class="roadmap-stat"><div class="roadmap-stat-num" style="color:var(--accent2)">${stagesComplete}</div><div class="roadmap-stat-label">Stages Done</div></div>
+    <div class="roadmap-stat"><div class="roadmap-stat-num" style="color:var(--accent4)">${totalTopics - doneCount}</div><div class="roadmap-stat-label">Remaining</div></div>`;
+
+  content.innerHTML = ROADMAP_DATA.map((stage, idx) => {
+    const stageDone    = stage.topics.filter(t => roadmapDone.includes(t.id)).length;
+    const stageTotal   = stage.topics.length;
+    const completed    = stageDone === stageTotal;
+    const unlocked     = idx === 0 || ROADMAP_DATA[idx - 1].topics.every(t => roadmapDone.includes(t.id));
+    const isOpen       = openStages.has(stage.id);
+    const headerClass  = completed ? 'completed' : (unlocked ? 'unlocked' : '');
+
+    return `<div class="roadmap-stage">
+      <div class="roadmap-stage-header ${headerClass}" onclick="toggleRoadmapStage('${stage.id}')">
+        <div class="roadmap-node">${completed ? '✅' : stage.icon}</div>
+        <div class="roadmap-stage-info">
+          <div class="roadmap-stage-name">${stage.name}</div>
+          <div class="roadmap-stage-sub">${stage.sub}</div>
+        </div>
+        <div class="roadmap-stage-pct">${stageDone}/${stageTotal}</div>
+        <div style="color:var(--text3);font-size:12px;margin-left:8px">${isOpen ? '▲' : '▼'}</div>
+      </div>
+      <div class="roadmap-topics ${isOpen ? 'open' : ''}" id="stage-topics-${stage.id}">
+        ${stage.topics.map(t => {
+          const done = roadmapDone.includes(t.id);
+          return `<div class="roadmap-topic-item ${done ? 'done' : ''}" onclick="toggleRoadmapTopic('${t.id}','${stage.id}')">
+            <div class="roadmap-topic-check">${done ? '✓' : ''}</div>
+            <div class="roadmap-topic-name">${t.name}</div>
+            ${t.snippet ? `<span class="roadmap-topic-try" onclick="event.stopPropagation();trySnippetFromRoadmap('${t.snippet}')">Try it →</span>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleRoadmapStage(id) {
+  if (openStages.has(id)) openStages.delete(id);
+  else openStages.add(id);
+  buildRoadmap();
+}
+
+function toggleRoadmapTopic(topicId, stageId) {
+  if (roadmapDone.includes(topicId)) {
+    roadmapDone = roadmapDone.filter(t => t !== topicId);
+  } else {
+    roadmapDone.push(topicId);
+    // Auto-open next stage if this one just completed
+    const stage = ROADMAP_DATA.find(s => s.topics.some(t => t.id === topicId));
+    if (stage && stage.topics.every(t => roadmapDone.includes(t.id))) {
+      const nextIdx = ROADMAP_DATA.indexOf(stage) + 1;
+      if (nextIdx < ROADMAP_DATA.length) openStages.add(ROADMAP_DATA[nextIdx].id);
+    }
+  }
+  localStorage.setItem('rdl_roadmap', JSON.stringify(roadmapDone));
+  buildRoadmap();
+}
+
+function trySnippetFromRoadmap(snippet) {
+  // Switch to editor tab and load the snippet
+  const editorTab = document.querySelector('.code-tab');
+  switchCodeTab('editor', editorTab);
+  setTimeout(() => loadSnippet(snippet), 100);
+}
 
 // ══ SEARCH ════════════════════════════════════════════════════════════════════
 const SEARCH_INDEX = [
