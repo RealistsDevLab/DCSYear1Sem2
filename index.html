@@ -2943,38 +2943,22 @@ int main() {
         <div class="pp-header fade-in">
           <div>
             <div class="pp-title">📋 Past Paper Flashcards</div>
-            <div class="pp-sub">Paste AI-answered text → auto-split into flashcards → Study</div>
+            <div class="pp-sub">Download past papers · Study flashcards in the Flashcards section</div>
           </div>
         </div>
 
-        <!-- Admin section (shown to admins only) -->
+        <!-- Admin upload section (shown to admins only) -->
         <div id="pp-admin-upload" style="display:none">
-
-          <!-- HOW IT WORKS banner -->
-          <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);border-radius:14px;padding:16px 20px;margin-bottom:20px;">
-            <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);font-family:'JetBrains Mono',monospace;margin-bottom:10px;">💡 HOW TO CREATE A DECK</div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;">
-              <div style="font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;line-height:1.7;">
-                <span style="color:var(--accent);">Step 1</span><br>
-                Go to Claude, ChatGPT or any AI. Upload your past paper PDF and say:<br>
-                <span style="color:var(--accent3);font-style:italic;">"Answer every question. Format each as Q: ... A: ..."</span>
-              </div>
-              <div style="font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;line-height:1.7;">
-                <span style="color:var(--accent);">Step 2</span><br>
-                Copy the AI response (Ctrl+A, Ctrl+C)
-              </div>
-              <div style="font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;line-height:1.7;">
-                <span style="color:var(--accent);">Step 3</span><br>
-                Paste it below, name your deck, pick the course and hit Save.
-              </div>
-            </div>
+          <div class="pp-upload-zone" id="pp-dropzone">
+            <input type="file" id="pp-file-input" accept=".pdf" onchange="ppOnFileSelected(this)" />
+            <span class="pp-upload-icon" id="pp-upload-icon">📥</span>
+            <div class="pp-upload-title" id="pp-upload-title">Drop a past paper PDF here</div>
+            <div class="pp-upload-hint" id="pp-upload-hint">or click to browse · PDF only · max 10MB</div>
           </div>
-
-          <!-- Deck name + course -->
-          <div class="pp-meta-row" style="margin-bottom:16px;">
+          <div class="pp-meta-row">
             <div class="form-group">
               <label class="form-label">Deck Name</label>
-              <input class="form-input" id="pp-deck-name" placeholder="e.g. CSC121 Hardware 2024" style="letter-spacing:0" />
+              <input class="form-input" id="pp-deck-name" placeholder="e.g. CSC122 Mock 2024" style="letter-spacing:0" />
             </div>
             <div class="form-group">
               <label class="form-label">Course</label>
@@ -2987,31 +2971,17 @@ int main() {
                 <option value="General">General</option>
               </select>
             </div>
+            <button class="btn btn-primary" id="pp-generate-btn" onclick="ppGenerate()" style="height:48px;align-self:flex-end;white-space:nowrap">
+              ✨ Generate Flashcards
+            </button>
           </div>
+        </div>
 
-          <!-- Paste area -->
-          <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px;">
-            <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:8px;">📋 PASTE AI RESPONSE HERE</div>
-            <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px;">Must use Q: / A: format &nbsp;|&nbsp; One Q&amp;A pair per card</div>
-            <textarea id="pp-paste-input" class="form-input" rows="12"
-              placeholder="Q: Which of the following is not an input device?&#10;A: C. Monitor — A monitor is an output device, not an input device. VDU, Keyboard, and Light Pen are all input devices.&#10;&#10;Q: What is a scanner?&#10;A: A light-sensitive device that converts printed text, drawings or images into digital form.&#10;&#10;(paste your full AI response here...)"
-              style="letter-spacing:0;resize:vertical;width:100%;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;"></textarea>
-            <div style="display:flex;gap:8px;margin-top:12px;">
-              <button class="btn btn-outline" onclick="ppPreviewPaste()" style="flex:1;">👁 Preview Cards</button>
-              <button class="btn btn-primary" onclick="ppSaveFromPaste()" style="flex:1;">💾 Save Deck</button>
-            </div>
-          </div>
-
-          <!-- Preview of detected cards -->
-          <div id="pp-paste-preview" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-              <div style="font-size:11px;font-weight:700;letter-spacing:2px;color:var(--accent);font-family:'JetBrains Mono',monospace;">✅ <span id="pp-paste-count">0</span> CARDS DETECTED</div>
-              <button class="btn btn-outline" style="padding:4px 12px;font-size:11px;color:var(--accent2);border-color:var(--accent2);" onclick="document.getElementById('pp-paste-preview').style.display='none'">✕ Close</button>
-            </div>
-            <div id="pp-paste-cards-list" style="display:flex;flex-direction:column;gap:8px;max-height:320px;overflow-y:auto;"></div>
-            <button class="btn btn-primary" onclick="ppSaveFromPaste()" style="width:100%;margin-top:14px;">💾 Save All Cards as Deck</button>
-          </div>
-
+        <!-- Processing indicator -->
+        <div class="pp-processing" id="pp-processing">
+          <div class="pp-processing-spinner"></div>
+          <div class="pp-processing-text">AI is reading your past paper…</div>
+          <div class="pp-processing-step" id="pp-step-text">Extracting text from PDF</div>
         </div>
 
         <!-- Saved decks -->
@@ -3023,7 +2993,7 @@ int main() {
           </div>
         </div>
 
-        <!-- Downloadable papers -->
+        <!-- Also show original downloadable papers below -->
         <div class="section-title fade-in">📥 Download Past Papers</div>
         <div class="papers-grid fade-in" id="papers-grid"></div>
       </div>
@@ -4858,6 +4828,45 @@ const FLASHCARD_DATA = [
   { course: 'BSM 121', q: 'What is the difference between primary and secondary data?', a: 'Primary: collected firsthand by researcher (surveys, interviews). Secondary: already existing data (books, articles, government reports).' },
   { course: 'BSM 121', q: 'What is Yamane\'s formula used for?', a: 'Calculating sample size: n = N / (1 + N*e²). N = population size, e = margin of error (usually 0.05).' },
   { course: 'BSM 121', q: 'What is the difference between null and alternative hypothesis?', a: 'Null (H0): states no effect or relationship exists. Alternative (H1): states an effect or relationship does exist.' },
+  // CSC 121 — Past Paper (Recess 2024) — Section A MCQs
+  { course: 'CSC 121', q: 'Q1. Which of the following is NOT an input device?\nA. VDU  B. Keyboard  C. Monitor  D. Light Pen', a: 'Answer: C. Monitor\n\nBoth VDU (Visual Display Unit) and Monitor are output devices. A Keyboard and Light Pen are input devices. The question accepts either A or C — Monitor is the standard answer.' },
+  { course: 'CSC 121', q: 'Q2. A light-sensitive device that converts printed text, drawings or images into digital form is called ____', a: 'Answer: C. Scanner\n\nA Scanner uses light sensors to convert physical documents and images into digital data. A Plotter and Printer are output devices. OMR reads marks on paper but does not scan images.' },
+  { course: 'CSC 121', q: 'Q3. Sometimes the mouse pointer moves erratically. This is because of ___', a: 'Answer: C. Mouse ball is dirty\n\nA dirty mouse ball (in older ball mice) causes inconsistent tracking. Dust and grime prevent the ball from rolling smoothly, making the pointer jump randomly.' },
+  { course: 'CSC 121', q: 'Q4. A specialized program that allows a user to utilize a specific application is classified as ___', a: 'Answer: A. Application programs\n\nApplication programs (also called application software) are designed for specific tasks — e.g. word processors, spreadsheets, games. They serve end-user purposes directly.' },
+  { course: 'CSC 121', q: 'Q5. ____ is known as the translator for low-level programming language', a: 'Answer: D. Assembler\n\nAn Assembler translates assembly language (low-level) into machine code. A Compiler translates high-level languages. A Linker combines object files. A Loader loads programs into memory.' },
+  { course: 'CSC 121', q: 'Q6. Information travels between components on the Motherboard through?', a: 'Answer: B. Busses\n\nBuses are electrical pathways on the motherboard that carry data, addresses, and control signals between the CPU, RAM, and other components. CMOS stores BIOS settings; Bays are physical drive slots.' },
+  { course: 'CSC 121', q: 'Q7. The data bus is ___ directional', a: 'Answer: C. Bidirectional\n\nThe data bus carries data both TO and FROM the CPU, so it is bidirectional. The address bus is unidirectional (CPU sends addresses only). The control bus is also unidirectional.' },
+  { course: 'CSC 121', q: 'Q8. Which is the secondary memory of a data processing system?', a: 'Answer: B. Hard Disk (also C. Floppy Disk)\n\nSecondary memory is non-volatile storage external to the CPU — Hard Disk and Floppy Disk both qualify. CPU and ALU are processing units, not memory. Hard Disk is the most correct modern answer.' },
+  { course: 'CSC 121', q: 'Q9. How many bits are used in the data bus?', a: 'Answer: C. 8 bits (minimum standard)\n\nA basic data bus is 8 bits wide. Modern systems use 32-bit or 64-bit buses. In this context the answer is 8 — representing the standard minimum data bus width.' },
+  { course: 'CSC 121', q: 'Q10. Which command divides the surface of a blank disk into sectors and assigns a unique address to each?', a: 'Answer: B. Format\n\nThe FORMAT command performs low-level disk preparation — creating sectors, tracks and assigning addresses. FAT is a file system table, not a command. CHKDSK checks disk errors. VER shows OS version.' },
+  { course: 'CSC 121', q: 'Q11. Which is the MOST common reason for a computer to overheat?', a: 'Answer: C. Blocked ventilation fans or dust buildup\n\nDust accumulates on fans and heatsinks, blocking airflow and trapping heat. This is the leading cause of overheating. Insufficient RAM causes slowness, not heat. Internet has no effect on temperature.' },
+  { course: 'CSC 121', q: 'Q12. When troubleshooting a computer that will not boot, the first step should be to:', a: 'Answer: C. Check for loose cables or faulty connections\n\nAlways start with the simplest physical checks — power cables, data cables, RAM seating. Reinstalling the OS or running a virus scan requires the computer to boot first.' },
+  { course: 'CSC 121', q: 'Q13. To safely replace a component inside a computer, you should:', a: 'Answer: C. Ground yourself to prevent Electrostatic Discharge (ESD)\n\nESD can permanently damage components. Use an anti-static wrist strap connected to the case or touch the metal case before handling parts. Never work on a live machine.' },
+  { course: 'CSC 121', q: 'Q14. Which of the following tools is NOT typically used for computer maintenance and repair?', a: 'Answer: C. Power drill\n\nA power drill is not a computer repair tool. A Multimeter measures voltage/current, an Anti-static wrist strap prevents ESD, and Thermal paste is applied between CPU and heatsink.' },
+  { course: 'CSC 121', q: 'Q15. When diagnosing a slow-performing computer, it is important to check for:', a: 'Answer: B. Unnecessary startup programs\n\nPrograms that auto-start consume RAM and CPU at boot, slowing the system. A damaged monitor does not affect speed. A loose keyboard connection is unrelated. B is the most direct cause of slowness.' },
+  { course: 'CSC 121', q: 'Q16. A symptom of a failing hard drive might include:', a: 'Answer: C. Frequent freezing or unexpected shutdowns\n\nA failing HDD shows symptoms like freezing, clicking sounds, slow file access, bad sectors and unexpected shutdowns. Blurry screen is a display issue. Wi-Fi problems are network issues.' },
+  { course: 'CSC 121', q: 'Q17. To identify faulty hardware components, a technician might use a diagnostic tool called:', a: 'Answer: C. POST (Power-On Self-Test)\n\nPOST runs automatically at startup and tests CPU, RAM, keyboard and other hardware. Beep codes and error messages indicate which component failed. Word processors and browsers are software tools.' },
+  { course: 'CSC 121', q: 'Q18. When replacing a component inside a computer, it is important to:', a: 'Answer: C. Follow the manufacturer\'s installation instructions\n\nManufacturer instructions ensure correct seating, torque and compatibility. Loose screws can cause short circuits. Force can break connectors. Touching all components spreads static electricity.' },
+  { course: 'CSC 121', q: 'Q19. When cleaning the inside of a computer, it is important to:', a: 'Answer: C. Use compressed air to blow out dust\n\nCompressed air safely removes dust without moisture or static. A vacuum creates static discharge. Water and damp cloths will short-circuit components and cause corrosion.' },
+  { course: 'CSC 121', q: 'Q20. Which of the following is NOT a preventative maintenance task for computers?', a: 'Answer: C. Overclocking the CPU\n\nOverclocking increases processor speed beyond rated limits — it increases heat and stress and reduces component lifespan. Updating software, defragmenting HDDs and backing up data are all valid maintenance tasks.' },
+
+  // CSC 121 — Past Paper (Recess 2024) — Section B Long Questions
+  { course: 'CSC 121', q: 'B1(a)(i). Explain the purpose of an Input device', a: 'An input device is hardware used to enter data and instructions into the computer for processing. It converts human actions or real-world data into digital signals the CPU can process.\n\nExamples: Keyboard (types text), Mouse (pointing), Scanner (digitises documents), Microphone (captures audio), Webcam (captures video).\n\nWithout input devices, the user cannot communicate with or control the computer.' },
+  { course: 'CSC 121', q: 'B1(a)(ii). Explain the purpose of an Output device', a: 'An output device receives processed data from the CPU and presents it in a human-readable or usable form.\n\nExamples: Monitor (displays visuals), Printer (produces hard copy), Speakers (produce sound), Projector (displays large-scale visuals).\n\nOutput devices complete the input-process-output cycle by delivering results back to the user.' },
+  { course: 'CSC 121', q: 'B1(a)(iii). Explain the purpose of Main Memory', a: 'Main memory (primary storage) holds data and instructions currently being used by the CPU. It is directly accessible by the processor.\n\nTypes:\n• RAM (Random Access Memory) — volatile, temporary, stores running programs\n• ROM (Read-Only Memory) — non-volatile, stores BIOS/firmware\n\nMain memory acts as the working space of the computer. Larger RAM = more programs running simultaneously without slowdown.' },
+  { course: 'CSC 121', q: 'B1(b). Explain the difference between application software and system software', a: 'System Software: manages and controls hardware resources, providing a platform for other software to run. Examples: Operating systems (Windows, Linux), device drivers, BIOS, utility programs.\n\nApplication Software: designed for specific end-user tasks. Runs on top of system software. Examples: Microsoft Word (word processing), Chrome (browsing), VLC (media), Photoshop (editing).\n\nKey difference: System software runs the machine; application software serves the user.' },
+  { course: 'CSC 121', q: 'B1(c). Give two examples of application software and one example of system software', a: 'Application Software Examples:\n1. Microsoft Word — used for creating and editing documents\n2. Google Chrome — used for browsing the internet\n\nSystem Software Example:\n1. Microsoft Windows / Ubuntu Linux — manages all hardware and provides environment for applications to run.' },
+  { course: 'CSC 121', q: 'B2(a). Explain the meaning of an Operating System in a computer system', a: 'An Operating System (OS) is system software that acts as an intermediary between the user and computer hardware. It manages all hardware resources and provides services for application programs.\n\nThe OS controls the CPU, memory, storage, input/output devices and user interface. Without an OS, users cannot interact with the computer.\n\nExamples: Windows 11, Ubuntu, macOS, Android.' },
+  { course: 'CSC 121', q: 'B2(b). Explain three phases taken by an Operating System during its installation', a: 'Phase 1 — Pre-installation / Setup Phase:\nThe installer checks hardware compatibility, collects user preferences (language, region, partition), and prepares the disk. The installation media (USB/DVD) boots and loads setup files.\n\nPhase 2 — Copying and Installation Phase:\nOS files are copied from the installation media to the hard disk. The installer configures the boot loader (e.g. GRUB or Windows Boot Manager) so the OS can start.\n\nPhase 3 — Post-installation / Configuration Phase:\nThe system reboots into the new OS. Device drivers are installed, user accounts are created, updates are applied, and initial settings (network, display, time zone) are configured.' },
+  { course: 'CSC 121', q: 'B2(c). Discuss any five functions performed by the Operating System', a: '1. Process Management — The OS schedules and manages running programs (processes), allocating CPU time to each using algorithms like Round Robin or Priority Scheduling.\n\n2. Memory Management — Allocates and deallocates RAM to processes. Uses virtual memory (paging/swapping) when physical RAM is full.\n\n3. File System Management — Organises data into files and directories on storage devices. Controls read/write permissions and maintains file integrity.\n\n4. Device Management — Controls all input/output devices through device drivers. Manages communication between hardware and software.\n\n5. Security and Access Control — Authenticates users (login), enforces access permissions, protects files from unauthorised access, and manages firewalls and antivirus integration.' },
+  { course: 'CSC 121', q: 'B3. State five factors to consider before purchasing application software', a: '1. Compatibility — The software must be compatible with the existing operating system and hardware specifications (RAM, processor, storage).\n\n2. Cost / Budget — Consider the purchase price, licensing fees (one-time vs subscription), and total cost of ownership including updates.\n\n3. User Requirements — The software must meet the specific needs of the users and organisation — features, ease of use, training needed.\n\n4. Technical Support — Availability of vendor support, documentation, updates and a user community for troubleshooting.\n\n5. Security — The software should be from a reputable vendor, free from malware, regularly updated with security patches, and safe for organisational data.' },
+  { course: 'CSC 121', q: 'B3(b). Why is the motherboard the first element installed but the last removed during assembly/disassembly?', a: 'The motherboard is the central hub of the computer — every other component connects to it directly or indirectly.\n\nInstalled FIRST because:\n• All other components (CPU, RAM, GPU, storage, PSU cables) mount onto or plug into the motherboard\n• It must be secured to the case before anything can be connected\n• Installing other components first would block access and risk damage\n\nRemoved LAST because:\n• All connected components must be detached first (RAM, CPU, GPU, power cables, data cables, cooling)\n• Removing the motherboard while components are attached risks bending pins and breaking connectors\n• It sits at the base of the case — removing it before everything else is physically impossible\n\nIn short: motherboard is the foundation that everything builds upon.' },
+  { course: 'CSC 121', q: 'B4(a). A desktop PC is making a loud whirring noise — what are 3 potential causes?', a: '1. Failing or obstructed cooling fan — A fan with worn bearings, bent blades or dust buildup spins unevenly and produces loud whirring or rattling sounds.\n\n2. Hard Drive Disk (HDD) failure — A failing mechanical hard drive produces clicking, grinding or whirring noises as the read/write head struggles to function.\n\n3. Loose component or cable — A power cable, side panel or PCIe card that is not fully secured can vibrate against the case and produce a whirring or buzzing sound.' },
+  { course: 'CSC 121', q: 'B4(b). How would you diagnose a loud whirring noise in a desktop PC?', a: '1. Listen carefully — Identify which area of the case the noise comes from (front, back, inside). This narrows down the source.\n\n2. Open the case (powered off) — Visually inspect fans for dust buildup, bent blades, loose mounts or obstructions.\n\n3. Power on and observe — Carefully watch all fans (CPU fan, case fans, GPU fan, PSU fan) while running to see which one wobbles or sounds abnormal.\n\n4. Temporarily stop each fan — Use a pencil to briefly stop one fan at a time (for less than 2 seconds) to isolate which one causes the noise. Never stop the CPU fan for long.\n\n5. Check hard drives — Use diagnostic software (CrystalDiskInfo, HD Tune) to check HDD health status. Listen for clicking or grinding distinct from fan noise.\n\n6. Check for loose parts — Press on PCIe cards, side panels and cables gently while running to see if the noise changes.' },
+  { course: 'CSC 121', q: 'B4(c). What are five possible solutions to a loud whirring noise in a desktop PC?', a: '1. Clean the fans — Use compressed air to blow out dust from all fans and heatsinks. Dust is the most common cause and cleaning often resolves the noise immediately.\n\n2. Replace the faulty fan — If a fan has failed bearings it cannot be repaired. Replace the CPU fan, case fan, GPU fan or PSU fan depending on which is faulty.\n\n3. Replace the Hard Drive — If the HDD is the source, back up all data immediately and replace it with a new HDD or SSD. SSDs have no moving parts and are silent.\n\n4. Secure loose components — Reseat all PCIe cards, tighten all screws on case panels, and reroute cables away from fans.\n\n5. Apply new thermal paste and improve cooling — If the CPU fan is spinning at maximum because the processor is overheating, clean and reapply thermal paste and improve case airflow with additional fans.' },
+  { course: 'CSC 121', q: "B5(a). Sarah's laptop shuts down unexpectedly and the fan runs loudly — explain four initial troubleshooting steps", a: "1. Check the laptop's air vents — Physically inspect the vents on the bottom and sides for dust blockage. A clogged vent prevents hot air from escaping, causing thermal shutdown.\n\n2. Monitor CPU temperature — Use software like HWMonitor or SpeedFan to check if the CPU is exceeding safe temperatures (usually above 90°C triggers shutdown).\n\n3. Check running processes — Open Task Manager and look for programs consuming excessive CPU or RAM, which generates abnormal heat even at idle.\n\n4. Place laptop on a hard flat surface — Using a laptop on a bed or pillow blocks bottom vents. Testing on a table isolates whether the environment is causing overheating." },
+  { course: 'CSC 121', q: "B5(b). The laptop is overheating due to dust. How do you explain the issue to Sarah and recommend a solution?", a: 'Explanation to Sarah:\n"Sarah, after checking your laptop I found that the internal cooling system is heavily clogged with dust. Over time, dust builds up inside the laptop and blocks the fan and vents. This prevents hot air from escaping, so the processor overheats. When the temperature gets too high, the laptop automatically shuts itself down to prevent damage — that is why it keeps switching off."\n\nRecommended Solution:\n"The solution is to clean the inside of your laptop. We will open the casing, use compressed air to blow out all the dust from the fan, heatsink and vents, and apply fresh thermal paste between the processor and heatsink. This will restore proper cooling. After cleaning, your laptop should run quietly and stop shutting down. I also recommend you avoid using the laptop on soft surfaces like beds, and bring it in for cleaning every 6-12 months."' },
+  { course: 'CSC 121', q: 'B5(c). After cleaning the laptop and running a stress test with normal temperatures — what do you do next?', a: '1. Inform the customer — Tell Sarah the laptop is now running within safe temperature limits and the overheating issue has been resolved.\n\n2. Run a full system check — Verify all hardware is functioning correctly: check RAM with MemTest, run a full antivirus scan, verify all drivers are up to date.\n\n3. Document the repair — Record what was done (dust cleaning, thermal paste replacement, components checked) for future reference and warranty purposes.\n\n4. Provide maintenance advice — Advise Sarah to use the laptop on hard surfaces, clean the vents with compressed air every 6 months, and return if the fan noise or shutdowns recur.' },
 ];
 
 let activeFilter = 'All';
@@ -5439,250 +5448,94 @@ async function deleteUploadedFile(course, key, public_id) {
   loadFileManage();
 }
 
-// ══ PAST PAPERS FLASHCARDS ══════════════════════════════════════════════════
+// ══ PAST PAPERS AI FLASHCARDS ════════════════════════════════════════════════
 
 // ── State ─────────────────────────────────────────────────────────────────────
-var ppCurrentDeck  = [];
-var ppCurrentIndex = 0;
-var ppShuffled     = false;
-var ppShuffleOrder = [];
-var ppIsFlipped    = false;
-var ppParsedCards  = [];
+let ppCurrentDeck  = [];
+let ppCurrentIndex = 0;
+let ppShuffled     = false;
+let ppShuffleOrder = [];
+let ppIsFlipped    = false;
 
-// ── Init ───────────────────────────────────────────────────────────────────────
+// ── Show/init when view opens ──────────────────────────────────────────────────
 async function ppInit() {
   document.getElementById('pp-admin-upload').style.display = isAdmin ? 'block' : 'none';
   await ppLoadDecks();
+
+  // Drag & drop
+  const dz = document.getElementById('pp-dropzone');
+  if (dz && !dz._ppDragSetup) {
+    dz._ppDragSetup = true;
+    dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+    dz.addEventListener('drop', e => {
+      e.preventDefault(); dz.classList.remove('dragover');
+      const f = e.dataTransfer.files[0];
+      if (f && f.type === 'application/pdf') {
+        document.getElementById('pp-file-input').files = e.dataTransfer.files;
+        ppOnFileSelected(document.getElementById('pp-file-input'));
+      }
+    });
+  }
 }
 
-// ── Load decks ─────────────────────────────────────────────────────────────────
+// ── Load decks from Firebase ───────────────────────────────────────────────────
 async function ppLoadDecks() {
-  var grid = document.getElementById('pp-decks-grid');
+  const grid = document.getElementById('pp-decks-grid');
   if (!grid) return;
   grid.innerHTML = '<div class="pp-empty"><span class="pp-empty-icon">⏳</span><div class="pp-empty-text">Loading…</div></div>';
-  if (!window.FB_READY) {
-    grid.innerHTML = '<div class="pp-empty"><span class="pp-empty-icon">🔌</span><div class="pp-empty-text">Firebase not connected</div></div>';
-    return;
-  }
-  var decks = await window.FB.getPaperDecks();
+  if (!window.FB_READY) { grid.innerHTML = '<div class="pp-empty"><span class="pp-empty-icon">🔌</span><div class="pp-empty-text">Firebase not connected</div></div>'; return; }
+  const decks = await window.FB.getPaperDecks();
   if (!decks.length) {
-    grid.innerHTML = '<div class="pp-empty"><span class="pp-empty-icon">🗂️</span><div class="pp-empty-text">No decks yet.' +
-      (isAdmin ? ' Paste an AI-answered paper above to get started.' : ' Ask your admin to create a deck.') + '</div></div>';
+    grid.innerHTML = '<div class="pp-empty"><span class="pp-empty-icon">🗂️</span><div class="pp-empty-text">No decks yet.' + (isAdmin ? ' Upload a past paper above to get started.' : ' Ask your admin to upload a past paper.') + '</div></div>';
     return;
   }
-  grid.innerHTML = decks.map(function(d) {
-    return '<div class="pp-deck-card fade-in" onclick="ppOpenStudy(\'' + d._key + '\')">' +
-      '<span class="pp-deck-icon">📚</span>' +
-      '<div class="pp-deck-name">' + escHtml(d.name) + '</div>' +
-      '<div class="pp-deck-meta">' + escHtml(d.course || '') + ' · ' + (d.cards ? d.cards.length : 0) + ' cards · ' + new Date(d.ts).toLocaleDateString() + '</div>' +
-      '<div class="pp-deck-footer">' +
-        '<span class="pp-deck-count">' + (d.cards ? d.cards.length : 0) + ' flashcards</span>' +
-        (isAdmin ? '<button class="pp-deck-delete" onclick="event.stopPropagation();ppDeleteDeck(\'' + d._key + '\')" title="Delete">🗑</button>' : '') +
-      '</div>' +
-    '</div>';
-  }).join('');
+  grid.innerHTML = decks.map(d => `
+    <div class="pp-deck-card fade-in" onclick="ppOpenStudy('${d._key}')">
+      <span class="pp-deck-icon">📚</span>
+      <div class="pp-deck-name">${escHtml(d.name)}</div>
+      <div class="pp-deck-meta">${escHtml(d.course||'')} · ${d.cards?.length||0} cards · ${new Date(d.ts).toLocaleDateString()}</div>
+      <div class="pp-deck-footer">
+        <span class="pp-deck-count">${d.cards?.length||0} flashcards</span>
+        ${isAdmin ? `<button class="pp-deck-delete" onclick="event.stopPropagation();ppDeleteDeck('${d._key}')" title="Delete">🗑</button>` : ''}
+      </div>
+    </div>
+  `).join('');
 }
 
-// ── Parse pasted Q:/A: text into cards ────────────────────────────────────────
-function ppParseQA(text) {
-  var cards = [];
-  // Split on Q: markers
-  var blocks = text.split(/\n(?=Q\s*[:.])/i);
-  blocks.forEach(function(block) {
-    block = block.trim();
-    if (!block) return;
-    // Find Q: line and A: line
-    var qMatch = block.match(/^Q\s*[:.]\s*(.+?)(?=\nA\s*[:.])|\bQ\s*[:.]\s*(.+)/is);
-    var aMatch = block.match(/A\s*[:.]\s*([\s\S]+)/i);
-    if (qMatch && aMatch) {
-      var q = (qMatch[1] || qMatch[2] || '').trim();
-      var a = aMatch[1].trim();
-      if (q && a) cards.push({ q: q, a: a });
-    } else if (!aMatch && block.match(/^Q\s*[:.]/i)) {
-      // Q with no A yet — still add with placeholder
-      var q2 = block.replace(/^Q\s*[:.]\s*/i,'').trim();
-      if (q2) cards.push({ q: q2, a: '(No answer provided)' });
-    }
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function ppFileToBase64(file) {
+  return new Promise(function(res, rej) {
+    var r = new FileReader();
+    r.onload  = function() { res(r.result.split(',')[1]); };
+    r.onerror = function() { rej(new Error('File read failed')); };
+    r.readAsDataURL(file);
   });
-  return cards;
 }
-
-// ── Preview parsed cards ───────────────────────────────────────────────────────
-function ppPreviewPaste() {
-  var text = document.getElementById('pp-paste-input').value.trim();
-  if (!text) { alert('Please paste your AI response first.'); return; }
-  ppParsedCards = ppParseQA(text);
-  if (!ppParsedCards.length) {
-    alert('No Q:/A: pairs found.\n\nMake sure your text uses this format:\n\nQ: Your question here\nA: Your answer here');
-    return;
-  }
-  document.getElementById('pp-paste-count').textContent = ppParsedCards.length;
-  var list = document.getElementById('pp-paste-cards-list');
-  list.innerHTML = ppParsedCards.map(function(c, i) {
-    return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:12px;">' +
-      '<div style="font-size:10px;color:var(--accent);font-family:\'JetBrains Mono\',monospace;margin-bottom:4px;letter-spacing:1px;">CARD ' + (i+1) + '</div>' +
-      '<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px;">' + escHtml(c.q) + '</div>' +
-      '<div style="font-size:12px;color:var(--text2);line-height:1.5;">' + escHtml(c.a) + '</div>' +
-    '</div>';
-  }).join('');
-  document.getElementById('pp-paste-preview').style.display = 'block';
+function ppOnFileSelected(input) {
+  var f = input.files[0];
+  if (!f) return;
+  var sizeMB = (f.size / (1024*1024)).toFixed(1);
+  document.getElementById('pp-upload-icon').textContent = '✅';
+  document.getElementById('pp-upload-title').textContent = f.name;
+  document.getElementById('pp-upload-hint').textContent = sizeMB + ' MB · PDF ready · Click to change';
+  document.getElementById('pp-dropzone').style.borderColor = 'var(--accent3)';
+  document.getElementById('pp-dropzone').style.background  = 'rgba(67,233,123,0.05)';
 }
-
-// ── Save parsed cards as a deck ───────────────────────────────────────────────
-async function ppSaveFromPaste() {
-  if (!window.FB_READY) { alert('Firebase not connected.'); return; }
-  var name   = document.getElementById('pp-deck-name').value.trim();
-  var course = document.getElementById('pp-deck-course').value;
-  if (!name) { alert('Please enter a deck name first.'); return; }
-  // Parse if not already previewed
-  if (!ppParsedCards.length) {
-    var text = document.getElementById('pp-paste-input').value.trim();
-    if (!text) { alert('Please paste your AI response first.'); return; }
-    ppParsedCards = ppParseQA(text);
-  }
-  if (!ppParsedCards.length) {
-    alert('No Q:/A: pairs found. Make sure your AI used the Q: / A: format.');
-    return;
-  }
-  await window.FB.savePaperDeck({ name: name, course: course, cards: ppParsedCards, ts: Date.now() });
-  var saved = ppParsedCards.length;
-  ppParsedCards = [];
-  document.getElementById('pp-paste-input').value = '';
-  document.getElementById('pp-paste-preview').style.display = 'none';
-  document.getElementById('pp-deck-name').value = '';
-  alert('✅ ' + saved + ' flashcards saved to deck "' + name + '"!');
-  ppLoadDecks();
+function ppSetProcessing(active, text) {
+  var el = document.getElementById('pp-processing');
+  if (el) el.classList.toggle('active', active);
+  var btn = document.getElementById('pp-generate-btn');
+  if (btn) btn.disabled = active;
+  var txt = document.getElementById('pp-processing-text');
+  if (text && txt) txt.textContent = text;
 }
-
-// ── Open study overlay ────────────────────────────────────────────────────────
-async function ppOpenStudy(deckKey) {
-  if (!window.FB_READY) return;
-  var decks = await window.FB.getPaperDecks();
-  var deck  = decks.find(function(d) { return d._key === deckKey; });
-  if (!deck || !deck.cards || !deck.cards.length) { alert('This deck is empty.'); return; }
-
-  ppCurrentDeck  = deck.cards;
-  ppCurrentIndex = 0;
-  ppShuffled     = false;
-  ppShuffleOrder = Array.from({length: deck.cards.length}, function(_, i){ return i; });
-  ppIsFlipped    = false;
-
-  document.getElementById('pp-study-deck-name').textContent = deck.name;
-  document.getElementById('pp-shuffle-btn').textContent = '⚡ Shuffle: OFF';
-  document.getElementById('pp-shuffle-btn').classList.remove('on');
-  document.getElementById('pp-done-screen').classList.remove('active');
-  document.getElementById('pp-card-scene').style.display = 'block';
-  document.getElementById('pp-study-nav').style.display  = 'flex';
-  ppRenderCard();
-  document.getElementById('pp-study-overlay').classList.add('active');
-  document.body.style.overflow = 'hidden';
+function ppSetStep(text) {
+  var el = document.getElementById('pp-step-text');
+  if (el) el.textContent = text;
 }
-
-function ppRenderCard() {
-  var total = ppCurrentDeck.length;
-  var idx   = ppShuffleOrder[ppCurrentIndex];
-  var card  = ppCurrentDeck[idx];
-  ppIsFlipped = false;
-  document.getElementById('pp-card-inner').classList.remove('flipped');
-  document.getElementById('pp-card-q').textContent = card.q;
-  document.getElementById('pp-card-a').textContent = card.a;
-  var label = (ppCurrentIndex + 1) + ' / ' + total;
-  document.getElementById('pp-card-num').textContent  = label;
-  document.getElementById('pp-card-num2').textContent = label;
-  document.getElementById('pp-progress-bar').style.width = ((ppCurrentIndex + 1) / total * 100) + '%';
-  document.getElementById('pp-prev-btn').disabled = (ppCurrentIndex === 0);
-  document.getElementById('pp-next-btn').textContent = ppCurrentIndex === total - 1 ? 'Finish ✓' : 'Next →';
-}
-
-function ppFlipCard() {
-  ppIsFlipped = !ppIsFlipped;
-  document.getElementById('pp-card-inner').classList.toggle('flipped', ppIsFlipped);
-}
-
-function ppNext() {
-  if (ppCurrentIndex >= ppCurrentDeck.length - 1) {
-    document.getElementById('pp-card-scene').style.display = 'none';
-    document.getElementById('pp-study-nav').style.display  = 'none';
-    document.getElementById('pp-done-screen').classList.add('active');
-    document.getElementById('pp-progress-bar').style.width = '100%';
-    return;
-  }
-  ppCurrentIndex++;
-  ppRenderCard();
-}
-
-function ppPrev() {
-  if (ppCurrentIndex <= 0) return;
-  ppCurrentIndex--;
-  ppRenderCard();
-}
-
-function ppToggleShuffle() {
-  ppShuffled = !ppShuffled;
-  var btn = document.getElementById('pp-shuffle-btn');
-  if (ppShuffled) {
-    var arr = Array.from({length: ppCurrentDeck.length}, function(_, i){ return i; });
-    for (var i = arr.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
-    }
-    ppShuffleOrder = arr;
-    btn.textContent = '⚡ Shuffle: ON'; btn.classList.add('on');
-  } else {
-    ppShuffleOrder = Array.from({length: ppCurrentDeck.length}, function(_, i){ return i; });
-    btn.textContent = '⚡ Shuffle: OFF'; btn.classList.remove('on');
-  }
-  ppCurrentIndex = 0; ppRenderCard();
-}
-
-function ppRestartDeck() {
-  ppCurrentIndex = 0; ppIsFlipped = false;
-  if (ppShuffled) ppToggleShuffle();
-  document.getElementById('pp-done-screen').classList.remove('active');
-  document.getElementById('pp-card-scene').style.display = 'block';
-  document.getElementById('pp-study-nav').style.display  = 'flex';
-  ppRenderCard();
-}
-
-function ppCloseStudy() {
-  document.getElementById('pp-study-overlay').classList.remove('active');
-  document.body.style.overflow = '';
-}
-
-async function ppDeleteDeck(key) {
-  if (!confirm('Delete this deck? This cannot be undone.')) return;
-  await window.FB.deletePaperDeck(key);
-  ppLoadDecks();
-}
-
-document.addEventListener('keydown', function(e) {
-  var overlay = document.getElementById('pp-study-overlay');
-  if (!overlay || !overlay.classList.contains('active')) return;
-  if (e.key === 'ArrowRight') ppNext();
-  if (e.key === 'ArrowLeft')  ppPrev();
-  if (e.key === ' ')          { e.preventDefault(); ppFlipCard(); }
-  if (e.key === 'Escape')     ppCloseStudy();
-});
-
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-async function addQuizQuestion() {
-  if (!window.FB_READY) { alert('Firebase not connected.'); return; }
-  const qid = document.getElementById('add-q-quiz').value;
-  const q   = document.getElementById('add-q-text').value.trim();
-  const a   = document.getElementById('add-q-a').value.trim();
-  const b   = document.getElementById('add-q-b').value.trim();
-  const c   = document.getElementById('add-q-c').value.trim();
-  const d   = document.getElementById('add-q-d').value.trim();
-  const ans = parseInt(document.getElementById('add-q-ans').value);
-  const exp = document.getElementById('add-q-exp').value.trim();
-  if (!q||!a||!b||!c||!d) { alert('Fill in all fields.'); return; }
-  await window.FB.saveQuestion(qid, { q, options:[a,b,c,d], answer:ans, explanation:exp||'No explanation provided.' });
-  ['add-q-text','add-q-a','add-q-b','add-q-c','add-q-d','add-q-exp'].forEach(id => document.getElementById(id).value='');
-  document.getElementById('quiz-add-status').textContent = '✅ Question added! It will appear in the quiz.';
-  setTimeout(()=>document.getElementById('quiz-add-status').textContent='', 3000);
 }
 
 // ══ ADD FLASHCARD ══════════════════════════════════════════════════════════════
