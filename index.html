@@ -1574,9 +1574,9 @@ body {
 }
 
 .flashcard {
-  height: 280px;
   perspective: 1000px;
-  cursor: pointer;
+  min-height: 300px;
+  height: 300px;
 }
 
 .flashcard-inner {
@@ -1604,6 +1604,7 @@ body {
   background: var(--card);
   border: 1px solid var(--border);
   justify-content: center;
+  cursor: pointer;
 }
 
 .flashcard-back {
@@ -1620,6 +1621,7 @@ body {
   text-transform: uppercase;
   margin-bottom: 8px;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .flashcard-front .flashcard-label { color: var(--text3); }
@@ -1632,7 +1634,7 @@ body {
   line-height: 1.4;
   overflow: hidden;
   display: -webkit-box;
-  -webkit-line-clamp: 5;
+  -webkit-line-clamp: 6;
   -webkit-box-orient: vertical;
 }
 
@@ -1641,23 +1643,27 @@ body {
   color: var(--text2);
   line-height: 1.6;
   font-family: 'JetBrains Mono', monospace;
-  overflow-y: auto;
+  overflow-y: scroll;
   flex: 1;
-  padding-right: 4px;
+  padding-right: 6px;
   white-space: pre-wrap;
+  cursor: text;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
-.flashcard-a::-webkit-scrollbar { width: 3px; }
-.flashcard-a::-webkit-scrollbar-track { background: transparent; }
+.flashcard-a::-webkit-scrollbar { width: 4px; }
+.flashcard-a::-webkit-scrollbar-track { background: rgba(108,99,255,0.1); border-radius: 2px; }
 .flashcard-a::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 2px; }
 
 .flashcard-hint {
-  margin-top: 8px;
+  margin-top: 6px;
   font-size: 10px;
   color: var(--text3);
   font-family: 'JetBrains Mono', monospace;
   text-align: right;
   flex-shrink: 0;
+  cursor: pointer;
 }
 
 .flashcard-filter {
@@ -4901,21 +4907,32 @@ function buildFlashcards() {
   const filtered = activeFilter === 'All' ? FLASHCARD_DATA : FLASHCARD_DATA.filter(f => f.course === activeFilter);
 
   grid.innerHTML = filtered.map((card, i) => `
-    <div class="flashcard" id="fc-${i}" onclick="flipCard(this)">
+    <div class="flashcard" id="fc-${i}">
       <div class="flashcard-inner">
-        <div class="flashcard-front">
+        <div class="flashcard-front" onclick="flipCard(document.getElementById('fc-${i}'))">
           <div class="flashcard-label">${card.course} · Question</div>
-          <div class="flashcard-q">${card.q}</div>
+          <div class="flashcard-q">${escHtml(card.q)}</div>
           <div class="flashcard-hint">Tap to reveal answer →</div>
         </div>
         <div class="flashcard-back">
-          <div class="flashcard-label">Answer ✅</div>
-          <div class="flashcard-a">${card.a}</div>
-          <div class="flashcard-hint">Tap to flip back</div>
+          <div class="flashcard-label" onclick="flipCard(document.getElementById('fc-${i}'))">Answer ✅ · tap label to flip back</div>
+          <div class="flashcard-a" onclick="event.stopPropagation()">${escHtml(card.a)}</div>
+          <div class="flashcard-hint" onclick="flipCard(document.getElementById('fc-${i}'))">↑ scroll to read · tap here to flip back</div>
         </div>
       </div>
     </div>
   `).join('');
+
+  // After rendering, set each card height to match its back face content
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.flashcard').forEach(fc => {
+      const back = fc.querySelector('.flashcard-back');
+      const front = fc.querySelector('.flashcard-front');
+      const h = Math.max(280, back.scrollHeight, front.scrollHeight);
+      const capped = Math.min(h, 420);
+      fc.style.height = capped + 'px';
+    });
+  });
 }
 
 function filterFlashcards(course) {
