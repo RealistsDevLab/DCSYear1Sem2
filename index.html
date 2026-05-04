@@ -62,11 +62,18 @@
   }
 
   window.FB = {
-    // ── Auth / Config ──────────────────────────────────────────────────────
-    getMemberCode: async () => { const s = await get(ref(db,'config/memberCode')); return s.exists() ? s.val() : 'UICTR2026'; },
-    getAdminCode:  async () => { const s = await get(ref(db,'config/adminCode'));  return s.exists() ? s.val() : 'RDLBRAVE2026'; },
-    setMemberCode: (v) => set(ref(db,'config/memberCode'), v),
-    setAdminCode:  (v) => set(ref(db,'config/adminCode'),  v),
+    // ── Auth / Config (hashed passwords only) ─────────────────────────────
+    getAdminHash:  async () => { const s = await get(ref(db,'config/adminHash'));  return s.exists() ? s.val() : null; },
+    setAdminHash:  (h) => set(ref(db,'config/adminHash'),  h),
+
+    // ── Per-Member Accounts ────────────────────────────────────────────────
+    // members/{uid} = { name, email, phone, codeHash, active, createdAt }
+    createMember:  (uid, data) => set(ref(db, 'members/' + uid), data),
+    updateMember:  (uid, data) => update(ref(db, 'members/' + uid), data),
+    deleteMember:  (uid) => remove(ref(db, 'members/' + uid)),
+    getAllMembers:  async () => { const s = await get(ref(db,'members')); if (!s.exists()) return {}; return s.val(); },
+    getMemberByUid: async (uid) => { const s = await get(ref(db,'members/'+uid)); return s.exists() ? s.val() : null; },
+    onMembers:     (cb) => onValue(ref(db,'members'), s => cb(s.exists() ? s.val() : {})),
 
     // ── Announcements ─────────────────────────────────────────────────────
     getAnnouncement: async () => { const s = await get(ref(db,'config/announcement')); return s.exists() ? s.val() : ''; },
@@ -2800,13 +2807,17 @@ body {
       </div>
     </div>
     <h2 class="login-title">Welcome Back</h2>
-    <p class="login-sub">Enter your group access code to continue<br><span>// UICT Year 1 · Semester 2 · 2026</span></p>
+    <p class="login-sub">Enter your identity + access code to continue<br><span>// UICT Year 1 · Semester 2 · 2026</span></p>
     <div class="form-group">
-      <label class="form-label" for="access-code">Group Access Code</label>
-      <input type="password" id="access-code" class="form-input" placeholder="Enter access code..." autocomplete="off">
+      <label class="form-label" for="login-identity">Email or Phone Number</label>
+      <input type="text" id="login-identity" class="form-input" placeholder="Your email or phone..." autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="access-code">Your Personal Access Code</label>
+      <input type="password" id="access-code" class="form-input" placeholder="Enter your code..." autocomplete="off">
     </div>
     <button class="login-btn" onclick="doLogin()">Access Study Portal →</button>
-    <div class="login-error" id="login-error">❌ Incorrect access code. Try again.</div>
+    <div class="login-error" id="login-error">❌ Wrong identity or code.</div>
     <div style="margin-top:16px;text-align:center;">
       <button onclick="showAdminLogin()" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;font-family:'JetBrains Mono',monospace;letter-spacing:1px;">🛡️ Admin Access</button>
     </div>
@@ -3811,26 +3822,13 @@ body {
 
         <!-- ACCESS CODES TAB -->
         <div id="stab-content-access" class="stab-content">
-          <div class="settings-section-title">🔑 Access Codes</div>
-          <div class="settings-card">
-            <div class="settings-card-header">
-              <div class="settings-card-icon" style="background:rgba(67,233,123,0.15)">🔑</div>
-              <div>
-                <div class="settings-card-title">Member Access Code</div>
-                <div class="settings-card-sub">All group members use this to log in</div>
-              </div>
-            </div>
-            <div class="settings-field-row">
-              <input type="text" id="new-member-code" class="form-input" placeholder="New member code e.g. UICTR2027">
-              <button class="btn btn-primary" onclick="changeMemberCode()">Save</button>
-            </div>
-          </div>
+          <div class="settings-section-title">🔑 Admin Password</div>
           <div class="settings-card">
             <div class="settings-card-header">
               <div class="settings-card-icon" style="background:rgba(255,101,132,0.15)">🛡️</div>
               <div>
                 <div class="settings-card-title">Admin Password</div>
-                <div class="settings-card-sub">Your private admin password — keep it secret</div>
+                <div class="settings-card-sub">Your private admin password — keep it secret. Never share this.</div>
               </div>
             </div>
             <div class="form-group"><label class="form-label">Current Password</label><input type="password" id="current-admin-pw" class="form-input" placeholder="Current password..."></div>
@@ -3838,23 +3836,11 @@ body {
             <div class="form-group"><label class="form-label">Confirm New</label><input type="password" id="confirm-admin-pw" class="form-input" placeholder="Confirm new password..."></div>
             <button class="btn btn-primary" onclick="changeAdminPassword()" style="background:linear-gradient(135deg,var(--accent2),#f72585)">Change Password</button>
           </div>
-          <div class="settings-card" style="background:rgba(10,10,15,0.6);border-color:rgba(108,99,255,0.2);">
-            <div class="settings-card-header">
-              <div class="settings-card-icon" style="background:rgba(108,99,255,0.15)">👁️</div>
-              <div>
-                <div class="settings-card-title">Current Codes</div>
-                <div class="settings-card-sub">Visible only to you</div>
-              </div>
-            </div>
-            <div style="background:var(--bg);border-radius:10px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:13px;border:1px solid var(--border);">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                <span style="color:var(--text3)">Member Code</span>
-                <span id="show-member-code" style="color:var(--accent3);font-weight:700;font-size:15px;"></span>
-              </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <span style="color:var(--text3)">Admin Password</span>
-                <span id="show-admin-code" style="color:var(--accent2);font-weight:700;font-size:15px;"></span>
-              </div>
+          <div class="settings-card" style="background:rgba(10,10,15,0.5);border-color:rgba(108,99,255,0.15);">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3);line-height:1.7;">
+              🔒 Passwords are stored as SHA-256 hashes — never in plain text.<br>
+              🔑 Each member has their own personal code tied to their email/phone.<br>
+              🚫 Codes cannot be shared — identity verification is required at login.
             </div>
           </div>
         </div>
@@ -4013,29 +3999,71 @@ body {
 
         <!-- MEMBERS TAB -->
         <div id="stab-content-members" class="stab-content" style="display:none;">
-          <div class="settings-section-title">⛔ Member Management</div>
+          <div class="settings-section-title">👥 Member Accounts</div>
+
+          <!-- Add Member -->
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <div class="settings-card-icon" style="background:rgba(67,233,123,0.15)">➕</div>
+              <div>
+                <div class="settings-card-title">Add New Member</div>
+                <div class="settings-card-sub">Each member gets a unique code tied to their email or phone — not shareable</div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input type="text" id="nm-name" class="form-input" placeholder="e.g. Dreamboat">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" id="nm-email" class="form-input" placeholder="e.g. dreamboat@gmail.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number (optional)</label>
+              <input type="text" id="nm-phone" class="form-input" placeholder="e.g. 0701234567">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Personal Access Code (min 6 chars)</label>
+              <input type="password" id="nm-code" class="form-input" placeholder="Create a code for this member...">
+            </div>
+            <button class="btn btn-primary" onclick="adminAddMember()" style="background:linear-gradient(135deg,var(--accent3),#06d6a0);">➕ Add Member</button>
+            <div id="nm-feedback" style="margin-top:10px;font-size:12px;font-family:'JetBrains Mono',monospace;display:none;"></div>
+          </div>
+
+          <!-- Member List -->
+          <div class="settings-card">
+            <div class="settings-card-header">
+              <div class="settings-card-icon" style="background:rgba(108,99,255,0.15)">👥</div>
+              <div>
+                <div class="settings-card-title">All Members</div>
+                <div class="settings-card-sub">Tap a member to reset their code, deactivate, or remove them</div>
+              </div>
+            </div>
+            <div id="admin-members-list" style="display:flex;flex-direction:column;gap:10px;">
+              <div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;">Loading members...</div>
+            </div>
+          </div>
+
+          <!-- Block / Danger -->
           <div class="settings-card">
             <div class="settings-card-header">
               <div class="settings-card-icon" style="background:rgba(255,101,132,0.15)">⛔</div>
               <div>
-                <div class="settings-card-title">Block a Member</div>
-                <div class="settings-card-sub">Blocked members can't use quizzes or post — synced across all devices</div>
+                <div class="settings-card-title">Quick Block by Name</div>
+                <div class="settings-card-sub">Prevents posting and quiz participation</div>
               </div>
             </div>
             <div style="display:flex;gap:8px;margin-bottom:16px;">
-              <input type="text" id="settings-block-name" class="form-input" placeholder="Enter member name to block..." style="flex:1;">
+              <input type="text" id="settings-block-name" class="form-input" placeholder="Member name to block..." style="flex:1;">
               <button class="btn btn-red" onclick="blockFromSettings()">⛔ Block</button>
             </div>
-            <div class="settings-card-sub" style="margin-bottom:8px;">Currently blocked:</div>
             <div id="settings-blocklist"></div>
           </div>
+
           <div class="settings-card">
             <div class="settings-card-header">
               <div class="settings-card-icon" style="background:rgba(220,38,38,0.15)">🗑️</div>
-              <div>
-                <div class="settings-card-title">Danger Zone</div>
-                <div class="settings-card-sub">Irreversible actions — use with caution</div>
-              </div>
+              <div><div class="settings-card-title">Danger Zone</div><div class="settings-card-sub">Irreversible actions</div></div>
             </div>
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
               <button class="btn btn-red" onclick="clearLeaderboard()">🗑️ Clear All Quiz Results</button>
@@ -4231,22 +4259,22 @@ const SNIPPETS = {
 };
 
 // ══ LOGIN SLIDESHOW ═══════════════════════════════════════════════════════════
-function initLoginSlideshow() {
-  if (typeof PHOTOS === 'undefined' || PHOTOS.length === 0) return;
+async function initLoginSlideshow() {
+  let photos = [];
+  if (window.FB_READY) {
+    try { photos = await window.FB.getPhotos(); } catch(e) {}
+  }
+  if (!photos.length) return;
 
   const container = document.getElementById('login-slides');
-  const dotsEl = document.getElementById('login-dots');
-
-  // Pick a random starting photo — different every visit
-  const startIndex = Math.floor(Math.random() * PHOTOS.length);
-
-  // Create slide elements (use up to 20 shuffled photos for performance)
-  const shuffled = [...PHOTOS].sort(() => Math.random() - 0.5).slice(0, 20);
+  const dotsEl    = document.getElementById('login-dots');
+  const shuffled  = [...photos].sort(() => Math.random() - 0.5).slice(0, 20);
 
   shuffled.forEach((p, i) => {
     const slide = document.createElement('div');
     slide.className = 'login-slide' + (i === 0 ? ' active' : '');
-    slide.style.backgroundImage = `url('${p.src}')`;
+    const imgSrc = p.src || p.url || '';
+    slide.style.backgroundImage = `url('${imgSrc}')`;
     container.appendChild(slide);
 
     const dot = document.createElement('div');
@@ -4257,7 +4285,7 @@ function initLoginSlideshow() {
 
   let current = 0;
   const slides = container.querySelectorAll('.login-slide');
-  const dots = dotsEl.querySelectorAll('.login-dot');
+  const dots   = dotsEl.querySelectorAll('.login-dot');
 
   function goToSlide(n) {
     slides[current].classList.remove('active');
@@ -4267,20 +4295,61 @@ function initLoginSlideshow() {
     dots[current].classList.add('active');
   }
 
-  // Auto advance every 4 seconds
   setInterval(() => goToSlide(current + 1), 4000);
 }
 
-// Run slideshow as soon as PHOTOS is available
+// Run slideshow after Firebase is ready
 document.addEventListener('DOMContentLoaded', () => {
-  // Small delay to ensure PHOTOS array is populated
-  setTimeout(initLoginSlideshow, 100);
+  if (window.FB_READY) { initLoginSlideshow(); }
+  else { window.addEventListener('fb-ready', () => initLoginSlideshow()); }
 });
 
-// ══ LOGIN ═════════════════════════════════════════════════════════════════════
-const DEFAULT_MEMBER_CODE = 'UICTR2026';
-const DEFAULT_ADMIN_CODE  = 'RDLBRAVE2026';
+// ══ LOGIN — SECURE AUTH SYSTEM ════════════════════════════════════════════════
+// Per-member codes tied to identity (email/phone). SHA-256. Lockout. Session timeout.
+
 let isAdmin = false;
+let _sessionRole   = null;  // 'member' | 'admin'
+let _currentMember = null;  // { uid, name, email, phone, ... } — set on login
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 min inactivity
+let _sessionTimer = null;
+
+// ── SHA-256 (Web Crypto — no library) ────────────────────────────────────────
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+// ── Normalise identity input (trim, lowercase) ────────────────────────────────
+function normaliseIdentity(s) { return (s||'').trim().toLowerCase(); }
+
+// ── Lockout state ─────────────────────────────────────────────────────────────
+const LOCKOUT = { member: { attempts:0, lockedUntil:0 }, admin: { attempts:0, lockedUntil:0 } };
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS   = 30 * 1000;
+
+function isLockedOut(type) {
+  const l = LOCKOUT[type];
+  if (l.lockedUntil && Date.now() < l.lockedUntil) return true;
+  if (l.lockedUntil && Date.now() >= l.lockedUntil) { l.attempts = 0; l.lockedUntil = 0; }
+  return false;
+}
+
+function recordFailedAttempt(type) {
+  const l = LOCKOUT[type];
+  l.attempts++;
+  if (l.attempts >= MAX_ATTEMPTS) l.lockedUntil = Date.now() + LOCKOUT_MS;
+}
+
+function showLockoutMsg(errEl, type) {
+  const remaining = Math.ceil((LOCKOUT[type].lockedUntil - Date.now()) / 1000);
+  errEl.textContent = `🔒 Too many attempts. Try again in ${remaining}s.`;
+  errEl.style.display = 'block';
+  const countdown = setInterval(() => {
+    const rem = Math.ceil((LOCKOUT[type].lockedUntil - Date.now()) / 1000);
+    if (rem <= 0) { errEl.style.display = 'none'; errEl.textContent = ''; clearInterval(countdown); }
+    else { errEl.textContent = `🔒 Too many attempts. Try again in ${rem}s.`; }
+  }, 1000);
+}
 
 // ── Login page toggles ────────────────────────────────────────────────────────
 function showAdminLogin() {
@@ -4293,25 +4362,83 @@ function showMemberLogin() {
   document.getElementById('member-login-box').style.display = 'block';
 }
 
-// ── Member login ──────────────────────────────────────────────────────────────
+// ── Member login (identity + personal code) ───────────────────────────────────
 async function doLogin() {
-  const code = document.getElementById('access-code').value.trim();
-  const err  = document.getElementById('login-error');
-  const btn  = document.querySelector('#member-login-box .login-btn');
-  btn.textContent = 'Checking...'; btn.disabled = true;
+  const identity = normaliseIdentity(document.getElementById('login-identity').value);
+  const code     = document.getElementById('access-code').value.trim();
+  const err      = document.getElementById('login-error');
+  const btn      = document.querySelector('#member-login-box .login-btn');
+
+  if (isLockedOut('member')) { showLockoutMsg(err, 'member'); return; }
+  if (!identity || !code) {
+    err.textContent = '❌ Enter both your email/phone and access code.';
+    err.style.display = 'block';
+    setTimeout(() => err.style.display = 'none', 3000);
+    return;
+  }
+
+  btn.textContent = 'Verifying...'; btn.disabled = true;
   try {
-    const correctCode = window.FB_READY ? await window.FB.getMemberCode() : (localStorage.getItem('rdl_member_code') || DEFAULT_MEMBER_CODE);
-    if (code === correctCode) { isAdmin = false; enterApp(); }
-    else {
+    if (!window.FB_READY) throw new Error('no-firebase');
+    const members = await window.FB.getAllMembers();
+    // Find member whose email or phone matches the identity
+    const uid = Object.keys(members).find(k => {
+      const m = members[k];
+      return normaliseIdentity(m.email) === identity || normaliseIdentity(m.phone) === identity;
+    });
+
+    if (!uid) {
+      recordFailedAttempt('member');
+      const left = MAX_ATTEMPTS - LOCKOUT.member.attempts;
+      err.textContent = isLockedOut('member')
+        ? `🔒 Too many attempts.` : `❌ Identity not found. ${left} attempt${left!==1?'s':''} left.`;
       err.style.display = 'block';
-      document.getElementById('access-code').style.borderColor = 'var(--accent2)';
-      setTimeout(() => { err.style.display = 'none'; document.getElementById('access-code').style.borderColor = ''; }, 3000);
+      setTimeout(() => err.style.display = 'none', 3500);
+      return;
     }
+
+    const member = members[uid];
+
+    // Check member is active
+    if (member.active === false) {
+      err.textContent = '🚫 Your account has been deactivated. Contact Bravehart.';
+      err.style.display = 'block';
+      setTimeout(() => err.style.display = 'none', 4000);
+      return;
+    }
+
+    // Verify code hash
+    const inputHash = await sha256(code);
+    if (inputHash !== member.codeHash) {
+      recordFailedAttempt('member');
+      const left = MAX_ATTEMPTS - LOCKOUT.member.attempts;
+      if (isLockedOut('member')) { showLockoutMsg(err, 'member'); }
+      else {
+        err.textContent = `❌ Wrong access code. ${left} attempt${left!==1?'s':''} left.`;
+        err.style.display = 'block';
+        document.getElementById('access-code').style.borderColor = 'var(--accent2)';
+        setTimeout(() => { err.style.display = 'none'; document.getElementById('access-code').style.borderColor = ''; }, 3500);
+      }
+      return;
+    }
+
+    // ✅ Authenticated
+    LOCKOUT.member.attempts = 0;
+    _currentMember = { uid, ...member };
+    isAdmin = false; _sessionRole = 'member';
+    enterApp();
+
   } catch(e) {
-    const fallback = localStorage.getItem('rdl_member_code') || DEFAULT_MEMBER_CODE;
-    if (code === fallback) { isAdmin = false; enterApp(); }
-    else { err.style.display = 'block'; setTimeout(() => err.style.display = 'none', 3000); }
-  } finally { btn.textContent = 'Access Study Portal →'; btn.disabled = false; }
+    if (e.message === 'no-firebase') {
+      err.textContent = '⚠️ Cannot log in offline. Firebase required.';
+    } else {
+      err.textContent = '⚠️ Login error. Please try again.';
+    }
+    err.style.display = 'block';
+    setTimeout(() => err.style.display = 'none', 4000);
+  } finally {
+    btn.textContent = 'Access Study Portal →'; btn.disabled = false;
+  }
 }
 
 // ── Admin login ───────────────────────────────────────────────────────────────
@@ -4319,40 +4446,93 @@ async function doAdminLogin() {
   const code = document.getElementById('admin-code-input').value.trim();
   const err  = document.getElementById('admin-login-error');
   const btn  = document.querySelector('#admin-login-box .login-btn');
+
+  if (isLockedOut('admin')) { showLockoutMsg(err, 'admin'); return; }
+  if (!code) return;
+
   btn.textContent = 'Verifying...'; btn.disabled = true;
   try {
-    const correctCode = window.FB_READY ? await window.FB.getAdminCode() : (localStorage.getItem('rdl_admin_code') || DEFAULT_ADMIN_CODE);
-    if (code === correctCode) { isAdmin = true; enterApp(); }
-    else {
-      err.style.display = 'block';
-      document.getElementById('admin-code-input').style.borderColor = 'var(--accent2)';
-      setTimeout(() => { err.style.display = 'none'; document.getElementById('admin-code-input').style.borderColor = ''; }, 3000);
+    if (!window.FB_READY) throw new Error('no-firebase');
+    const storedHash = await window.FB.getAdminHash();
+    if (!storedHash) {
+      // First-time setup — hash and store
+      await window.FB.setAdminHash(await sha256(code));
+      isAdmin = true; _sessionRole = 'admin'; _currentMember = null; enterApp(); return;
+    }
+    const inputHash = await sha256(code);
+    if (inputHash === storedHash) {
+      LOCKOUT.admin.attempts = 0;
+      isAdmin = true; _sessionRole = 'admin'; _currentMember = null; enterApp();
+    } else {
+      recordFailedAttempt('admin');
+      const left = MAX_ATTEMPTS - LOCKOUT.admin.attempts;
+      if (isLockedOut('admin')) { showLockoutMsg(err, 'admin'); }
+      else {
+        err.textContent = `❌ Wrong password. ${left} attempt${left!==1?'s':''} left.`;
+        err.style.display = 'block';
+        document.getElementById('admin-code-input').style.borderColor = 'var(--accent2)';
+        setTimeout(() => { err.style.display = 'none'; document.getElementById('admin-code-input').style.borderColor = ''; }, 3500);
+      }
     }
   } catch(e) {
-    const fallback = localStorage.getItem('rdl_admin_code') || DEFAULT_ADMIN_CODE;
-    if (code === fallback) { isAdmin = true; enterApp(); }
-    else { err.style.display = 'block'; setTimeout(() => err.style.display = 'none', 3000); }
+    err.textContent = e.message === 'no-firebase'
+      ? '⚠️ Admin login requires Firebase connection.'
+      : '⚠️ Login error. Please try again.';
+    err.style.display = 'block';
+    setTimeout(() => err.style.display = 'none', 4000);
   } finally { btn.textContent = 'Enter Admin Panel →'; btn.disabled = false; }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('access-code').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('login-identity').addEventListener('keypress', e => { if (e.key === 'Enter') doLogin(); });
   document.getElementById('admin-code-input').addEventListener('keypress', e => { if (e.key === 'Enter') doAdminLogin(); });
 });
+
+// ── Session timeout ───────────────────────────────────────────────────────────
+function resetSessionTimer() {
+  clearTimeout(_sessionTimer);
+  if (!_sessionRole) return;
+  _sessionTimer = setTimeout(() => {
+    alert('⏱️ You have been logged out due to 30 minutes of inactivity.');
+    logout();
+  }, SESSION_TIMEOUT_MS);
+}
+
+function startSessionTimeout() {
+  ['mousemove','keydown','touchstart','click'].forEach(evt =>
+    document.addEventListener(evt, resetSessionTimer, { passive: true })
+  );
+  resetSessionTimer();
+}
 
 // ── Enter app ─────────────────────────────────────────────────────────────────
 function enterApp() {
   document.getElementById('login-page').style.display = 'none';
   document.getElementById('app').style.display = 'block';
+  startSessionTimeout();
 
-
+  // Show role badge in header
+  const headerRight = document.querySelector('.header-right');
+  const existingBadge = headerRight.querySelector('.session-badge');
+  if (existingBadge) existingBadge.remove();
+  const badge = document.createElement('div');
+  badge.className = 'session-badge';
   if (isAdmin) {
+    badge.innerHTML = '<span class="admin-badge" style="font-size:11px;">🛡️ ADMIN</span>';
     document.getElementById('admin-sidebar-item').style.display = 'flex';
     document.getElementById('settings-sidebar-item').style.display = 'flex';
-    const badge = document.createElement('div');
-    badge.innerHTML = '<span class="admin-badge" style="font-size:11px;">🛡️ ADMIN</span>';
-    document.querySelector('.header-right').prepend(badge);
+  } else if (_currentMember) {
+    badge.innerHTML = `<span style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--accent3);background:rgba(67,233,123,0.1);padding:4px 10px;border-radius:20px;border:1px solid rgba(67,233,123,0.3);">👤 ${_currentMember.name}</span>`;
+    // Auto check-in with real member name
+    if (window.FB_READY) window.FB.checkIn(_currentMember.name).catch(()=>{});
+    // Pre-fill profile if not already saved
+    if (!localStorage.getItem('rdl_profile')) {
+      localStorage.setItem('rdl_profile', JSON.stringify({ name: _currentMember.name, nick: _currentMember.name, course: 'DCS Year 1', joined: new Date().toLocaleDateString('en-UG') }));
+    }
   }
+  headerRight.prepend(badge);
+
   buildPapersGrid();
   ppInit();
   loadAnnouncement();
@@ -4360,9 +4540,7 @@ function enterApp() {
   registerSW();
   showPWABanner();
   updateHomeStats();
-  // Init CodeMirror editor (defer slightly so the DOM is fully visible)
   setTimeout(initCodeMirror, 200);
-  // Live Firebase listeners
   if (window.FB_READY) {
     window.FB.onAnnouncement(text => {
       const box = document.getElementById('announcement-box');
@@ -4371,21 +4549,24 @@ function enterApp() {
       else { box.classList.remove('visible'); }
     });
     initNotifications();
-    // Auto check-in if profile exists
-    const p = localStorage.getItem('rdl_profile');
-    if (p) {
-      const prof = JSON.parse(p);
-      window.FB.checkIn(prof.name).catch(()=>{});
-    }
   }
 }
 
 function logout() {
   isAdmin = false;
+  _sessionRole = null;
+  _currentMember = null;
+  clearTimeout(_sessionTimer);
+  ['mousemove','keydown','touchstart','click'].forEach(evt =>
+    document.removeEventListener(evt, resetSessionTimer)
+  );
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-page').style.display = 'flex';
   document.getElementById('access-code').value = '';
+  document.getElementById('login-identity').value = '';
   document.getElementById('admin-code-input').value = '';
+  const badge = document.querySelector('.session-badge');
+  if (badge) badge.remove();
   showMemberLogin();
 }
 
@@ -4409,40 +4590,123 @@ function closeSettings() {
 }
 
 async function showSettings() {
-  // IMPORTANT: Never set display:none on views directly — use classes only
-  // Just overlay the settings panel on top — app stays intact underneath
   document.getElementById('view-settings').style.display = 'flex';
   document.getElementById('view-settings').style.flexDirection = 'column';
-  const mc = window.FB_READY ? await window.FB.getMemberCode() : (localStorage.getItem('rdl_member_code') || DEFAULT_MEMBER_CODE);
-  const ac = window.FB_READY ? await window.FB.getAdminCode()  : (localStorage.getItem('rdl_admin_code')  || DEFAULT_ADMIN_CODE);
-  document.getElementById('show-member-code').textContent = mc;
-  document.getElementById('show-admin-code').textContent  = ac;
   renderSettingsBlocklist();
-}
-
-async function changeMemberCode() {
-  const code = document.getElementById('new-member-code').value.trim();
-  if (!code || code.length < 4) { alert('Code must be at least 4 characters.'); return; }
-  if (window.FB_READY) await window.FB.setMemberCode(code);
-  localStorage.setItem('rdl_member_code', code);
-  document.getElementById('show-member-code').textContent = code;
-  document.getElementById('new-member-code').value = '';
-  alert('✅ Member code changed to: ' + code + '\n\nShare this with your group.');
+  buildAdminMembersList();
 }
 
 async function changeAdminPassword() {
   const current = document.getElementById('current-admin-pw').value.trim();
   const newPw   = document.getElementById('new-admin-pw').value.trim();
   const confirm = document.getElementById('confirm-admin-pw').value.trim();
-  const correctCode = window.FB_READY ? await window.FB.getAdminCode() : (localStorage.getItem('rdl_admin_code') || DEFAULT_ADMIN_CODE);
-  if (current !== correctCode) { alert('❌ Current password is wrong.'); return; }
+  if (!window.FB_READY) { alert('❌ Firebase not ready.'); return; }
+  const storedHash = await window.FB.getAdminHash();
+  const currentHash = await sha256(current);
+  if (storedHash && currentHash !== storedHash) { alert('❌ Current password is wrong.'); return; }
   if (!newPw || newPw.length < 6) { alert('Password must be at least 6 characters.'); return; }
   if (newPw !== confirm) { alert('❌ Passwords do not match.'); return; }
-  if (window.FB_READY) await window.FB.setAdminCode(newPw);
-  localStorage.setItem('rdl_admin_code', newPw);
-  document.getElementById('show-admin-code').textContent = newPw;
+  const newHash = await sha256(newPw);
+  await window.FB.setAdminHash(newHash);
   ['current-admin-pw','new-admin-pw','confirm-admin-pw'].forEach(id => document.getElementById(id).value = '');
-  alert('✅ Admin password changed! Works on all devices immediately.');
+  alert('✅ Admin password changed! Takes effect immediately on all devices.');
+}
+
+// ══ MEMBER MANAGEMENT (Admin) ═════════════════════════════════════════════════
+
+function generateUid() {
+  return 'mbr_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
+}
+
+async function adminAddMember() {
+  const name    = document.getElementById('nm-name').value.trim();
+  const email   = document.getElementById('nm-email').value.trim().toLowerCase();
+  const phone   = document.getElementById('nm-phone').value.trim().toLowerCase();
+  const code    = document.getElementById('nm-code').value.trim();
+  const feedback = document.getElementById('nm-feedback');
+
+  if (!name || !email || !code) {
+    feedback.textContent = '❌ Name, email and code are required.';
+    feedback.style.color = 'var(--accent2)'; feedback.style.display = 'block';
+    setTimeout(() => feedback.style.display = 'none', 3000);
+    return;
+  }
+  if (code.length < 6) {
+    feedback.textContent = '❌ Code must be at least 6 characters.';
+    feedback.style.color = 'var(--accent2)'; feedback.style.display = 'block';
+    setTimeout(() => feedback.style.display = 'none', 3000);
+    return;
+  }
+  if (!window.FB_READY) { alert('❌ Firebase not ready.'); return; }
+
+  // Check email not already taken
+  const existing = await window.FB.getAllMembers();
+  const taken = Object.values(existing).find(m => m.email === email);
+  if (taken) {
+    feedback.textContent = `❌ Email already registered to ${taken.name}.`;
+    feedback.style.color = 'var(--accent2)'; feedback.style.display = 'block';
+    setTimeout(() => feedback.style.display = 'none', 4000);
+    return;
+  }
+
+  const uid      = generateUid();
+  const codeHash = await sha256(code);
+  const data = { name, email, phone: phone||'', codeHash, active: true, createdAt: Date.now() };
+  await window.FB.createMember(uid, data);
+
+  // Clear form
+  ['nm-name','nm-email','nm-phone','nm-code'].forEach(id => document.getElementById(id).value = '');
+  feedback.textContent = `✅ ${name} added! Give them their code and tell them to log in with: ${email}`;
+  feedback.style.color = 'var(--accent3)'; feedback.style.display = 'block';
+  setTimeout(() => feedback.style.display = 'none', 6000);
+  buildAdminMembersList();
+}
+
+async function buildAdminMembersList() {
+  const el = document.getElementById('admin-members-list');
+  if (!el || !window.FB_READY) return;
+  el.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;">Loading...</div>';
+  try {
+    const members = await window.FB.getAllMembers();
+    const entries = Object.entries(members);
+    if (!entries.length) {
+      el.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;">No members yet. Add one above.</div>';
+      return;
+    }
+    el.innerHTML = entries.map(([uid, m]) => `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div>
+          <div style="font-weight:700;font-size:14px;color:var(--text)">${m.name} ${m.active===false ? '<span style="color:var(--accent2);font-size:11px;">● INACTIVE</span>' : '<span style="color:var(--accent3);font-size:11px;">● ACTIVE</span>'}</div>
+          <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:3px;">${m.email}${m.phone ? ' · ' + m.phone : ''}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-outline" style="font-size:11px;padding:5px 10px;" onclick="adminResetMemberCode('${uid}','${m.name}')">🔑 Reset Code</button>
+          <button class="btn btn-outline" style="font-size:11px;padding:5px 10px;" onclick="adminToggleMember('${uid}',${!!m.active})">${m.active===false ? '✅ Activate' : '⏸ Deactivate'}</button>
+          <button class="btn btn-red" style="font-size:11px;padding:5px 10px;" onclick="adminDeleteMember('${uid}','${m.name}')">🗑️</button>
+        </div>
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--accent2);font-size:12px;">Error loading members.</div>';
+  }
+}
+
+async function adminResetMemberCode(uid, name) {
+  const newCode = prompt(`Enter new access code for ${name} (min 6 chars):`);
+  if (!newCode || newCode.length < 6) { alert('Code too short or cancelled.'); return; }
+  const h = await sha256(newCode);
+  await window.FB.updateMember(uid, { codeHash: h });
+  alert(`✅ Code reset for ${name}. Give them their new code.`);
+}
+
+async function adminToggleMember(uid, currentlyActive) {
+  await window.FB.updateMember(uid, { active: !currentlyActive });
+  buildAdminMembersList();
+}
+
+async function adminDeleteMember(uid, name) {
+  if (!confirm(`Remove ${name} from the portal? They will no longer be able to log in.`)) return;
+  await window.FB.deleteMember(uid);
+  buildAdminMembersList();
 }
 
 async function renderSettingsBlocklist() {
@@ -4476,11 +4740,16 @@ async function unblockFromSettings(name) {
 
 function logout() {
   isAdmin = false;
+  _sessionRole = null;
+  clearTimeout(_sessionTimer);
+  ['mousemove','keydown','touchstart','click'].forEach(evt =>
+    document.removeEventListener(evt, resetSessionTimer)
+  );
   document.getElementById('app').style.display = 'none';
   document.getElementById('login-page').style.display = 'flex';
   document.getElementById('access-code').value = '';
+  document.getElementById('admin-code-input').value = '';
   showMemberLogin();
-  document.getElementById('access-code').value = '';
 }
 
 // ══ NAVIGATION ════════════════════════════════════════════════════════════════
@@ -5558,91 +5827,15 @@ function hideSearch() {
 }
 
 // ══ GALLERY ══════════════════════════════════════════════════════════════════
-// Add your photos here after uploading to GitHub repo in a photos/ folder
-// Format: { src: "photos/filename.jpg", caption: "Description" }
-const PHOTOS = [
-  { src: "photos/20250918_165540.jpg", caption: "TheRealists — 20250918_165540" },
-  { src: "photos/20250920_142229~2.jpg", caption: "TheRealists — 20250920_142229~2" },
-  { src: "photos/20251003_141018.jpg", caption: "TheRealists — 20251003_141018" },
-  { src: "photos/IMG-20250906-WA0010.jpg", caption: "TheRealists — IMG-20250906-WA0010" },
-  { src: "photos/IMG-20250906-WA0012.jpg", caption: "TheRealists — IMG-20250906-WA0012" },
-  { src: "photos/IMG-20250906-WA0015.jpg", caption: "TheRealists — IMG-20250906-WA0015" },
-  { src: "photos/IMG-20250906-WA0017.jpg", caption: "TheRealists — IMG-20250906-WA0017" },
-  { src: "photos/IMG-20250906-WA0020.jpg", caption: "TheRealists — IMG-20250906-WA0020" },
-  { src: "photos/IMG-20250906-WA0023.jpg", caption: "TheRealists — IMG-20250906-WA0023" },
-  { src: "photos/IMG-20250906-WA0024.jpg", caption: "TheRealists — IMG-20250906-WA0024" },
-  { src: "photos/IMG-20250906-WA0025.jpg", caption: "TheRealists — IMG-20250906-WA0025" },
-  { src: "photos/IMG-20250906-WA0026.jpg", caption: "TheRealists — IMG-20250906-WA0026" },
-  { src: "photos/IMG-20250906-WA0027.jpg", caption: "TheRealists — IMG-20250906-WA0027" },
-  { src: "photos/IMG-20250906-WA0028.jpg", caption: "TheRealists — IMG-20250906-WA0028" },
-  { src: "photos/IMG-20250906-WA0029.jpg", caption: "TheRealists — IMG-20250906-WA0029" },
-  { src: "photos/IMG-20250906-WA0030.jpg", caption: "TheRealists — IMG-20250906-WA0030" },
-  { src: "photos/IMG-20250906-WA0031.jpg", caption: "TheRealists — IMG-20250906-WA0031" },
-  { src: "photos/IMG-20250906-WA0032.jpg", caption: "TheRealists — IMG-20250906-WA0032" },
-  { src: "photos/IMG-20250910-WA0007.jpg", caption: "TheRealists — IMG-20250910-WA0007" },
-  { src: "photos/IMG-20250911-WA0030.jpg", caption: "TheRealists — IMG-20250911-WA0030" },
-  { src: "photos/IMG-20250911-WA0031.jpg", caption: "TheRealists — IMG-20250911-WA0031" },
-  { src: "photos/IMG-20250911-WA0032.jpg", caption: "TheRealists — IMG-20250911-WA0032" },
-  { src: "photos/IMG-20250911-WA0033.jpg", caption: "TheRealists — IMG-20250911-WA0033" },
-  { src: "photos/IMG-20250911-WA0034.jpg", caption: "TheRealists — IMG-20250911-WA0034" },
-  { src: "photos/IMG-20250911-WA0035.jpg", caption: "TheRealists — IMG-20250911-WA0035" },
-  { src: "photos/IMG-20250911-WA0036.jpg", caption: "TheRealists — IMG-20250911-WA0036" },
-  { src: "photos/IMG-20250911-WA0037.jpg", caption: "TheRealists — IMG-20250911-WA0037" },
-  { src: "photos/IMG-20250911-WA0038.jpg", caption: "TheRealists — IMG-20250911-WA0038" },
-  { src: "photos/IMG-20250911-WA0039.jpg", caption: "TheRealists — IMG-20250911-WA0039" },
-  { src: "photos/IMG-20250911-WA0040.jpg", caption: "TheRealists — IMG-20250911-WA0040" },
-  { src: "photos/IMG-20250911-WA0041.jpg", caption: "TheRealists — IMG-20250911-WA0041" },
-  { src: "photos/IMG-20250911-WA0042.jpg", caption: "TheRealists — IMG-20250911-WA0042" },
-  { src: "photos/IMG-20250911-WA0043.jpg", caption: "TheRealists — IMG-20250911-WA0043" },
-  { src: "photos/IMG-20250911-WA0044.jpg", caption: "TheRealists — IMG-20250911-WA0044" },
-  { src: "photos/IMG-20250912-WA0011.jpg", caption: "TheRealists — IMG-20250912-WA0011" },
-  { src: "photos/IMG-20250912-WA0012.jpg", caption: "TheRealists — IMG-20250912-WA0012" },
-  { src: "photos/IMG-20250912-WA0013.jpg", caption: "TheRealists — IMG-20250912-WA0013" },
-  { src: "photos/IMG-20250912-WA0016.jpg", caption: "TheRealists — IMG-20250912-WA0016" },
-  { src: "photos/IMG-20250912-WA0017.jpg", caption: "TheRealists — IMG-20250912-WA0017" },
-  { src: "photos/IMG-20250912-WA0018.jpg", caption: "TheRealists — IMG-20250912-WA0018" },
-  { src: "photos/IMG-20250912-WA0020.jpg", caption: "TheRealists — IMG-20250912-WA0020" },
-  { src: "photos/IMG-20250912-WA0053.jpg", caption: "TheRealists — IMG-20250912-WA0053" },
-  { src: "photos/IMG-20250913-WA0000.jpg", caption: "TheRealists — IMG-20250913-WA0000" },
-  { src: "photos/IMG-20250915-WA0034.jpg", caption: "TheRealists — IMG-20250915-WA0034" },
-  { src: "photos/IMG-20250918-WA0015.jpg", caption: "TheRealists — IMG-20250918-WA0015" },
-  { src: "photos/IMG-20250918-WA0016.jpg", caption: "TheRealists — IMG-20250918-WA0016" },
-  { src: "photos/IMG-20250918-WA0017.jpg", caption: "TheRealists — IMG-20250918-WA0017" },
-  { src: "photos/IMG-20250920-WA0055.jpg", caption: "TheRealists — IMG-20250920-WA0055" },
-  { src: "photos/IMG-20250920-WA0056.jpg", caption: "TheRealists — IMG-20250920-WA0056" },
-  { src: "photos/IMG-20250920-WA0057.jpg", caption: "TheRealists — IMG-20250920-WA0057" },
-  { src: "photos/IMG-20250920-WA0058.jpg", caption: "TheRealists — IMG-20250920-WA0058" },
-  { src: "photos/IMG-20250920-WA0059.jpg", caption: "TheRealists — IMG-20250920-WA0059" },
-  { src: "photos/IMG-20250922-WA0014.jpg", caption: "TheRealists — IMG-20250922-WA0014" },
-  { src: "photos/IMG-20250922-WA0015.jpg", caption: "TheRealists — IMG-20250922-WA0015" },
-  { src: "photos/IMG-20250922-WA0016.jpg", caption: "TheRealists — IMG-20250922-WA0016" },
-  { src: "photos/IMG-20250922-WA0017.jpg", caption: "TheRealists — IMG-20250922-WA0017" },
-  { src: "photos/IMG-20250922-WA0018.jpg", caption: "TheRealists — IMG-20250922-WA0018" },
-  { src: "photos/IMG-20251213-WA0006.jpg", caption: "TheRealists — IMG-20251213-WA0006" },
-  { src: "photos/IMG-20251213-WA0007.jpg", caption: "TheRealists — IMG-20251213-WA0007" },
-  { src: "photos/IMG-20251213-WA0008.jpg", caption: "TheRealists — IMG-20251213-WA0008" },
-  { src: "photos/IMG-20251213-WA0009.jpg", caption: "TheRealists — IMG-20251213-WA0009" },
-  { src: "photos/IMG-20251213-WA0010.jpg", caption: "TheRealists — IMG-20251213-WA0010" },
-  { src: "photos/IMG-20251213-WA0011.jpg", caption: "TheRealists — IMG-20251213-WA0011" },
-  { src: "photos/IMG-20251215-WA0013.jpg", caption: "TheRealists — IMG-20251215-WA0013" },
-  { src: "photos/IMG-20260309-WA0005.jpg", caption: "TheRealists — IMG-20260309-WA0005" },
-  { src: "photos/IMG-20260310-WA0002.jpg", caption: "TheRealists — IMG-20260310-WA0002" },
-  { src: "photos/IMG-20260310-WA0003.jpg", caption: "TheRealists — IMG-20260310-WA0003" },
-  { src: "photos/IMG-20260310-WA0004.jpg", caption: "TheRealists — IMG-20260310-WA0004" },
-  { src: "photos/IMG-20260310-WA0005.jpg", caption: "TheRealists — IMG-20260310-WA0005" },
-  { src: "photos/IMG-20260310-WA0006.jpg", caption: "TheRealists — IMG-20260310-WA0006" },
-  { src: "photos/IMG-20260310-WA0008.jpg", caption: "TheRealists — IMG-20260310-WA0008" },
-  { src: "photos/IMG-20260312-WA0007.jpg", caption: "TheRealists — IMG-20260312-WA0007" },
-  { src: "photos/Screenshot_20260309-153039_Video Player~2.jpg", caption: "TheRealists — Screenshot_20260309-153039_Video Player~2" },
-  { src: "photos/gmaildp.jpg", caption: "TheRealists — gmaildp" },
-];
+// All images are stored in Firebase + Cloudinary. No hardcoded photos.
+// Upload via Admin → Settings → Upload Content
 
 let currentPhotoIndex = 0;
 
 async function updateHomeStats() {
-  let photoCount = PHOTOS.length;
+  let photoCount = 0;
   if (window.FB_READY) {
-    try { const fb = await window.FB.getPhotos(); photoCount += fb.length; } catch(e) {}
+    try { const fb = await window.FB.getPhotos(); photoCount = fb.length; } catch(e) {}
   }
   const statEl = document.getElementById('stat-photos');
   const tagEl  = document.getElementById('tag-photos');
@@ -5661,11 +5854,10 @@ async function buildGallery() {
   grid.innerHTML = '<div class="gallery-empty">⏳ Loading photos...</div>';
 
   // Merge GitHub photos + Firebase uploaded photos
-  let allPhotos = [...PHOTOS];
+  let allPhotos = [];
   if (window.FB_READY) {
     try {
-      const fbPhotos = await window.FB.getPhotos();
-      allPhotos = [...allPhotos, ...fbPhotos];
+      allPhotos = await window.FB.getPhotos();
     } catch(e) {}
   }
 
@@ -5673,7 +5865,7 @@ async function buildGallery() {
   updateHomeStats();
 
   if (!allPhotos.length) {
-    grid.innerHTML = `<div class="gallery-empty">📸 No photos yet.<br><br>Upload via Settings or add to the photos/ folder in GitHub.</div>`;
+    grid.innerHTML = `<div class="gallery-empty">📸 No academic images yet.<br><br>Upload via Admin → Settings → Upload Content.</div>`;
     return;
   }
 
@@ -5685,7 +5877,7 @@ async function buildGallery() {
 }
 
 function openLightbox(index) {
-  const photos = window._allPhotos || PHOTOS;
+  const photos = window._allPhotos || [];
   if (!photos.length) return;
   currentPhotoIndex = index;
   const p = photos[index];
@@ -5704,7 +5896,7 @@ function closeLightbox() {
 }
 
 function lightboxNav(dir) {
-  const photos = window._allPhotos || PHOTOS;
+  const photos = window._allPhotos || [];
   currentPhotoIndex = (currentPhotoIndex + dir + photos.length) % photos.length;
   const p = photos[currentPhotoIndex];
   document.getElementById('lightbox-img').src = p.src;
@@ -5712,7 +5904,7 @@ function lightboxNav(dir) {
 }
 
 function updateLightbox() {
-  const photos = window._allPhotos || PHOTOS;
+  const photos = window._allPhotos || [];
   const p = photos[currentPhotoIndex];
   document.getElementById('lightbox-img').src = p.src;
   document.getElementById('lightbox-caption').textContent = `${p.caption} (${currentPhotoIndex + 1} / ${photos.length})`;
@@ -6286,7 +6478,7 @@ async function buildAdminPanel() {
       <div>📋 Quiz attempts: <strong style="color:var(--accent)">${results.length}</strong></div>
       <div>💬 Discussion posts: <strong style="color:var(--accent3)">${posts.length}</strong></div>
       <div>⛔ Blocked members: <strong style="color:var(--accent2)">${blocked.length}</strong></div>
-      <div>📸 Photos: <strong style="color:var(--accent4)">${PHOTOS.length}</strong></div>
+      <div>📸 Photos: <strong style="color:var(--accent4)">${(window._allPhotos||[]).length}</strong></div>
       <div>🃏 Flashcards: <strong style="color:var(--accent)">${FLASHCARD_DATA.length}</strong></div>
     </div>`;
   }
