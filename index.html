@@ -185,6 +185,12 @@
     readSession:   async (uid)  => { const s = await get(ref(db,'sessions/'+uid)); return s.exists() ? s.val() : null; },
     watchSession:  (uid, cb)    => onValue(ref(db,'sessions/'+uid), s => cb(s.exists() ? s.val() : null)),
     clearSession:  (uid)        => remove(ref(db,'sessions/'+uid)),
+
+    // ── Device Binding (permanent per-member) ─────────────────────────────────
+    // deviceBindings/{uid} = { fingerprint, boundAt, ua }
+    getDeviceBinding:   async (uid) => { const s = await get(ref(db,'deviceBindings/'+uid)); return s.exists() ? s.val() : null; },
+    setDeviceBinding:   (uid, fp)   => set(ref(db,'deviceBindings/'+uid), { fingerprint: fp, boundAt: Date.now(), ua: navigator.userAgent.slice(0,200) }),
+    clearDeviceBinding: (uid)       => remove(ref(db,'deviceBindings/'+uid)),
   };
 
   window.FB_READY = true;
@@ -4328,6 +4334,23 @@ async function sha256(str) {
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
+// ── Device fingerprint (stable, no library) ───────────────────────────────────
+// Combines browser/hardware traits that stay constant across sessions on the same device.
+// Not perfect forensic ID, but strong enough to block a different phone/laptop.
+async function getDeviceFingerprint() {
+  const raw = [
+    navigator.userAgent,
+    navigator.language,
+    navigator.hardwareConcurrency,
+    navigator.deviceMemory || '',
+    screen.width + 'x' + screen.height,
+    screen.colorDepth,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    navigator.platform || '',
+  ].join('||');
+  return await sha256(raw);
+}
+
 // ── Normalise identity input (trim, lowercase) ────────────────────────────────
 function normaliseIdentity(s) { return (s||'').trim().toLowerCase(); }
 
@@ -4435,6 +4458,24 @@ async function doLogin() {
     LOCKOUT.member.attempts = 0;
     _currentMember = { uid, ...member };
     isAdmin = false; _sessionRole = 'member';
+
+    // ── Device binding check ──────────────────────────────────────────────────
+    // First login ever → bind this device. All future logins must come from the same device.
+    const deviceFp = await getDeviceFingerprint();
+    const existingBinding = await window.FB.getDeviceBinding(uid);
+    if (!existingBinding) {
+      // No binding yet — register this device permanently
+      await window.FB.setDeviceBinding(uid, deviceFp);
+    } else if (existingBinding.fingerprint !== deviceFp) {
+      // Different device — block access
+      err.textContent = '🔒 This account is bound to a different device. Contact Bravehart to reset it.';
+      err.style.display = 'block';
+      isAdmin = false; _sessionRole = null; _currentMember = null;
+      btn.textContent = 'Access Study Portal →'; btn.disabled = false;
+      setTimeout(() => err.style.display = 'none', 7000);
+      return;
+    }
+    // ── Device OK — proceed ───────────────────────────────────────────────────
 
     // ── Single-session enforcement ────────────────────────────────────────────
     // Generate a unique token for this login, write it to Firebase.
@@ -4761,6 +4802,7 @@ async function buildAdminMembersList() {
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <button class="btn btn-outline" style="font-size:11px;padding:5px 10px;" onclick="adminResetMemberCode('${uid}','${m.name}')">🔑 Reset Code</button>
+          <button class="btn btn-outline" style="font-size:11px;padding:5px 10px;" onclick="adminResetMemberDevice('${uid}','${m.name}')">📱 Reset Device</button>
           <button class="btn btn-outline" style="font-size:11px;padding:5px 10px;" onclick="adminToggleMember('${uid}',${!!m.active})">${m.active===false ? '✅ Activate' : '⏸ Deactivate'}</button>
           <button class="btn btn-red" style="font-size:11px;padding:5px 10px;" onclick="adminDeleteMember('${uid}','${m.name}')">🗑️</button>
         </div>
@@ -4776,6 +4818,14 @@ async function adminResetMemberCode(uid, name) {
   const h = await sha256(newCode);
   await window.FB.updateMember(uid, { codeHash: h });
   alert(`✅ Code reset for ${name}. Give them their new code.`);
+}
+
+async function adminResetMemberDevice(uid, name) {
+  if (!confirm(`Reset device binding for ${name}?\n\nThis will let them log in from a new device. Their current device (if any) will be unbound.`)) return;
+  await window.FB.clearDeviceBinding(uid);
+  // Also clear any active session so they must log in fresh from the new device
+  await window.FB.clearSession(uid).catch(()=>{});
+  alert(`✅ Device reset for ${name}. They can now log in from any device — their new device will be bound on next login.`);
 }
 
 async function adminToggleMember(uid, currentlyActive) {
