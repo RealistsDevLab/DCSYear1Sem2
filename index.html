@@ -4665,12 +4665,12 @@ async function adminAddMember() {
 async function buildAdminMembersList() {
   const el = document.getElementById('admin-members-list');
   if (!el || !window.FB_READY) return;
-  el.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;">Loading...</div>';
+  el.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:"JetBrains Mono",monospace;">Loading...</div>';
   try {
     const members = await window.FB.getAllMembers();
     const entries = Object.entries(members);
     if (!entries.length) {
-      el.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;">No members yet. Add one above.</div>';
+      el.innerHTML = '<div style="color:var(--text3);font-size:12px;font-family:"JetBrains Mono",monospace;">No members yet. Add one above.</div>';
       return;
     }
     el.innerHTML = entries.map(([uid, m]) => `
