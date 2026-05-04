@@ -54,7 +54,7 @@
     form.append('file', file);
     form.append('upload_preset', UPLOAD_PRESET);
     form.append('folder', 'therealistdevlab');
-    form.append('public_id', `rdl_${Date.now()}_${Math.random().toString(36).slice(2,7)}`);
+    form.append('public_id', `rdl_${Date.now()}_${Math.random().toString(36).slice(2,7)}_${Math.random().toString(36).slice(2,9)}`);
     const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method:'POST', body:form });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'Upload failed');
@@ -178,6 +178,13 @@
     getPaperDecks:   async () => { const s = await get(ref(db,'paperDecks')); if(!s.exists()) return []; const a=[]; s.forEach(c=>a.push({...c.val(),_key:c.key})); return a; },
     deletePaperDeck: (k)  => remove(ref(db,'paperDecks/'+k)),
     onPaperDecks:    (cb) => onValue(ref(db,'paperDecks'), s=>{ const a=[]; if(s.exists()) s.forEach(c=>a.push({...c.val(),_key:c.key})); cb(a); }),
+
+    // ── Single Active Session (anti-sharing) ──────────────────────────────────
+    // sessions/{uid} = { token, ts, device }
+    writeSession:  (uid, token) => set(ref(db,'sessions/'+uid), { token, ts: Date.now(), device: navigator.userAgent.slice(0,120) }),
+    readSession:   async (uid)  => { const s = await get(ref(db,'sessions/'+uid)); return s.exists() ? s.val() : null; },
+    watchSession:  (uid, cb)    => onValue(ref(db,'sessions/'+uid), s => cb(s.exists() ? s.val() : null)),
+    clearSession:  (uid)        => remove(ref(db,'sessions/'+uid)),
   };
 
   window.FB_READY = true;
@@ -4312,6 +4319,8 @@ let _sessionRole   = null;  // 'member' | 'admin'
 let _currentMember = null;  // { uid, name, email, phone, ... } — set on login
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 min inactivity
 let _sessionTimer = null;
+let _sessionToken  = null;   // random token written to Firebase on login
+let _sessionWatcher = null;  // Firebase onValue unsubscribe fn
 
 // ── SHA-256 (Web Crypto — no library) ────────────────────────────────────────
 async function sha256(str) {
@@ -4426,7 +4435,15 @@ async function doLogin() {
     LOCKOUT.member.attempts = 0;
     _currentMember = { uid, ...member };
     isAdmin = false; _sessionRole = 'member';
+
+    // ── Single-session enforcement ────────────────────────────────────────────
+    // Generate a unique token for this login, write it to Firebase.
+    // A watcher will kick this session out if another device overwrites the token.
+    _sessionToken = crypto.randomUUID();
+    await window.FB.writeSession(uid, _sessionToken);
+
     enterApp();
+    startSessionWatcher(uid, _sessionToken);
 
   } catch(e) {
     if (e.message === 'no-firebase') {
@@ -4506,7 +4523,59 @@ function startSessionTimeout() {
   resetSessionTimer();
 }
 
-// ── Enter app ─────────────────────────────────────────────────────────────────
+// ── Single-session watcher ────────────────────────────────────────────────────
+// Listens to Firebase in real-time. If another device logs in with the same
+// account, the token changes — this session detects it and is kicked out.
+function startSessionWatcher(uid, token) {
+  if (_sessionWatcher) { _sessionWatcher(); _sessionWatcher = null; }
+  _sessionWatcher = window.FB.watchSession(uid, (data) => {
+    // Ignore if we're not logged in or this is admin
+    if (!_sessionRole || isAdmin) return;
+    // If the token in Firebase no longer matches ours, someone else logged in
+    if (data && data.token && data.token !== token) {
+      // Stop watching before we log out to avoid double-trigger
+      if (_sessionWatcher) { _sessionWatcher(); _sessionWatcher = null; }
+      // Show a clear message and force logout
+      showSessionKickedModal();
+    }
+  });
+}
+
+function showSessionKickedModal() {
+  // Remove any existing modal
+  const existing = document.getElementById('session-kicked-modal');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'session-kicked-modal';
+  modal.style.cssText = `
+    position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+    background:rgba(10,10,15,0.96);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    font-family:'Syne',sans-serif;
+  `;
+  modal.innerHTML = `
+    <div style="background:var(--card);border:1px solid var(--accent2);border-radius:20px;padding:40px 36px;max-width:400px;width:90%;text-align:center;box-shadow:0 0 60px rgba(255,101,132,0.2);">
+      <div style="font-size:48px;margin-bottom:16px;">🔒</div>
+      <div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:10px;">Session Ended</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px;font-family:'JetBrains Mono',monospace;">
+        Your account was accessed from another device.<br>Only one active session is allowed per account.
+      </div>
+      <div style="font-size:11px;color:var(--accent2);margin-bottom:28px;font-family:'JetBrains Mono',monospace;">
+        If this wasn't you, contact Bravehart immediately.
+      </div>
+      <button onclick="document.getElementById('session-kicked-modal').remove();logout();"
+        style="background:linear-gradient(135deg,var(--accent),#8b5cf6);border:none;border-radius:10px;
+               padding:12px 28px;color:white;font-size:14px;font-weight:700;cursor:pointer;width:100%;">
+        Back to Login
+      </button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  // Auto-logout after 10 seconds even if user ignores the modal
+  setTimeout(() => { if (document.getElementById('session-kicked-modal')) logout(); }, 10000);
+}
+
+
 function enterApp() {
   document.getElementById('login-page').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -4553,6 +4622,17 @@ function enterApp() {
 }
 
 function logout() {
+  // Stop session watcher
+  if (_sessionWatcher) { _sessionWatcher(); _sessionWatcher = null; }
+  // Clear our session token from Firebase (only if we own it)
+  if (_currentMember && _sessionToken && window.FB_READY) {
+    window.FB.readSession(_currentMember.uid).then(data => {
+      if (data && data.token === _sessionToken) {
+        window.FB.clearSession(_currentMember.uid).catch(()=>{});
+      }
+    }).catch(()=>{});
+  }
+  _sessionToken = null;
   isAdmin = false;
   _sessionRole = null;
   _currentMember = null;
