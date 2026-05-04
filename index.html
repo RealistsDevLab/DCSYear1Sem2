@@ -5160,7 +5160,22 @@ async function tryGodbolt(code) {
   return html;
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
+// ══ CODING CHALLENGES ════════════════════════════════════════════════════════
+const CHALLENGES = [
+  {
+    id: 'ch1', title: 'Hello, Realist!', difficulty: 'easy',
+    desc: 'Print exactly: Hello, Realist!',
+    examples: [{ input: '(none)', output: 'Hello, Realist!' }],
+    expected: 'Hello, Realist!',
+    starter: '#include <stdio.h>\n\nint main() {\n    // your code here\n    return 0;\n}',
+    hint: 'Use printf("Hello, Realist!\\n");'
+  },
+  {
+    id: 'ch2', title: 'Sum of Two Numbers', difficulty: 'easy',
+    desc: 'Add a=3 and b=4 and print: Sum = 7',
+    examples: [{ input: '(none)', output: 'Sum = 7' }],
+    expected: 'Sum = 7',
+    starter: '#include <stdio.h>\n\nint main() {\n    int a = 3, b = 4;\n    // compute sum\n    return 0;\n}',
     hint: 'Use int sum = a + b; then printf("Sum = %d\\n", sum);'
   },
   {
