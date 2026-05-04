@@ -5161,23 +5161,6 @@ async function tryGodbolt(code) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// FEATURE 1 — CODING CHALLENGES
-// ══════════════════════════════════════════════════════════════════════════════
-const CHALLENGES = [
-  {
-    id: 'ch1', title: 'Hello, Realist!', difficulty: 'easy',
-    desc: 'Write a C program that prints exactly:\nHello, Realist!\nDCS Year 1',
-    examples: [{ input: '(none)', output: 'Hello, Realist!\nDCS Year 1' }],
-    expected: 'Hello, Realist!\nDCS Year 1',
-    starter: '#include <stdio.h>\n\nint main() {\n    // Your code here\n    return 0;\n}',
-    hint: 'Use printf() twice, once for each line. Use \\n for newline.'
-  },
-  {
-    id: 'ch2', title: 'Sum of Two Numbers', difficulty: 'easy',
-    desc: 'Write a program that:\n1. Declares two integers: a = 15, b = 27\n2. Computes their sum\n3. Prints: Sum = 42',
-    examples: [{ input: '(none)', output: 'Sum = 42' }],
-    expected: 'Sum = 42',
-    starter: '#include <stdio.h>\n\nint main() {\n    int a = 15, b = 27;\n    // compute and print sum\n    return 0;\n}',
     hint: 'Use int sum = a + b; then printf("Sum = %d\\n", sum);'
   },
   {
