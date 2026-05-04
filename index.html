@@ -4738,19 +4738,6 @@ async function unblockFromSettings(name) {
   renderBlocklist();
 }
 
-function logout() {
-  isAdmin = false;
-  _sessionRole = null;
-  clearTimeout(_sessionTimer);
-  ['mousemove','keydown','touchstart','click'].forEach(evt =>
-    document.removeEventListener(evt, resetSessionTimer)
-  );
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-page').style.display = 'flex';
-  document.getElementById('access-code').value = '';
-  document.getElementById('admin-code-input').value = '';
-  showMemberLogin();
-}
 
 // ══ NAVIGATION ════════════════════════════════════════════════════════════════
 function showView(name, el) {
