@@ -191,6 +191,40 @@
     getDeviceBinding:   async (uid) => { const s = await get(ref(db,'deviceBindings/'+uid)); return s.exists() ? s.val() : null; },
     setDeviceBinding:   (uid, fp)   => set(ref(db,'deviceBindings/'+uid), { fingerprint: fp, boundAt: Date.now(), ua: navigator.userAgent.slice(0,200) }),
     clearDeviceBinding: (uid)       => remove(ref(db,'deviceBindings/'+uid)),
+
+    // ── Courses ───────────────────────────────────────────────────────────────
+    getCourses:  async () => { const s = await get(ref(db,'config/courses')); return s.exists() ? s.val() : null; },
+    setCourses:  (d) => set(ref(db,'config/courses'), d),
+
+    // ── Papers ────────────────────────────────────────────────────────────────
+    getPapers:   async () => { const s = await get(ref(db,'config/papers')); return s.exists() ? s.val() : null; },
+    setPapers:   (d) => set(ref(db,'config/papers'), d),
+
+    // ── Topics ────────────────────────────────────────────────────────────────
+    getTopics:   async () => { const s = await get(ref(db,'config/topics')); return s.exists() ? s.val() : null; },
+    setTopics:   (d) => set(ref(db,'config/topics'), d),
+
+    // ── Challenges ────────────────────────────────────────────────────────────
+    getChallenges:      async () => { const s = await get(ref(db,'config/challenges')); return s.exists() ? s.val() : null; },
+    setChallenges:      (d) => set(ref(db,'config/challenges'), d),
+    getDebugChallenges: async () => { const s = await get(ref(db,'config/debugChallenges')); return s.exists() ? s.val() : null; },
+    setDebugChallenges: (d) => set(ref(db,'config/debugChallenges'), d),
+
+    // ── Snippets ──────────────────────────────────────────────────────────────
+    getSnippets: async () => { const s = await get(ref(db,'config/snippets')); return s.exists() ? s.val() : null; },
+    setSnippets: (d) => set(ref(db,'config/snippets'), d),
+
+    // ── Seed check ────────────────────────────────────────────────────────────
+    isSeedDone: async () => { const s = await get(ref(db,'config/seeded')); return s.exists() && s.val() === true; },
+    markSeedDone: () => set(ref(db,'config/seeded'), true),
+
+    // ── Builtin Quizzes (seeded set, keyed by id) ─────────────────────────────
+    getQuizzesBuiltin: async () => { const s = await get(ref(db,'config/quizzesBuiltin')); return s.exists() ? s.val() : null; },
+    setQuizzesBuiltin: (d) => set(ref(db,'config/quizzesBuiltin'), d),
+
+    // ── Builtin Flashcards (seeded set, keyed by index) ───────────────────────
+    getFlashcardsBuiltin: async () => { const s = await get(ref(db,'config/flashcardsBuiltin')); return s.exists() ? s.val() : null; },
+    setFlashcardsBuiltin: (d) => set(ref(db,'config/flashcardsBuiltin'), d),
   };
 
   window.FB_READY = true;
@@ -2927,7 +2961,7 @@ body {
         <div class="sidebar-item" onclick="showView('flashcards', this)">
           <div class="sidebar-item-icon" style="background:rgba(108,99,255,0.15)">🃏</div>
           Flashcards
-          <span class="sidebar-item-count">30+</span>
+          <span class="sidebar-item-count" id="sidebar-count-flashcards">30+</span>
         </div>
       </div>
 
@@ -2938,27 +2972,27 @@ body {
         <div class="sidebar-item" onclick="showCourse('csc122', this)">
           <div class="sidebar-item-icon" style="background:rgba(108,99,255,0.15)">⚡</div>
           CSC 122
-          <span class="sidebar-item-count">3</span>
+          <span class="sidebar-item-count" id="sidebar-count-csc122">5</span>
         </div>
         <div class="sidebar-item" onclick="showCourse('csc121', this)">
           <div class="sidebar-item-icon" style="background:rgba(67,233,123,0.15)">🖥️</div>
           CSC 121
-          <span class="sidebar-item-count">3</span>
+          <span class="sidebar-item-count" id="sidebar-count-csc121">5</span>
         </div>
         <div class="sidebar-item" onclick="showCourse('csc123', this)">
           <div class="sidebar-item-icon" style="background:rgba(247,151,30,0.15)">🗄️</div>
           CSC 123
-          <span class="sidebar-item-count">3</span>
+          <span class="sidebar-item-count" id="sidebar-count-csc123">5</span>
         </div>
         <div class="sidebar-item" onclick="showCourse('ict121', this)">
           <div class="sidebar-item-icon" style="background:rgba(255,101,132,0.15)">🔧</div>
           ICT 121
-          <span class="sidebar-item-count">3</span>
+          <span class="sidebar-item-count" id="sidebar-count-ict121">5</span>
         </div>
         <div class="sidebar-item" onclick="showCourse('bsm121', this)">
           <div class="sidebar-item-icon" style="background:rgba(240,196,25,0.15)">📊</div>
           BSM 121
-          <span class="sidebar-item-count">2</span>
+          <span class="sidebar-item-count" id="sidebar-count-bsm121">4</span>
         </div>
       </div>
 
@@ -3085,7 +3119,7 @@ body {
               <div class="course-icon" style="background:rgba(67,233,123,0.15)">🧠</div>
               <div><div class="course-code">QUIZZES</div><div class="course-name">Tests & Instant Results</div></div>
             </div>
-            <div class="course-tags"><span class="tag">3 Tests</span><span class="tag">Instant Marking</span><span class="tag">Leaderboard</span></div>
+            <div class="course-tags"><span class="tag" id="home-quiz-tag">3 Tests</span><span class="tag">Instant Marking</span><span class="tag">Leaderboard</span></div>
             <div class="course-actions"><button class="btn btn-primary" style="width:100%">Start a Test →</button></div>
           </div>
           <div class="course-card" onclick="showView('flashcards')">
@@ -3094,7 +3128,7 @@ body {
               <div class="course-icon" style="background:rgba(108,99,255,0.15)">🃏</div>
               <div><div class="course-code">FLASHCARDS</div><div class="course-name">Study Flashcards</div></div>
             </div>
-            <div class="course-tags"><span class="tag">30+ Cards</span><span class="tag">Flip to Reveal</span><span class="tag">All Courses</span></div>
+            <div class="course-tags"><span class="tag" id="home-fc-tag">30+ Cards</span><span class="tag">Flip to Reveal</span><span class="tag">All Courses</span></div>
             <div class="course-actions"><button class="btn btn-primary" style="width:100%">Study Now →</button></div>
           </div>
           <div class="course-card" onclick="showView('leaderboard');buildLeaderboard()">
@@ -3490,76 +3524,82 @@ body {
       <!-- HOW TO ADD CONTENT -->
       <div class="view" id="view-howto">
         <div class="home-greeting fade-in">
-          <h1>How to Add Content ➕</h1>
-          <p>Keep your study hub updated easily — <span>from any device</span></p>
+          <h1>How to Manage Content ➕</h1>
+          <p>Everything is database-driven — <span>no code changes needed</span></p>
         </div>
 
         <div class="how-to-box fade-in">
-          <h3>📁 Method 1 — Add Files via GitHub (Recommended)</h3>
+          <h3>🧠 Quizzes & Flashcards — Admin Settings Panel</h3>
           <div class="how-to-steps">
             <div class="how-to-step">
               <div class="how-to-num">1</div>
-              <div>Go to <span class="code-inline">github.com/RealistsDevLab/DCSYear1Sem2</span> and open the repository</div>
+              <div>Log in as <span class="code-inline">Admin</span> and go to <span class="code-inline">Settings → Quiz Builder</span></div>
             </div>
             <div class="how-to-step">
               <div class="how-to-num">2</div>
-              <div>Click <span class="code-inline">Add file → Upload files</span> — drag your PDF, DOCX, or image</div>
+              <div>Create a new quiz, give it a title and course, then add questions with 4 options each</div>
             </div>
             <div class="how-to-step">
               <div class="how-to-num">3</div>
-              <div>Write a commit message e.g. <span class="code-inline">Add CSC122 past paper 2025</span> and click Commit</div>
+              <div>New quizzes appear instantly for all members — no redeploy needed</div>
             </div>
             <div class="how-to-step">
               <div class="how-to-num">4</div>
-              <div>Open <span class="code-inline">index.html</span> in the repo, click the pencil ✏️ to edit</div>
+              <div>For flashcards, go to <span class="code-inline">Settings → Flashcard Builder</span> and add Q&A pairs</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="how-to-box fade-in" style="border-left-color:var(--accent3)">
+          <h3>📅 Timetable & Exam Dates — Settings → Timetable</h3>
+          <div class="how-to-steps">
+            <div class="how-to-step">
+              <div class="how-to-num">1</div>
+              <div>Go to <span class="code-inline">Settings → Timetable</span> as Admin</div>
             </div>
             <div class="how-to-step">
-              <div class="how-to-num">5</div>
-              <div>Find the course section and add a new resource item with the file path — commit changes</div>
+              <div class="how-to-num">2</div>
+              <div>Click <span class="code-inline">📥 Load Current</span> to load the existing schedule into the editor</div>
+            </div>
+            <div class="how-to-step">
+              <div class="how-to-num">3</div>
+              <div>Edit the JSON directly and click <span class="code-inline">💾 Save</span> — updates sync instantly to all members</div>
+            </div>
+            <div class="how-to-step">
+              <div class="how-to-num">4</div>
+              <div>Use the Exam Dates editor on the same page to update countdown dates before each exam season</div>
             </div>
           </div>
         </div>
 
         <div class="how-to-box fade-in" style="border-left-color:var(--accent2)">
-          <h3>📧 Method 2 — From Your Email (Forward & Upload)</h3>
+          <h3>📁 Study Files & Past Papers — Settings → Upload</h3>
           <div class="how-to-steps">
             <div class="how-to-step">
               <div class="how-to-num">1</div>
-              <div>Receive notes or papers in your email</div>
+              <div>Go to <span class="code-inline">Settings → Upload</span> as Admin</div>
             </div>
             <div class="how-to-step">
               <div class="how-to-num">2</div>
-              <div>Download the attachment to your phone or PC</div>
+              <div>Select the course and upload the file — it goes to Cloudinary automatically</div>
             </div>
             <div class="how-to-step">
               <div class="how-to-num">3</div>
-              <div>Open GitHub on your phone browser → go to the repository → Upload the file</div>
-            </div>
-            <div class="how-to-step">
-              <div class="how-to-num">4</div>
-              <div>Update <span class="code-inline">index.html</span> to add the new resource link</div>
+              <div>Files appear in the course detail view immediately for all members</div>
             </div>
           </div>
         </div>
 
-        <div class="how-to-box fade-in" style="border-left-color:var(--accent)">
-          <h3>💻 Method 3 — From Terminal (Fastest for You)</h3>
+        <div class="how-to-box fade-in" style="border-left-color:var(--accent4)">
+          <h3>📸 Group Photos — Settings → Upload</h3>
           <div class="how-to-steps">
             <div class="how-to-step">
               <div class="how-to-num">1</div>
-              <div>Clone the repo: <span class="code-inline">git clone https://github.com/RealistsDevLab/DCSYear1Sem2.git</span></div>
+              <div>Go to <span class="code-inline">Settings → Upload → Photos</span></div>
             </div>
             <div class="how-to-step">
               <div class="how-to-num">2</div>
-              <div>Copy your new file into the folder, then: <span class="code-inline">git add .</span></div>
-            </div>
-            <div class="how-to-step">
-              <div class="how-to-num">3</div>
-              <div><span class="code-inline">git commit -m "Add new resource"</span></div>
-            </div>
-            <div class="how-to-step">
-              <div class="how-to-num">4</div>
-              <div><span class="code-inline">git push</span> — done! Site updates in 1-2 minutes</div>
+              <div>Upload photos with a caption — they appear in the gallery and login slideshow</div>
             </div>
           </div>
         </div>
@@ -3976,6 +4016,22 @@ body {
               <button class="btn btn-outline" onclick="loadTimetableToSettings()">📥 Load Current</button>
             </div>
           </div>
+          <!-- Exam dates editor -->
+          <div class="settings-card" style="margin-top:16px;">
+            <div class="settings-card-header">
+              <div class="settings-card-icon" style="background:rgba(255,101,132,0.15)">📅</div>
+              <div>
+                <div class="settings-card-title">Edit Exam Countdown Dates</div>
+                <div class="settings-card-sub">Changes sync to all members immediately</div>
+              </div>
+            </div>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:12px;font-family:"JetBrains Mono",monospace;">Format: array of objects with course, name, date (YYYY-MM-DD), color</p>
+            <textarea id="exams-json" class="post-textarea" style="min-height:200px;font-family:"JetBrains Mono",monospace;font-size:11px;line-height:1.6;"></textarea>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+              <button class="btn btn-primary" onclick="saveExamsFromSettings()">💾 Save Exams</button>
+              <button class="btn btn-outline" onclick="loadExamsToSettings()">📥 Load Current</button>
+            </div>
+          </div>
         </div>
 
         <!-- COMMUNICATIONS TAB -->
@@ -4174,7 +4230,7 @@ body {
 
 <script>
 // ══ DATA ══════════════════════════════════════════════════════════════════════
-const COURSES = {
+const _SEED_COURSES = {
   csc122: {
     name: "Structured Software Development",
     code: "CSC 122",
@@ -4251,7 +4307,7 @@ const COURSES = {
   }
 };
 
-const PAPERS = [
+const _SEED_PAPERS = [
   { year: "2025", course: "CSC 122 — Structured Software Development", marks: "100 Marks", duration: "3 Hours", file: "ClassWork/Resources/files/Past_Papers/STRUCTURED SOFTWARE DEVELOPMENT.pdf", real: true },
   { year: "2024", course: "CSC 122 — Structured Software Development", marks: "100 Marks", duration: "3 Hours", file: "ClassWork/Resources/files/Past_Papers/STRUCTURED SOFTWARE DEVT.pdf", real: true },
   { year: "2024", course: "CSC 121 — Computer Hardware & Maintenance", marks: "100 Marks", duration: "3 Hours", file: "ClassWork/Resources/files/Past_Papers/Computer Hardware and maintenance 1.pdf", real: true },
@@ -4259,7 +4315,7 @@ const PAPERS = [
   { year: "2025", course: "ICT 121 — Computer Workshop Practice", marks: "100 Marks", duration: "3 Hours", file: "#", real: false },
 ];
 
-const SNIPPETS = {
+const _SEED_SNIPPETS = {
   hello: `#include <stdio.h>\n\nint main() {\n    printf("Hello, TheRealists!\\n");\n    printf("DCS Year 1 - Semester 2\\n");\n    return 0;\n}`,
   input: `#include <stdio.h>\n\nint main() {\n    // INPUT\n    int num;\n    printf("Enter a number: ");\n    scanf("%d", &num);\n    \n    // PROCESSING\n    int doubled = num * 2;\n    \n    // OUTPUT\n    printf("You entered: %d\\n", num);\n    printf("Doubled: %d\\n", doubled);\n    return 0;\n}`,
   ifelse: `#include <stdio.h>\n\nint main() {\n    int score = 75;\n    \n    if (score >= 90) {\n        printf("Excellent\\n");\n    } else if (score >= 80) {\n        printf("Very Good\\n");\n    } else if (score >= 70) {\n        printf("Good\\n");\n    } else if (score >= 60) {\n        printf("Fair\\n");\n    } else {\n        printf("Fail\\n");\n    }\n    \n    return 0;\n}`,
@@ -4270,6 +4326,125 @@ const SNIPPETS = {
   arrays: `#include <stdio.h>\n\nint main() {\n    // 1D Array\n    int scores[5] = {85, 92, 78, 90, 88};\n    \n    printf("All scores:\\n");\n    for (int i = 0; i < 5; i++) {\n        printf("Student %d: %d\\n", i+1, scores[i]);\n    }\n    \n    // Find highest\n    int max = scores[0];\n    for (int i = 1; i < 5; i++) {\n        if (scores[i] > max) max = scores[i];\n    }\n    printf("Highest: %d\\n", max);\n    \n    return 0;\n}`,
   pointers: `#include <stdio.h>\n\nint main() {\n    int x = 42;\n    int *ptr = &x;  // ptr stores address of x\n    \n    printf("Value of x: %d\\n", x);\n    printf("Address of x: %p\\n", &x);\n    printf("ptr points to: %p\\n", ptr);\n    printf("Value at ptr: %d\\n", *ptr);\n    \n    // Modify through pointer\n    *ptr = 100;\n    printf("x after *ptr = 100: %d\\n", x);\n    \n    return 0;\n}`
 };
+
+// ══ RUNTIME DATA (loaded from Firebase — seeded on first run) ════════════════
+let COURSES    = null;
+let PAPERS     = null;
+let SNIPPETS   = null;
+let CHALLENGES = null;
+let DEBUG_CHALLENGES = null;
+let QUIZZES    = null;
+let FLASHCARD_DATA = null;
+let TIMETABLE  = null;
+let EXAMS      = null;
+let TOPICS     = null;
+let _dataReady = false;
+
+// Seed all hardcoded data to Firebase the very first time, then load from there every time.
+async function seedAndLoadData() {
+  if (!window.FB_READY) return;
+  try {
+    const alreadySeeded = await window.FB.isSeedDone();
+    if (!alreadySeeded) {
+      console.log('🌱 First run — seeding all data to Firebase...');
+      await Promise.all([
+        window.FB.setCourses(_SEED_COURSES),
+        window.FB.setPapers(_SEED_PAPERS),
+        window.FB.setSnippets(_SEED_SNIPPETS),
+        window.FB.setChallenges(_SEED_CHALLENGES),
+        window.FB.setDebugChallenges(_SEED_DEBUG_CHALLENGES),
+        window.FB.setTopics(_SEED_TOPICS),
+        window.FB.saveTimetable(_SEED_TIMETABLE),
+        window.FB.saveExams(_SEED_EXAMS),
+      ]);
+      // Seed quizzes to config/quizzesBuiltin
+      const quizzesObj = {};
+      _SEED_QUIZZES.forEach(q => { quizzesObj[q.id] = q; });
+      await window.FB.setQuizzesBuiltin(quizzesObj);
+      // Seed flashcards
+      const fcObj = {};
+      _SEED_FLASHCARD_DATA.forEach((f, i) => { fcObj['fc_' + i] = f; });
+      await window.FB.setFlashcardsBuiltin(fcObj);
+      await window.FB.markSeedDone();
+      console.log('✅ Seed complete.');
+    }
+  } catch(e) {
+    console.warn('Seed error (non-fatal):', e);
+  }
+  // Load all data from Firebase
+  await loadAllDataFromFirebase();
+}
+
+async function loadAllDataFromFirebase() {
+  if (!window.FB_READY) return;
+  try {
+    const [courses, papers, snippets, challenges, debugCh, topics, timetable, exams, quizzesBuiltin, fcBuiltin, fbQuizzes, fbCards] = await Promise.all([
+      window.FB.getCourses(),
+      window.FB.getPapers(),
+      window.FB.getSnippets(),
+      window.FB.getChallenges(),
+      window.FB.getDebugChallenges(),
+      window.FB.getTopics(),
+      window.FB.getTimetable(),
+      window.FB.getExams(),
+      window.FB.getQuizzesBuiltin(),
+      window.FB.getFlashcardsBuiltin(),
+      window.FB.getQuizzes(),   // user-created quizzes
+      window.FB.getFlashcards() // user-created flashcards
+    ]);
+    COURSES          = courses          || _SEED_COURSES;
+    PAPERS           = papers           || _SEED_PAPERS;
+    SNIPPETS         = snippets         || _SEED_SNIPPETS;
+    CHALLENGES       = challenges       || _SEED_CHALLENGES;
+    DEBUG_CHALLENGES = debugCh          || _SEED_DEBUG_CHALLENGES;
+    TOPICS           = topics           || _SEED_TOPICS;
+    TIMETABLE        = timetable        || _SEED_TIMETABLE;
+    EXAMS            = exams            || _SEED_EXAMS;
+    // Merge builtin quizzes (keyed obj) with user-created quizzes (array)
+    const builtinArr = quizzesBuiltin ? Object.values(quizzesBuiltin) : _SEED_QUIZZES;
+    const userQuizArr = fbQuizzes ? fbQuizzes.filter(q => q.questions && Object.keys(q.questions).length > 0).map(q => ({ ...q, id: q._key, questions: Object.values(q.questions) })) : [];
+    QUIZZES = [...builtinArr, ...userQuizArr];
+    // Merge builtin flashcards (keyed obj) with user-created flashcards (array)
+    const builtinFc = fcBuiltin ? Object.values(fcBuiltin) : _SEED_FLASHCARD_DATA;
+    const userFc    = fbCards   || [];
+    FLASHCARD_DATA  = [...builtinFc, ...userFc];
+    _dataReady = true;
+    console.log('📦 All data loaded from Firebase.');
+    updateDynamicCounts();
+  } catch(e) {
+    console.error('Failed to load data from Firebase:', e);
+    // Last-resort fallback to seeds so app doesn't break
+    COURSES = _SEED_COURSES; PAPERS = _SEED_PAPERS; SNIPPETS = _SEED_SNIPPETS;
+    CHALLENGES = _SEED_CHALLENGES; DEBUG_CHALLENGES = _SEED_DEBUG_CHALLENGES;
+    TOPICS = _SEED_TOPICS; TIMETABLE = _SEED_TIMETABLE; EXAMS = _SEED_EXAMS;
+    QUIZZES = _SEED_QUIZZES; FLASHCARD_DATA = _SEED_FLASHCARD_DATA;
+    _dataReady = true;
+  }
+}
+
+function updateDynamicCounts() {
+  // Stat cards
+  const qEl = document.getElementById('stat-quizzes');
+  const fEl = document.getElementById('stat-flashcards');
+  if (qEl && QUIZZES) qEl.textContent = QUIZZES.length;
+  if (fEl && FLASHCARD_DATA) fEl.textContent = FLASHCARD_DATA.length + '+';
+  // Sidebar course counts
+  if (COURSES) {
+    Object.entries(COURSES).forEach(([key, course]) => {
+      const el = document.getElementById('sidebar-count-' + key);
+      if (el) el.textContent = (course.resources || []).length;
+    });
+  }
+  // Sidebar flashcard count
+  const sbFc = document.getElementById('sidebar-count-flashcards');
+  if (sbFc && FLASHCARD_DATA) sbFc.textContent = FLASHCARD_DATA.length + '+';
+  // Home quiz card tag
+  const qTag = document.getElementById('home-quiz-tag');
+  if (qTag && QUIZZES) qTag.textContent = QUIZZES.length + ' Tests';
+  // Home flashcards tag
+  const fcTag = document.getElementById('home-fc-tag');
+  if (fcTag && FLASHCARD_DATA) fcTag.textContent = FLASHCARD_DATA.length + '+ Cards';
+}
 
 // ══ LOGIN SLIDESHOW ═══════════════════════════════════════════════════════════
 async function initLoginSlideshow() {
@@ -4659,6 +4834,11 @@ function enterApp() {
       else { box.classList.remove('visible'); }
     });
     initNotifications();
+    // Load / seed all Firebase-driven data, then refresh views
+    seedAndLoadData().then(() => {
+      buildPapersGrid();
+      updateHomeStats();
+    });
   }
 }
 
@@ -4919,6 +5099,7 @@ function showView(name, el) {
 }
 
 async function showCourse(id, el) {
+  if (!COURSES) { alert('⏳ Course data is still loading. Please try again.'); return; }
   const c = COURSES[id];
   if (!c) return;
 
@@ -5038,6 +5219,7 @@ function downloadFile(file) {
 // ══ PAST PAPERS GRID ════════════════════════════════════════════════════════
 function buildPapersGrid() {
   const grid = document.getElementById('papers-grid');
+  if (!PAPERS) { grid.innerHTML = '<div style="color:var(--text3);padding:20px;font-family:\'JetBrains Mono\',monospace;">⏳ Loading papers…</div>'; return; }
   grid.innerHTML = PAPERS.map(p => `
     <div class="paper-card fade-in">
       <div class="paper-year">${p.year}</div>
@@ -5100,6 +5282,7 @@ function getCMCode() {
 }
 
 function loadSnippet(name) {
+  if (!SNIPPETS) return;
   let code = SNIPPETS[name] || '';
   code = code.replace(/\u2264/g, '<=').replace(/\u2265/g, '>=').replace(/\u2260/g, '!=').replace(/\u2212/g, '-');
   if (cmEditor) { cmEditor.setValue(code); cmEditor.focus(); }
@@ -5329,7 +5512,7 @@ async function tryGodbolt(code) {
 }
 
 // ══ CODING CHALLENGES ════════════════════════════════════════════════════════
-const CHALLENGES = [
+const _SEED_CHALLENGES = [
   {
     id: 'ch1', title: 'Hello, Realist!', difficulty: 'easy',
     desc: 'Print exactly: Hello, Realist!',
@@ -5419,6 +5602,7 @@ let solvedChallenges   = JSON.parse(localStorage.getItem('rdl_solved_ch') || '[]
 function buildChallengesGrid() {
   const grid = document.getElementById('challenges-grid');
   if (!grid) return;
+  if (!CHALLENGES) { grid.innerHTML = '<div style="color:var(--text3);padding:20px;font-family:\'JetBrains Mono\',monospace;">⏳ Loading challenges…</div>'; return; }
   grid.innerHTML = CHALLENGES.map(ch => {
     const solved = solvedChallenges.includes(ch.id);
     return `<div class="challenge-card ${ch.difficulty} ${solved ? 'solved' : ''}" onclick="openChallenge('${ch.id}')">
@@ -5433,7 +5617,7 @@ function buildChallengesGrid() {
 }
 
 function openChallenge(id) {
-  const ch = CHALLENGES.find(c => c.id === id);
+  const ch = (CHALLENGES||[]).find(c => c.id === id);
   if (!ch) return;
   activeChallengeId = id;
   document.getElementById('ch-title').textContent = ch.title;
@@ -5489,7 +5673,7 @@ function clearChallengeEditor() {
 }
 
 async function runChallenge() {
-  const ch = CHALLENGES.find(c => c.id === activeChallengeId);
+  const ch = (CHALLENGES||[]).find(c => c.id === activeChallengeId);
   if (!ch || !chCmEditor) return;
   const code     = sanitizeCode(chCmEditor.getValue());
   const outEl    = document.getElementById('ch-output');
@@ -5561,7 +5745,7 @@ async function runChallenge() {
 // ══════════════════════════════════════════════════════════════════════════════
 // FEATURE 2 — DEBUG MODE
 // ══════════════════════════════════════════════════════════════════════════════
-const DEBUG_CHALLENGES = [
+const _SEED_DEBUG_CHALLENGES = [
   {
     id: 'dbg1', title: 'Missing Semicolon',
     instructions: 'This program should print "Score: 95" but it won\'t compile.\nFind and fix the bug.',
@@ -5636,6 +5820,7 @@ let hintShown      = false;
 function buildDebugGrid() {
   const grid = document.getElementById('debug-grid');
   if (!grid) return;
+  if (!DEBUG_CHALLENGES) { grid.innerHTML = '<div style="color:var(--text3);padding:20px;font-family:\'JetBrains Mono\',monospace;">⏳ Loading debug challenges…</div>'; return; }
   grid.innerHTML = DEBUG_CHALLENGES.map(dbg => {
     const solved = solvedDebugs.includes(dbg.id);
     return `<div class="debug-card ${solved ? 'solved' : ''}" onclick="openDebug('${dbg.id}')">
@@ -5646,7 +5831,7 @@ function buildDebugGrid() {
 }
 
 function openDebug(id) {
-  const dbg = DEBUG_CHALLENGES.find(d => d.id === id);
+  const dbg = (DEBUG_CHALLENGES||[]).find(d => d.id === id);
   if (!dbg) return;
   activeDebugId = id;
   hintShown = false;
@@ -5694,7 +5879,7 @@ function toggleDebugHint() {
 }
 
 function revealDebugSolution() {
-  const dbg = DEBUG_CHALLENGES.find(d => d.id === activeDebugId);
+  const dbg = (DEBUG_CHALLENGES||[]).find(d => d.id === activeDebugId);
   if (!dbg) return;
   const box = document.getElementById('dbg-reveal-box');
   box.innerHTML = '✅ Solution Explanation:\n\n' + escapeHtml(dbg.solution);
@@ -5702,7 +5887,7 @@ function revealDebugSolution() {
 }
 
 async function runDebug() {
-  const dbg = DEBUG_CHALLENGES.find(d => d.id === activeDebugId);
+  const dbg = (DEBUG_CHALLENGES||[]).find(d => d.id === activeDebugId);
   if (!dbg || !dbgCmEditor) return;
   const code   = sanitizeCode(dbgCmEditor.getValue());
   const outEl  = document.getElementById('dbg-output');
@@ -6075,7 +6260,7 @@ document.addEventListener('keydown', e => {
 });
 
 // ══ QUIZ SYSTEM ═══════════════════════════════════════════════════════════════
-const QUIZZES = [
+const _SEED_QUIZZES = [
   {
     id: 'csc122_test1', title: 'CSC 122 — C Programming Basics',
     course: 'Structured Software Development', icon: '⚡', color: 'var(--accent)',
@@ -6181,22 +6366,11 @@ async function startQuizLobby() {
   }
   quizState.name = name;
 
-  // Merge hardcoded quizzes with Firebase quizzes
-  let allQuizzes = [...QUIZZES];
-  if (window.FB_READY) {
-    try {
-      const fbQuizzes = await window.FB.getQuizzes();
-      if (fbQuizzes && fbQuizzes.length) {
-        // Only add FB quizzes that have at least one question
-        const valid = fbQuizzes.filter(q => q.questions && Object.keys(q.questions).length > 0).map(q => ({
-          ...q,
-          id: q._key,
-          questions: Object.values(q.questions)
-        }));
-        allQuizzes = [...allQuizzes, ...valid];
-      }
-    } catch(e) {}
+  if (!QUIZZES) {
+    alert('⏳ Quiz data is still loading. Please wait a moment and try again.');
+    return;
   }
+  const allQuizzes = QUIZZES;
   window._allQuizzes = allQuizzes;
 
   document.getElementById('quiz-list').innerHTML = allQuizzes.map(q => `
@@ -6358,7 +6532,7 @@ function closeMobileMenu() {
 }
 
 // ══ FLASHCARDS ════════════════════════════════════════════════════════════════
-const FLASHCARD_DATA = [
+const _SEED_FLASHCARD_DATA = [
   // CSC 122 — C Programming
   { course: 'CSC 122', q: 'What is the correct order of sections in a C program?', a: 'Comments → #include → global variables → function prototypes → main() → function definitions' },
   { course: 'CSC 122', q: 'What is the difference between while and do-while?', a: 'while checks condition BEFORE running. do-while checks AFTER — so do-while always runs at least once.' },
@@ -6451,14 +6625,11 @@ async function buildFlashcards() {
 
   grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-family:\'JetBrains Mono\',monospace;">⏳ Loading flashcards...</div>';
 
-  // Merge hardcoded cards + Firebase-added cards
-  let allCards = [...FLASHCARD_DATA];
-  if (window.FB_READY) {
-    try {
-      const fbCards = await window.FB.getFlashcards();
-      if (fbCards && fbCards.length) allCards = [...allCards, ...fbCards];
-    } catch(e) {}
+  if (!FLASHCARD_DATA) {
+    grid.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-family:\'JetBrains Mono\',monospace;">⏳ Still loading…</div>';
+    return;
   }
+  const allCards = FLASHCARD_DATA;
   window._allFlashcards = allCards;
 
   const courses = ['All', 'CSC 122', 'CSC 121', 'CSC 123', 'ICT 121', 'BSM 121'];
@@ -6518,7 +6689,7 @@ function switchSettingsTab(tab) {
   // Load data for specific tabs
   if (tab === 'upload') { loadPhotoManage(); loadFileManage(); }
   if (tab === 'members') renderSettingsBlocklist();
-  if (tab === 'timetable') loadTimetableToSettings();
+  if (tab === 'timetable') { loadTimetableToSettings(); loadExamsToSettings(); }
   if (tab === 'appearance') {
     const isLight = document.body.classList.contains('light-mode');
     document.getElementById('current-theme-label').textContent = isLight ? 'Light' : 'Dark';
@@ -6664,11 +6835,7 @@ async function buildAdminPanel() {
   }
   const posts   = window.FB_READY ? await window.FB.getPosts()     : JSON.parse(localStorage.getItem('rdl_posts')   || '[]');
   const blocked = window.FB_READY ? await window.FB.getBlocklist() : JSON.parse(localStorage.getItem('rdl_blocked') || '[]');
-  let fbFlashcardCount = FLASHCARD_DATA.length;
-  let fbFileCount = 0;
-  if (window.FB_READY) {
-    try { const fc = await window.FB.getFlashcards(); fbFlashcardCount = FLASHCARD_DATA.length + fc.length; } catch(e) {}
-  }
+  let fbFlashcardCount = FLASHCARD_DATA ? FLASHCARD_DATA.length : 0;
   const statsEl = document.getElementById('admin-stats');
   if (statsEl) {
     statsEl.innerHTML = `<div style="display:grid;gap:8px;font-size:13px;">
@@ -6707,6 +6874,10 @@ async function exportResults() {
 function buildDailyChallenge() {
   const el = document.getElementById('daily-challenge-content');
   if (!el) return;
+  if (!FLASHCARD_DATA || !FLASHCARD_DATA.length) {
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:20px;font-family:\'JetBrains Mono\',monospace;">⏳ Loading daily challenge…</div>';
+    return;
+  }
 
   // Pick card based on day of year so everyone gets same question
   const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
@@ -6752,7 +6923,7 @@ function revealDaily(answer) {
 }
 
 // ══ TIMETABLE ════════════════════════════════════════════════════════════════
-const TIMETABLE = [
+const _SEED_TIMETABLE = [
   { day: 'Mon', subject: 'CSC 122', topic: 'C Programming', time: '8:00–10:00' },
   { day: 'Tue', subject: 'CSC 121', topic: 'Hardware', time: '10:00–12:00' },
   { day: 'Wed', subject: 'CSC 123', topic: 'Databases', time: '8:00–10:00' },
@@ -6762,7 +6933,7 @@ const TIMETABLE = [
   { day: 'Sun', subject: 'Rest', topic: 'Recharge', time: '—' },
 ];
 
-const EXAMS = [
+const _SEED_EXAMS = [
   { course: 'CSC 122', name: 'Structured Software Dev', date: '2026-06-27', color: 'var(--accent)' },
   { course: 'CSC 121', name: 'Computer Hardware', date: '2026-06-28', color: 'var(--accent3)' },
   { course: 'CSC 123', name: 'Database Systems', date: '2026-07-01', color: 'var(--accent4)' },
@@ -6774,6 +6945,10 @@ function buildTimetable() {
   const grid = document.getElementById('timetable-grid');
   const countdown = document.getElementById('exam-countdown');
   if (!grid) return;
+  if (!TIMETABLE || !EXAMS) {
+    grid.innerHTML = '<div style="color:var(--text3);font-size:13px;padding:20px;font-family:\'JetBrains Mono\',monospace;">⏳ Loading schedule…</div>';
+    return;
+  }
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'short' });
 
@@ -6801,7 +6976,7 @@ function buildTimetable() {
 }
 
 // ══ PROGRESS TRACKER ════════════════════════════════════════════════════════
-const TOPICS = {
+const _SEED_TOPICS = {
   'CSC 122': ['Algorithms & Flowcharts','Program Structure','Data Types & Variables','Operators','If/Else Statements','Switch Case','For Loop','While Loop','Do-While Loop','Functions','Arrays','Strings','Pointers','Structures','File I/O','Sorting Algorithms'],
   'CSC 121': ['Computer Classification','Input/Output Devices','Motherboard & CPU','Memory Types','Storage Devices','Operating Systems','DOS Commands','Troubleshooting','Maintenance Types'],
   'CSC 123': ['Database Concepts','Relational Model','ER Diagrams','Normalisation 1NF','Normalisation 2NF','Normalisation 3NF','SQL DDL','SQL DML','SQL SELECT','JOINs','Views & Indexes','Transactions'],
@@ -6812,6 +6987,7 @@ const TOPICS = {
 function buildProgress() {
   const el = document.getElementById('progress-content');
   if (!el) return;
+  if (!TOPICS) { el.innerHTML = '<div style="color:var(--text3);padding:20px;font-family:\'JetBrains Mono\',monospace;">⏳ Loading topics…</div>'; return; }
   const saved = JSON.parse(localStorage.getItem('rdl_progress') || '{}');
   const colors = { 'CSC 122': 'var(--accent)', 'CSC 121': 'var(--accent3)', 'CSC 123': 'var(--accent4)', 'ICT 121': 'var(--accent2)', 'BSM 121': '#f0c419' };
 
@@ -7366,7 +7542,24 @@ async function loadTimetableToSettings() {
   const el = document.getElementById('timetable-json');
   if (!el) return;
   const t = window.FB_READY ? await window.FB.getTimetable() : null;
-  el.value = JSON.stringify(t || TIMETABLE, null, 2);
+  el.value = JSON.stringify(t || TIMETABLE || [], null, 2);
+}
+
+async function loadExamsToSettings() {
+  const el = document.getElementById('exams-json');
+  if (!el) return;
+  const e = window.FB_READY ? await window.FB.getExams() : null;
+  el.value = JSON.stringify(e || EXAMS || [], null, 2);
+}
+
+async function saveExamsFromSettings() {
+  const el = document.getElementById('exams-json');
+  if (!el) return;
+  try {
+    const data = JSON.parse(el.value);
+    if (window.FB_READY) { await window.FB.saveExams(data); EXAMS = data; }
+    alert('✅ Exam dates saved!');
+  } catch(e) { alert('❌ Invalid JSON: ' + e.message); }
 }
 
 async function saveTimetableFromSettings() {
