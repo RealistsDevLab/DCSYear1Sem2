@@ -1,0 +1,45 @@
+/* src/pages/Gallery.module.css */
+.title { font-size: 28px; font-weight: 800; margin-bottom: 4px; }
+.sub   { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text2); margin-bottom: 24px; }
+
+.uploadCard   { margin-bottom: 24px; }
+.uploadTitle  { font-weight: 700; font-size: 15px; margin-bottom: 12px; }
+
+.deleteBtn {
+  position: absolute; top: 6px; right: 6px;
+  background: rgba(220,38,38,0.85); border: none;
+  color: #fff; border-radius: 50%;
+  width: 24px; height: 24px;
+  font-size: 11px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.2s;
+}
+.gallery-item:hover .deleteBtn { opacity: 1; }
+
+/* Lightbox */
+.lbClose {
+  position: fixed; top: 20px; right: 24px;
+  background: rgba(255,255,255,0.1); border: none;
+  color: #fff; font-size: 20px; cursor: pointer;
+  border-radius: 50%; width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10000;
+}
+.lbNav {
+  position: fixed; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,0.1); border: none;
+  color: #fff; font-size: 36px; cursor: pointer;
+  width: 50px; height: 80px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; z-index: 10000;
+  transition: background 0.2s;
+}
+.lbNav:hover    { background: rgba(255,255,255,0.2); }
+.lbNav:disabled { opacity: 0.2; cursor: default; }
+.lbPrev { left: 12px; }
+.lbNext { right: 12px; }
+.lbCaption {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  color: rgba(255,255,255,0.8); font-family: 'JetBrains Mono', monospace;
+  font-size: 13px; text-align: center; z-index: 10000;
+}

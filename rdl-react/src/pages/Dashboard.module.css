@@ -1,0 +1,89 @@
+/* src/pages/Dashboard.module.css */
+.greeting { font-size: 32px; font-weight: 800; margin-bottom: 4px; }
+.sub      { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--text2); }
+.credit   { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text3); margin-bottom: 28px; }
+
+.statsRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.statCard {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+}
+.statNum   { font-size: 36px; font-weight: 800; font-family: 'Space Mono', monospace; }
+.statLabel { font-size: 12px; color: var(--text2); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+
+.sectionTitle {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.featureCard {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  text-decoration: none;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s;
+}
+.featureCard:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(108,99,255,0.15);
+}
+
+.featureTop     { display: flex; align-items: center; gap: 14px; }
+.featureIconWrap {
+  width: 48px; height: 48px;
+  background: var(--bg3);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; flex-shrink: 0;
+}
+.featureCat   { font-size: 11px; color: var(--text3); font-family: 'Space Mono', monospace; letter-spacing: 1px; }
+.featureTitle { font-size: 16px; font-weight: 700; }
+
+.featureTags  { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag {
+  background: var(--bg3);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text2);
+}
+
+.featureBtn {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  text-align: center;
+  border-radius: 10px;
+  padding: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  margin-top: auto;
+}
+
+@media (max-width: 900px) {
+  .statsRow     { grid-template-columns: repeat(2, 1fr); }
+  .featuresGrid { grid-template-columns: 1fr; }
+}
