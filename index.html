@@ -54,7 +54,9 @@
     form.append('file', file);
     form.append('upload_preset', UPLOAD_PRESET);
     form.append('folder', 'therealistdevlab');
-    form.append('public_id', `rdl_${Date.now()}_${Math.random().toString(36).slice(2,7)}_${Math.random().toString(36).slice(2,9)}`);
+    // Do NOT send a manual public_id — let Cloudinary generate a unique one.
+    // Sending a custom public_id with an overwrite-enabled preset causes uploads
+    // to silently replace the previous file whenever IDs collide.
     const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method:'POST', body:form });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message || 'Upload failed');
