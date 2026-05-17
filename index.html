@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TheRealistDevLab — DCS Study Portal</title>
+<title>TheRealists — DCS Study Hub</title>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -197,38 +197,121 @@
   window.dispatchEvent(new Event('fb-ready'));
   console.log('✅ Firebase connected — TheRealistDevLab 🚀');
 </script>
+<script>
+
+// ══ ANTI-COPY / ANTI-DOWNLOAD ENFORCEMENT ══
+document.addEventListener('contextmenu', function(e) {
+  if (!document.body.classList.contains('admin-mode')) {
+    e.preventDefault();
+    return false;
+  }
+});
+document.addEventListener('keydown', function(e) {
+  if (!document.body.classList.contains('admin-mode')) {
+    // Block Ctrl+C, Ctrl+A, Ctrl+S, Ctrl+P, Ctrl+U, Ctrl+Shift+I, F12, PrintScreen
+    if ((e.ctrlKey || e.metaKey) && ['c','a','s','p','u','x'].includes(e.key.toLowerCase())) {
+      e.preventDefault(); return false;
+    }
+    if ((e.ctrlKey && e.shiftKey && ['i','j','c'].includes(e.key.toLowerCase())) ||
+        e.key === 'F12' || e.key === 'PrintScreen') {
+      e.preventDefault(); return false;
+    }
+  }
+});
+document.addEventListener('copy', function(e) {
+  if (!document.body.classList.contains('admin-mode')) {
+    e.preventDefault();
+    return false;
+  }
+});
+document.addEventListener('dragstart', function(e) {
+  if (!document.body.classList.contains('admin-mode')) {
+    e.preventDefault();
+  }
+});
+// Intercept ALL anchor clicks to prevent download for non-admins
+document.addEventListener('click', function(e) {
+  if (document.body.classList.contains('admin-mode')) return;
+  const a = e.target.closest('a');
+  if (a) {
+    const href = a.getAttribute('href') || '';
+    const hasDownload = a.hasAttribute('download');
+    // Block PDF/DOCX downloads
+    if (hasDownload || /\.pdf|\.docx|\.doc/i.test(href)) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Open in new tab to VIEW only — no download attribute
+      if (href && href !== '#') {
+        const win = window.open(href, '_blank', 'noopener');
+        if (win) win.opener = null;
+      }
+      return false;
+    }
+  }
+}, true);
+
+</script>
 <style>
 :root {
-  --bg: #0a0a0f;
-  --bg2: #0f0f1a;
-  --bg3: #141428;
-  --card: #131320;
-  --border: #1e1e3a;
-  --border2: #2a2a4a;
-  --accent: #6c63ff;
-  --accent2: #ff6584;
-  --accent3: #43e97b;
-  --accent4: #f7971e;
-  --text: #e8e8f8;
-  --text2: #9090b8;
-  --text3: #5a5a80;
-  --sidebar-w: 280px;
+  --bg: #0f0e17;
+  --bg2: #16141f;
+  --bg3: #1c1929;
+  --card: #1a1826;
+  --border: #2a2740;
+  --border2: #3a3660;
+  --accent: #7c6af7;
+  --accent2: #f97316;
+  --accent3: #22c55e;
+  --accent4: #eab308;
+  --text: #ede9fe;
+  --text2: #a89fd8;
+  --text3: #6b64a0;
+  --sidebar-w: 270px;
   --header-h: 60px;
 }
 
 body.light-mode {
-  --bg: #f0f2ff;
+  --bg: #faf8ff;
   --bg2: #ffffff;
-  --bg3: #e8eaf6;
+  --bg3: #f3f0ff;
   --card: #ffffff;
-  --border: #dde0f0;
-  --border2: #c5c9e8;
-  --text: #1a1a2e;
-  --text2: #4a4a6a;
-  --text3: #8a8aaa;
+  --border: #e2ddf7;
+  --border2: #c9c2f0;
+  --text: #1e1b3a;
+  --text2: #4a4270;
+  --text3: #8a82b8;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ══ ANTI-COPY / ANTI-DOWNLOAD PROTECTION ══ */
+body:not(.admin-mode) * {
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  user-select: none !important;
+}
+/* Allow text selection in admin mode */
+body.admin-mode * {
+  user-select: text;
+}
+/* Allow code editor selection always */
+.CodeMirror *, .code-editor-area * {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+}
+/* Hide download buttons globally for non-admin */
+body:not(.admin-mode) .download-btn,
+body:not(.admin-mode) #lightbox-dl,
+body:not(.admin-mode) a[download],
+body:not(.admin-mode) .btn-download {
+  display: none !important;
+}
+/* Admin upload section — hidden by default */
+.admin-upload-section { display: none; }
+body.admin-mode .admin-upload-section { display: block; }
+/* Gallery view — completely hidden for non-admin */
+body:not(.admin-mode) [data-view="gallery"] { display: none !important; }
+
 
 body {
   font-family: 'Syne', sans-serif;
@@ -2798,6 +2881,76 @@ body {
 }
 .roadmap-stat-num  { font-size: 24px; font-weight: 800; font-family: 'Space Mono', monospace; }
 .roadmap-stat-label { font-size: 11px; color: var(--text3); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+
+/* ══ STUDY PLATFORM THEME OVERRIDES ══ */
+#login-page {
+  background: linear-gradient(135deg, #0f0e17 0%, #1a1535 50%, #0f0e17 100%);
+}
+.sidebar {
+  background: linear-gradient(180deg, var(--bg2) 0%, #141230 100%);
+}
+.header {
+  background: linear-gradient(135deg, rgba(22,20,31,0.98) 0%, rgba(20,18,30,0.98) 100%);
+  border-bottom: 1px solid rgba(124,106,247,0.2);
+}
+.course-card:hover {
+  border-color: rgba(124,106,247,0.4);
+  box-shadow: 0 12px 32px rgba(124,106,247,0.15);
+}
+.sidebar-item.active {
+  background: rgba(124,106,247,0.1);
+  color: var(--accent);
+  border-left-color: var(--accent);
+}
+.section-title { color: var(--accent); font-size: 13px; }
+.btn-primary { background: linear-gradient(135deg, var(--accent) 0%, #9d8ff0 100%); }
+.announcement-box { border-left-color: var(--accent2); background: rgba(249,115,22,0.06); }
+.login-box {
+  background: rgba(22,20,31,0.92);
+  border: 1px solid rgba(124,106,247,0.3);
+  box-shadow: 0 40px 80px rgba(0,0,0,0.7), 0 0 60px rgba(124,106,247,0.08);
+}
+.login-title {
+  background: linear-gradient(135deg, var(--text) 0%, var(--accent) 60%, var(--accent2) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header-badge {
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.3);
+  color: var(--accent3);
+}
+.admin-badge {
+  background: rgba(249,115,22,0.15) !important;
+  border: 1px solid rgba(249,115,22,0.3) !important;
+  color: var(--accent2) !important;
+}
+.flashcard-front {
+  background: linear-gradient(135deg, var(--card) 0%, rgba(30,26,50,1) 100%);
+}
+.resource-item {
+  border-left: 3px solid transparent;
+  transition: border-color 0.2s, background 0.2s;
+}
+.resource-item:hover {
+  border-left-color: var(--accent);
+  background: rgba(124,106,247,0.04);
+}
+/* Login page slides disabled - use clean gradient instead */
+.login-slide { display: none !important; }
+.login-overlay { background: transparent !important; }
+#login-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 70% 80% at 20% 40%, rgba(124,106,247,0.22) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 60% at 80% 20%, rgba(249,115,22,0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 50% at 60% 80%, rgba(34,197,94,0.08) 0%, transparent 60%);
+  z-index: 2;
+  pointer-events: none;
+}
 </style>
 </head>
 <body>
@@ -2815,8 +2968,8 @@ body {
     <div class="login-logo">
       <div class="login-logo-icon">🚀</div>
       <div class="login-logo-text">
-        TheRealistDevLab
-        <span>DCS Study Portal</span>
+        TheRealists Study Hub
+        <span>DCS Study Portal · UICT</span>
       </div>
     </div>
     <h2 class="login-title">Welcome Back</h2>
@@ -2835,7 +2988,7 @@ body {
       <button onclick="showAdminLogin()" style="background:none;border:none;color:var(--text3);font-size:11px;cursor:pointer;font-family:"JetBrains Mono",monospace;letter-spacing:1px;">🛡️ Admin Access</button>
     </div>
     <div class="login-footer">
-      Developed by <span>Bravehart</span> · TheRealists 🌍 · Real solutions, no illusions.
+      Developed by <span>Bravehart</span> · TheRealists 🌍 · Study smart, not hard.
     </div>
   </div>
 
@@ -2867,9 +3020,9 @@ body {
   <!-- Header -->
   <header class="header">
     <div class="header-logo">
-      <div class="header-logo-icon">🚀</div>
+      <div class="header-logo-icon">📚</div>
       <div class="header-logo-text">
-        TheRealistDevLab
+        TheRealists Study Hub
         <small>DCS · UICT · 2026</small>
       </div>
     </div>
@@ -2912,10 +3065,7 @@ body {
           Past Papers
           <span class="sidebar-item-count">5</span>
         </div>
-        <div class="sidebar-item" onclick="showView('gallery', this)">
-          <div class="sidebar-item-icon">📸</div>
-          Photo Gallery
-        </div>
+
         <div class="sidebar-item" onclick="showView('quiz', this)">
           <div class="sidebar-item-icon">🧠</div>
           Tests &amp; Quizzes
@@ -2966,10 +3116,7 @@ body {
 
       <div class="sidebar-section">
         <div class="sidebar-section-header">Features</div>
-        <div class="sidebar-item" onclick="showView('gallery', this)">
-          <div class="sidebar-item-icon" style="background:rgba(255,101,132,0.15)">📸</div>
-          Photo Gallery
-        </div>
+
         <div class="sidebar-item" onclick="showView('quiz', this)">
           <div class="sidebar-item-icon" style="background:rgba(67,233,123,0.15)">🧠</div>
           Tests & Quizzes
@@ -3008,7 +3155,7 @@ body {
           <div class="sidebar-item-icon" style="background:rgba(67,233,123,0.15)">📆</div>
           Attendance
         </div>
-        <div class="sidebar-item" onclick="showView('howto', this)">
+        <div class="sidebar-item admin-only-item" id="howto-sidebar-item" style="display:none" onclick="showView('howto', this)">
           <div class="sidebar-item-icon">➕</div>
           How to Add Content
         </div>
@@ -3044,8 +3191,8 @@ body {
           <button class="btn btn-outline" onclick="document.getElementById('pwa-banner').classList.remove('visible')">✕</button>
         </div>
         <div class="home-greeting fade-in">
-          <h1>Good day, Realists 👋</h1>
-          <p>DCS Year 1 · Semester 2 · <span>UICT 2026</span> · TheRealistDevLab</p>
+          <h1>Welcome back, Realists 📚</h1>
+          <p>DCS Year 1 · Semester 2 · <span>UICT 2026</span> · Study Smart. Study Right.</p>
           <p style="margin-top:6px;font-size:11px;color:var(--text3);font-family:"JetBrains Mono",monospace;">Developed by <span style="color:var(--accent3)">Bravehart</span> · TheRealists 🌍</p>
         </div>
 
@@ -3055,8 +3202,8 @@ body {
             <div class="stat-label">Course Units</div>
           </div>
           <div class="stat-card">
-            <div class="stat-num" style="color:var(--accent3)" id="stat-photos">74</div>
-            <div class="stat-label">Group Photos</div>
+            <div class="stat-num" style="color:var(--accent3)" id="stat-materials">10+</div>
+            <div class="stat-label">Study Materials</div>
           </div>
           <div class="stat-card">
             <div class="stat-num" style="color:var(--accent2)" id="stat-quizzes">3</div>
@@ -3070,14 +3217,14 @@ body {
 
         <div class="section-title fade-in">Features</div>
         <div class="courses-grid fade-in" style="margin-bottom:28px">
-          <div class="course-card" onclick="showView('gallery')">
-            <div class="course-card-accent" style="background:linear-gradient(90deg,var(--accent2),#f72585)"></div>
+          <div class="course-card" onclick="showView('papers')">
+            <div class="course-card-accent" style="background:linear-gradient(90deg,var(--accent2),#f97316)"></div>
             <div class="course-card-header">
-              <div class="course-icon" style="background:rgba(255,101,132,0.15)">📸</div>
-              <div><div class="course-code">GALLERY</div><div class="course-name">Group Photo Gallery</div></div>
+              <div class="course-icon" style="background:rgba(249,115,22,0.15)">📄</div>
+              <div><div class="course-code">PAST PAPERS</div><div class="course-name">Exam Past Papers</div></div>
             </div>
-            <div class="course-tags"><span class="tag" id="tag-photos">74 Photos</span><span class="tag">Slideshow</span><span class="tag">Download</span></div>
-            <div class="course-actions"><button class="btn btn-primary" style="width:100%">Open Gallery →</button></div>
+            <div class="course-tags"><span class="tag">5 Papers</span><span class="tag">All Courses</span><span class="tag">View Online</span></div>
+            <div class="course-actions"><button class="btn btn-primary" style="width:100%">Browse Papers →</button></div>
           </div>
           <div class="course-card" onclick="showView('quiz')">
             <div class="course-card-accent" style="background:linear-gradient(90deg,var(--accent3),#06d6a0)"></div>
@@ -3583,7 +3730,7 @@ body {
             <button class="lightbox-nav lightbox-next" onclick="lightboxNav(1)">›</button>
             <div class="lightbox-footer">
               <span id="lightbox-caption"></span>
-              <button class="btn btn-green" id="lightbox-dl">⬇ Download</button>
+              <button class="btn btn-green download-btn" id="lightbox-dl" style="display:none">⬇ Download</button>
             </div>
           </div>
         </div>
@@ -3865,8 +4012,8 @@ body {
             <div class="settings-card-header">
               <div class="settings-card-icon" style="background:rgba(255,101,132,0.15)">📸</div>
               <div>
-                <div class="settings-card-title">Upload Group Photos</div>
-                <div class="settings-card-sub">Powered by Cloudinary · No GitHub needed · Multiple files supported</div>
+                <div class="settings-card-title">Upload Study Materials (Admin Only)</div>
+                <div class="settings-card-sub">Powered by Cloudinary · PDF, DOCX, Images · Admin only</div>
               </div>
             </div>
             <div class="form-group"><label class="form-label">Caption</label><input type="text" id="photo-caption" class="form-input" placeholder="e.g. TheRealists Study Session — March 2026"></div>
@@ -4081,7 +4228,7 @@ body {
             <div style="display:flex;gap:10px;flex-wrap:wrap;">
               <button class="btn btn-red" onclick="clearLeaderboard()">🗑️ Clear All Quiz Results</button>
               <button class="btn btn-red" onclick="clearAllPosts()">🗑️ Clear All Posts</button>
-              <button class="btn btn-outline" onclick="exportResults()">📤 Export Results</button>
+              <button class="btn btn-outline download-btn" onclick="exportResults()">📤 Export Results</button>
             </div>
           </div>
         </div>
@@ -4129,9 +4276,7 @@ body {
       <div class="mobile-nav-item" id="mnav-code" onclick="showView('code');setMobileNav('code')">
         <span>💻</span><span>Code</span>
       </div>
-      <div class="mobile-nav-item" id="mnav-gallery" onclick="showView('gallery');setMobileNav('gallery')">
-        <span>📸</span><span>Photos</span>
-      </div>
+
       <div class="mobile-nav-item" id="mnav-quiz" onclick="showView('quiz');setMobileNav('quiz')">
         <span>🧠</span><span>Tests</span>
       </div>
@@ -4150,7 +4295,7 @@ body {
       <div class="sidebar-section-header">Navigation</div>
       <div class="sidebar-item" onclick="showView('home');closeMobileMenu()"><div class="sidebar-item-icon">🏠</div>Dashboard</div>
       <div class="sidebar-item" onclick="showView('papers');closeMobileMenu()"><div class="sidebar-item-icon">📋</div>Past Papers<span class="sidebar-item-count">5</span></div>
-      <div class="sidebar-item" onclick="showView('gallery');closeMobileMenu()"><div class="sidebar-item-icon" style="background:rgba(255,101,132,0.15)">📸</div>Photo Gallery</div>
+
       <div class="sidebar-item" onclick="showView('quiz');closeMobileMenu()"><div class="sidebar-item-icon" style="background:rgba(67,233,123,0.15)">🧠</div>Tests & Quizzes</div>
       <div class="sidebar-item" onclick="showView('leaderboard');buildLeaderboard();closeMobileMenu()"><div class="sidebar-item-icon" style="background:rgba(247,151,30,0.15)">🏆</div>Leaderboard</div>
       <div class="sidebar-item" onclick="showView('flashcards');closeMobileMenu()"><div class="sidebar-item-icon" style="background:rgba(108,99,255,0.15)">🃏</div>Flashcards</div>
@@ -4470,7 +4615,7 @@ async function doLogin() {
       // Different device — block access
       err.textContent = '🔒 This account is bound to a different device. Contact Bravehart to reset it.';
       err.style.display = 'block';
-      isAdmin = false; _sessionRole = null; _currentMember = null;
+      isAdmin = false; document.body.classList.remove("admin-mode"); _sessionRole = null; _currentMember = null;
       btn.textContent = 'Access Study Portal →'; btn.disabled = false;
       setTimeout(() => err.style.display = 'none', 7000);
       return;
@@ -4515,7 +4660,7 @@ async function doAdminLogin() {
     if (!storedHash) {
       // First-time setup — hash and store
       await window.FB.setAdminHash(await sha256(code));
-      isAdmin = true; _sessionRole = 'admin'; _currentMember = null; enterApp(); return;
+      isAdmin = true; document.body.classList.add('admin-mode'); _sessionRole = 'admin'; _currentMember = null; enterApp(); return;
     }
     const inputHash = await sha256(code);
     if (inputHash === storedHash) {
@@ -4631,6 +4776,7 @@ function enterApp() {
   if (isAdmin) {
     badge.innerHTML = '<span class="admin-badge" style="font-size:11px;">🛡️ ADMIN</span>';
     document.getElementById('admin-sidebar-item').style.display = 'flex';
+  document.getElementById('howto-sidebar-item').style.display = 'flex';
     document.getElementById('settings-sidebar-item').style.display = 'flex';
   } else if (_currentMember) {
     badge.innerHTML = `<span style="font-size:11px;font-family:"JetBrains Mono",monospace;color:var(--accent3);background:rgba(67,233,123,0.1);padding:4px 10px;border-radius:20px;border:1px solid rgba(67,233,123,0.3);">👤 ${_currentMember.name}</span>`;
@@ -4663,6 +4809,7 @@ function enterApp() {
 }
 
 function logout() {
+  document.body.classList.remove('admin-mode');
   // Stop session watcher
   if (_sessionWatcher) { _sessionWatcher(); _sessionWatcher = null; }
   // Clear our session token from Firebase (only if we own it)
@@ -4674,7 +4821,7 @@ function logout() {
     }).catch(()=>{});
   }
   _sessionToken = null;
-  isAdmin = false;
+  isAdmin = false; document.body.classList.remove("admin-mode");
   _sessionRole = null;
   _currentMember = null;
   clearTimeout(_sessionTimer);
@@ -4948,8 +5095,8 @@ function showCourse(id, el) {
           <div class="resource-meta">${r.meta}</div>
         </div>
         <div class="resource-actions">
-          ${r.real ? `<button class="btn btn-primary" onclick="viewFile('${r.file}')">👁 View</button>
-          <button class="btn btn-green" onclick="downloadFile('${r.file}')">⬇ Download</button>` :
+          ${r.real ? `<button class="btn btn-primary" onclick="viewFile('${r.file}')">📖 View</button>
+          ${isAdmin ? `<button class="btn btn-green download-btn" onclick="downloadFile('${r.file}')">⬇ Download</button>` : ''}` :
           `<span class="placeholder-badge">Coming Soon</span>`}
         </div>
       </div>
@@ -4967,8 +5114,8 @@ function showCourse(id, el) {
           <div class="resource-meta">${r.meta}</div>
         </div>
         <div class="resource-actions">
-          ${r.real ? `<button class="btn btn-primary" onclick="viewFile('${r.file}')">👁 View</button>
-          <button class="btn btn-green" onclick="downloadFile('${r.file}')">⬇ Download</button>` :
+          ${r.real ? `<button class="btn btn-primary" onclick="viewFile('${r.file}')">📖 View</button>
+          ${isAdmin ? `<button class="btn btn-green download-btn" onclick="downloadFile('${r.file}')">⬇ Download</button>` : ''}` :
           `<span class="placeholder-badge">Coming Soon</span>`}
         </div>
       </div>
@@ -4991,6 +5138,7 @@ function viewFile(file) {
 }
 
 function downloadFile(file) {
+  if (!isAdmin) { alert('⛔ Downloads are restricted to the admin only.'); return; }
   if (file === '#') { alert('This file will be added soon!'); return; }
   const a = document.createElement('a');
   a.href = file; a.download = file;
@@ -5011,8 +5159,8 @@ function buildPapersGrid() {
       </div>
       <div class="paper-actions">
         ${p.real ?
-          `<button class="btn btn-primary" onclick="viewFile('${p.file}')">👁 View</button>
-           <button class="btn btn-green" onclick="downloadFile('${p.file}')">⬇ Download</button>` :
+          `<button class="btn btn-primary" onclick="viewFile('${p.file}')">📖 View</button>
+           ${isAdmin ? `<button class="btn btn-green download-btn" onclick="downloadFile('${p.file}')">⬇ Download</button>` : ''}` :
           `<button class="btn btn-outline" disabled style="opacity:0.5">Coming Soon</button>`
         }
       </div>
@@ -5890,7 +6038,7 @@ const SEARCH_INDEX = [
   { text: "Arrays — C Snippet", sub: "Code snippet", action: () => { showView('code'); loadSnippet('arrays'); }, icon: "📋" },
   { text: "Pointers — C Snippet", sub: "Code snippet", action: () => { showView('code'); loadSnippet('pointers'); }, icon: "👉" },
   { text: "If Else — C Snippet", sub: "Code snippet", action: () => { showView('code'); loadSnippet('ifelse'); }, icon: "🔀" },
-  { text: "Photo Gallery", sub: "74 group photos · slideshow · download", action: () => showView('gallery'), icon: "📸" },
+  { text: "Past Papers", sub: "All past papers · View online", action: () => showView('papers'), icon: "📄" },
   { text: "Group Photos", sub: "TheRealists memories · gallery", action: () => showView('gallery'), icon: "📸" },
   { text: "Memories", sub: "Photo gallery · TheRealists", action: () => showView('gallery'), icon: "📸" },
   { text: "Tests & Quizzes", sub: "Attempt a test · instant results", action: () => showView('quiz'), icon: "🧠" },
@@ -6957,7 +7105,7 @@ async function loadFileManage() {
         <div class="resource-icon" style="background:rgba(108,99,255,0.1)">📄</div>
         <div><div class="resource-name">${f.name}</div></div>
         <div class="resource-actions">
-          <a href="${f.url}" target="_blank" class="btn btn-outline" style="font-size:11px;padding:4px 10px;">View</a>
+          <a href="${f.url}" target="_blank" rel="noopener" class="btn btn-outline" style="font-size:11px;padding:4px 10px;">View</a>
           <button class="btn btn-red" style="font-size:11px;padding:4px 10px;" onclick="deleteUploadedFile('${course}','${f._key}','${f.public_id||''}')">🗑️</button>
         </div></div>`).join('')
     : '';
