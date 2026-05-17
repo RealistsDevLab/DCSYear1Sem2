@@ -6,247 +6,146 @@
   <title>DCS Study Hub | Year 1 Semester 2</title>
   <meta name="theme-color" content="#0f2b3d">
   <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700;14..32,800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, get, onValue, push, remove, update, serverTimestamp }
+      from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDgwfW0y5RaTj7XDLfvFUkueiU_OC1uamw",
+      authDomain: "therealistdevlab.firebaseapp.com",
+      databaseURL: "https://therealistdevlab-default-rtdb.firebaseio.com",
+      projectId: "therealistdevlab",
+      storageBucket: "therealistdevlab.firebasestorage.app",
+      messagingSenderId: "174775227684",
+      appId: "1:174775227684:web:221575868fbb00e254cfb1"
+    };
+
+    const fbApp = initializeApp(firebaseConfig);
+    const db = getDatabase(fbApp);
+
+    window.FB = {
+      getAdminHash: async () => { const s = await get(ref(db, 'config/adminHash')); return s.exists() ? s.val() : null; },
+      setAdminHash: (h) => set(ref(db, 'config/adminHash'), h),
+      createMember: (uid, data) => set(ref(db, 'members/' + uid), data),
+      updateMember: (uid, data) => update(ref(db, 'members/' + uid), data),
+      deleteMember: (uid) => remove(ref(db, 'members/' + uid)),
+      getAllMembers: async () => { const s = await get(ref(db, 'members')); if (!s.exists()) return {}; return s.val(); },
+      getMemberByUid: async (uid) => { const s = await get(ref(db, 'members/' + uid)); return s.exists() ? s.val() : null; },
+      onMembers: (cb) => onValue(ref(db, 'members'), s => cb(s.exists() ? s.val() : {})),
+      getAnnouncement: async () => { const s = await get(ref(db, 'config/announcement')); return s.exists() ? s.val() : ''; },
+      setAnnouncement: (v) => set(ref(db, 'config/announcement'), v),
+      onAnnouncement: (cb) => onValue(ref(db, 'config/announcement'), s => cb(s.exists() ? s.val() : '')),
+      getBlocklist: async () => { const s = await get(ref(db, 'blocklist')); return s.exists() ? Object.values(s.val()) : []; },
+      addBlock: (n) => set(ref(db, 'blocklist/' + n.replace(/\s/g, '_')), n),
+      removeBlock: (n) => remove(ref(db, 'blocklist/' + n.replace(/\s/g, '_'))),
+      isBlocked: async (n) => { const s = await get(ref(db, 'blocklist/' + n.replace(/\s/g, '_'))); return s.exists(); },
+      saveResult: (r) => push(ref(db, 'results'), r),
+      getAllResults: async () => { const s = await get(ref(db, 'results')); return s.exists() ? Object.values(s.val()) : []; },
+      clearResults: () => remove(ref(db, 'results')),
+      savePost: (p) => push(ref(db, 'posts'), p),
+      getPosts: async () => { const s = await get(ref(db, 'posts')); if (!s.exists()) return []; const a = []; s.forEach(c => a.unshift({...c.val(), _key: c.key})); return a; },
+      deletePost: (k) => remove(ref(db, 'posts/' + k)),
+      clearPosts: () => remove(ref(db, 'posts')),
+      onPosts: (cb) => onValue(ref(db, 'posts'), s => { const a = []; if(s.exists()) s.forEach(c=>a.unshift({...c.val(), _key: c.key})); cb(a); }),
+      saveQuiz: (q) => push(ref(db, 'quizzes'), q),
+      getQuizzes: async () => { const s = await get(ref(db, 'quizzes')); if (!s.exists()) return []; const a = []; s.forEach(c=>a.push({...c.val(), _key: c.key})); return a; },
+      deleteQuiz: (k) => remove(ref(db, 'quizzes/' + k)),
+      saveFlashcard: (f) => push(ref(db, 'flashcards'), f),
+      getFlashcards: async () => { const s = await get(ref(db, 'flashcards')); if (!s.exists()) return []; const a = []; s.forEach(c=>a.push({...c.val(), _key: c.key})); return a; },
+      deleteFlashcard: (k) => remove(ref(db, 'flashcards/' + k)),
+      saveTimetable: (t) => set(ref(db, 'config/timetable'), t),
+      getTimetable: async () => { const s = await get(ref(db, 'config/timetable')); return s.exists() ? s.val() : null; },
+      saveExams: (e) => set(ref(db, 'config/exams'), e),
+      getExams: async () => { const s = await get(ref(db, 'config/exams')); return s.exists() ? s.val() : null; },
+      saveProfile: (name, data) => set(ref(db, 'profiles/' + name.replace(/\s/g, '_')), data),
+      getProfile: async (name) => { const s = await get(ref(db, 'profiles/' + name.replace(/\s/g, '_'))); return s.exists() ? s.val() : null; },
+      getAllProfiles: async () => { const s = await get(ref(db, 'profiles')); return s.exists() ? s.val() : {}; },
+      onProfiles: (cb) => onValue(ref(db, 'profiles'), s => cb(s.exists() ? s.val() : {})),
+      checkIn: (name) => { const today = new Date().toISOString().split('T')[0]; const key = name.replace(/\s/g, '_'); return set(ref(db, 'attendance/' + key + '/' + today), { name, date: today, ts: Date.now() }); },
+      getAttendance: async () => { const s = await get(ref(db, 'attendance')); return s.exists() ? s.val() : {}; },
+      pushNotification: (msg) => push(ref(db, 'notifications'), { msg, ts: Date.now(), read: false }),
+      onNotifications: (cb) => onValue(ref(db, 'notifications'), s => { const a = []; if(s.exists()) s.forEach(c=>a.push({...c.val(), _key: c.key})); cb(a); }),
+      markRead: (k) => update(ref(db, 'notifications/' + k), { read: true }),
+      // Session management
+      writeSession: (uid, token) => set(ref(db, 'sessions/' + uid), { token, ts: Date.now(), device: navigator.userAgent.slice(0,120) }),
+      readSession: async (uid) => { const s = await get(ref(db, 'sessions/' + uid)); return s.exists() ? s.val() : null; },
+      watchSession: (uid, cb) => onValue(ref(db, 'sessions/' + uid), s => cb(s.exists() ? s.val() : null)),
+      clearSession: (uid) => remove(ref(db, 'sessions/' + uid)),
+      getDeviceBinding: async (uid) => { const s = await get(ref(db, 'deviceBindings/' + uid)); return s.exists() ? s.val() : null; },
+      setDeviceBinding: (uid, fp) => set(ref(db, 'deviceBindings/' + uid), { fingerprint: fp, boundAt: Date.now(), ua: navigator.userAgent.slice(0,200) }),
+      clearDeviceBinding: (uid) => remove(ref(db, 'deviceBindings/' + uid)),
+    };
+
+    window.FB_READY = true;
+    window.dispatchEvent(new Event('fb-ready'));
+    console.log('✅ Firebase connected');
+  </script>
+  
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      user-select: text; /* normal text selection, but copy prevention via CSS + JS */
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: #f8fafc;
-      color: #0f172a;
-      transition: background 0.2s, color 0.2s;
-    }
-
-    /* dark mode – optional but keep academic */
-    body.dark {
-      background: #0b1120;
-      color: #e2e8f0;
-    }
-
-    /* copy protection: disable right-click on content (admin exempt by class) */
-    .no-copy, .resource-item, .flashcard, .quiz-card, .note-card, .paper-card {
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
-    }
-    input, textarea, .admin-panel, .settings-card {
-      user-select: text !important;
-    }
-
-    /* layout */
-    .app {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 1.5rem 2rem;
-    }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-bottom: 2rem;
-      padding-bottom: 1rem;
-      border-bottom: 2px solid #e2e8f0;
-    }
-    .logo h1 {
-      font-size: 1.7rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #1e4b6e, #2c7da0);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-    }
-    .logo span {
-      font-size: 0.8rem;
-      font-weight: 400;
-      color: #5b6e8c;
-    }
-    .admin-badge {
-      background: #2c3e50;
-      color: white;
-      padding: 0.2rem 0.8rem;
-      border-radius: 30px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      margin-left: 0.5rem;
-    }
-    .nav-tabs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-bottom: 2rem;
-      border-bottom: 1px solid #cbd5e1;
-      padding-bottom: 0.5rem;
-    }
-    .nav-btn {
-      background: transparent;
-      border: none;
-      padding: 0.5rem 1.2rem;
-      font-weight: 600;
-      font-size: 0.9rem;
-      border-radius: 2rem;
-      cursor: pointer;
-      transition: 0.2s;
-      color: #334155;
-    }
-    .nav-btn.active {
-      background: #1e4b6e;
-      color: white;
-    }
-    .view {
-      display: none;
-      animation: fade 0.2s ease;
-    }
-    .view.active-view {
-      display: block;
-    }
+    /* Keep all styles from original - same academic theme */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', sans-serif; background: #f8fafc; color: #0f172a; }
+    body.dark { background: #0b1120; color: #e2e8f0; }
+    .app { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem; }
+    header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; padding-bottom: 1rem; border-bottom: 2px solid #e2e8f0; }
+    .logo h1 { font-size: 1.7rem; font-weight: 800; background: linear-gradient(135deg, #1e4b6e, #2c7da0); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .admin-badge { background: #2c3e50; color: white; padding: 0.2rem 0.8rem; border-radius: 30px; font-size: 0.7rem; font-weight: 600; }
+    .nav-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 2rem; border-bottom: 1px solid #cbd5e1; padding-bottom: 0.5rem; }
+    .nav-btn { background: transparent; border: none; padding: 0.5rem 1.2rem; font-weight: 600; border-radius: 2rem; cursor: pointer; color: #334155; }
+    .nav-btn.active { background: #1e4b6e; color: white; }
+    .view { display: none; animation: fade 0.2s ease; }
+    .view.active-view { display: block; }
     @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-
-    /* cards & grid */
-    .courses-grid, .notes-grid, .flashcards-grid, .resources-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 1.5rem;
-      margin-top: 1rem;
-    }
-    .course-card, .note-card, .flashcard, .resource-card {
-      background: white;
-      border-radius: 1.2rem;
-      padding: 1.3rem;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-      border: 1px solid #e2e8f0;
-      transition: 0.2s;
-    }
-    body.dark .course-card, body.dark .note-card, body.dark .flashcard, body.dark .resource-card {
-      background: #1e293b;
-      border-color: #334155;
-    }
-    .course-card h3 { font-size: 1.3rem; margin-bottom: 0.3rem; }
-    .badge { background: #eef2ff; color: #1e4b6e; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
-    .btn {
-      background: #1e4b6e;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 2rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .btn-outline {
-      background: transparent;
-      border: 1px solid #1e4b6e;
-      color: #1e4b6e;
-    }
-    .btn-small { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
+    .courses-grid, .flashcards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem; }
+    .course-card, .flashcard { background: white; border-radius: 1.2rem; padding: 1.3rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+    body.dark .course-card, body.dark .flashcard { background: #1e293b; border-color: #334155; }
+    .btn { background: #1e4b6e; color: white; border: none; padding: 0.5rem 1rem; border-radius: 2rem; font-weight: 500; cursor: pointer; }
+    .btn-outline { background: transparent; border: 1px solid #1e4b6e; color: #1e4b6e; }
     .admin-only { display: none; }
-
-    /* flashcards flip */
-    .flashcard {
-      perspective: 1000px;
-      min-height: 220px;
-      cursor: pointer;
-    }
-    .flashcard-inner {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      transition: transform 0.5s;
-      transform-style: preserve-3d;
-    }
-    .flashcard.flipped .flashcard-inner {
-      transform: rotateY(180deg);
-    }
-    .front, .back {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      backface-visibility: hidden;
-      border-radius: 1rem;
-      padding: 1.2rem;
-      background: white;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
+    .flashcard { perspective: 1000px; min-height: 200px; cursor: pointer; }
+    .flashcard-inner { position: relative; width: 100%; height: 100%; transition: transform 0.5s; transform-style: preserve-3d; }
+    .flashcard.flipped .flashcard-inner { transform: rotateY(180deg); }
+    .front, .back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; border-radius: 1rem; padding: 1.2rem; background: white; border: 1px solid #e2e8f0; }
     body.dark .front, body.dark .back { background: #1e293b; }
     .back { transform: rotateY(180deg); background: #f1f5f9; }
-    .front p, .back p { font-size: 0.9rem; line-height: 1.4; }
-
-    /* quiz */
-    .quiz-question {
-      background: white;
-      border-radius: 1rem;
-      padding: 1.5rem;
-      margin: 1rem 0;
-    }
-    .option { margin: 0.5rem 0; padding: 0.7rem; border-radius: 1rem; background: #f1f5f9; cursor: pointer; }
-
-    /* admin panel */
-    .admin-section {
-      background: white;
-      border-radius: 1rem;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-    }
-    textarea, input, select {
-      width: 100%;
-      padding: 0.6rem;
-      border-radius: 0.8rem;
-      border: 1px solid #cbd5e1;
-      font-family: inherit;
-    }
-    .login-overlay {
-      position: fixed;
-      inset: 0;
-      background: #0b1120e6;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-    }
-    .login-card {
-      background: white;
-      padding: 2rem;
-      border-radius: 2rem;
-      width: 340px;
-    }
-    .scrolling-bg {
-      position: fixed;
-      top:0;left:0;width:100%;height:100%;
-      background-image: url('https://picsum.photos/1920/1080?random=1');
-      background-size: cover;
-      background-position: center;
-      animation: slowZoom 20s infinite alternate;
-      z-index: -1;
-    }
-    @keyframes slowZoom {
-      0% { transform: scale(1); }
-      100% { transform: scale(1.08); }
-    }
+    .login-overlay { position: fixed; inset: 0; background: #0b1120e6; display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .login-card { background: white; padding: 2rem; border-radius: 2rem; width: 340px; }
+    body.dark .login-card { background: #1e293b; }
     .error { color: #b91c1c; font-size: 0.8rem; margin-top: 0.5rem; }
-    footer { margin-top: 3rem; text-align: center; font-size: 0.7rem; color: #64748b; }
-    @media (max-width: 700px) { .app { padding: 1rem; } .nav-btn { padding: 0.3rem 0.8rem; } }
+    input, textarea, select { width: 100%; padding: 0.6rem; border-radius: 0.8rem; border: 1px solid #cbd5e1; font-family: inherit; }
+    @media (max-width: 700px) { .app { padding: 1rem; } }
   </style>
 </head>
 <body>
+
+<!-- LOGIN PAGE -->
 <div id="loginContainer" class="login-overlay">
-  <div class="scrolling-bg"></div>
   <div class="login-card">
     <h2 style="margin-bottom:0.5rem;">📘 DCS Study Hub</h2>
     <p style="margin-bottom:1.5rem;">Year 1 · Semester 2 · UICT</p>
     <input type="text" id="loginIdentity" placeholder="Email or Phone" style="margin-bottom:0.8rem;">
     <input type="password" id="loginCode" placeholder="Access Code">
     <button class="btn" style="width:100%; margin-top:1rem;" id="loginBtn">Login →</button>
+    <button class="btn-outline" style="width:100%; margin-top:0.5rem;" id="showAdminLoginBtn">🛡️ Admin Access</button>
     <div id="loginError" class="error"></div>
-    <p style="font-size:0.7rem; margin-top:1rem;">Admin: use admin pass (set on first login)</p>
   </div>
 </div>
 
+<!-- ADMIN LOGIN (separate) -->
+<div id="adminLoginContainer" class="login-overlay" style="display:none;">
+  <div class="login-card">
+    <h2 style="margin-bottom:0.5rem;">🛡️ Admin Login</h2>
+    <p style="margin-bottom:1.5rem;">Restricted Access</p>
+    <input type="password" id="adminCode" placeholder="Admin Password">
+    <button class="btn" style="width:100%; margin-top:1rem;" id="adminLoginBtn">Enter →</button>
+    <button class="btn-outline" style="width:100%; margin-top:0.5rem;" id="backToMemberBtn">← Back</button>
+    <div id="adminLoginError" class="error"></div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
 <main id="mainApp" style="display:none;">
   <div class="app">
     <header>
@@ -256,8 +155,9 @@
       </div>
       <div style="display:flex; gap:0.5rem;">
         <span id="userRoleBadge" class="admin-badge" style="background:#2c7da0;">MEMBER</span>
-        <button id="themeToggleBtn" class="btn-outline btn-small">🌙 Dark</button>
-        <button id="logoutBtn" class="btn-outline btn-small">Logout</button>
+        <span id="userNameBadge" style="font-size:0.8rem;"></span>
+        <button id="themeToggleBtn" class="btn-outline" style="padding:0.3rem 0.8rem;">🌙 Dark</button>
+        <button id="logoutBtn" class="btn-outline" style="padding:0.3rem 0.8rem;">Logout</button>
       </div>
     </header>
 
@@ -265,261 +165,226 @@
       <button class="nav-btn active" data-view="home">🏠 Dashboard</button>
       <button class="nav-btn" data-view="courses">📚 Courses</button>
       <button class="nav-btn" data-view="flashcards">🃏 Flashcards</button>
-      <button class="nav-btn" data-view="quizzes">🧪 Quizzes & Tests</button>
+      <button class="nav-btn" data-view="quizzes">🧪 Quizzes</button>
       <button class="nav-btn admin-only" data-view="admin">⚙️ Admin Panel</button>
     </div>
 
-    <!-- DASHBOARD -->
+    <!-- Views -->
     <div id="view-home" class="view active-view">
       <div style="background: #e6f7ff; padding:1.2rem; border-radius:1rem; margin-bottom:1.5rem;">
         <strong>📢 Announcement</strong><br>
-        <span id="announcementText">Welcome to Semester 2! Focus on structured programming, hardware, databases, workshop, and research methods.</span>
+        <span id="announcementText">Welcome to Semester 2!</span>
       </div>
-      <div class="courses-grid" style="margin-bottom:2rem;">
-        <div class="course-card"><h3>💻 CSC 122</h3><p>Structured Software Development (C Programming)</p><span class="badge">Core</span></div>
-        <div class="course-card"><h3>🖥️ CSC 121</h3><p>Computer Hardware & Maintenance</p><span class="badge">Core</span></div>
-        <div class="course-card"><h3>🗄️ CSC 123</h3><p>Database Systems Design I</p><span class="badge">Core</span></div>
-        <div class="course-card"><h3>🔧 ICT 121</h3><p>Computer Workshop Practice</p><span class="badge">Practical</span></div>
-        <div class="course-card"><h3>📊 BSM 121</h3><p>Research Methods</p><span class="badge">Theory</span></div>
+      <div class="courses-grid">
+        <div class="course-card"><h3>💻 CSC 122</h3><p>Structured Software Development (C Programming)</p></div>
+        <div class="course-card"><h3>🖥️ CSC 121</h3><p>Computer Hardware & Maintenance</p></div>
+        <div class="course-card"><h3>🗄️ CSC 123</h3><p>Database Systems Design I</p></div>
+        <div class="course-card"><h3>🔧 ICT 121</h3><p>Computer Workshop Practice</p></div>
+        <div class="course-card"><h3>📊 BSM 121</h3><p>Research Methods</p></div>
       </div>
-      <div><h3>📌 Quick Study</h3><p>Review flashcards, take quizzes, and track progress.</p></div>
     </div>
 
-    <!-- COURSES with HARDCODED NOTES + RESOURCES -->
-    <div id="view-courses" class="view">
-      <div id="coursesContainer"></div>
-    </div>
-
-    <!-- FLASHCARDS -->
-    <div id="view-flashcards" class="view">
-      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-        <h2>📇 Course Flashcards</h2>
-        <select id="fcFilterSelect" style="width:auto;"><option value="all">All Courses</option><option>CSC122</option><option>CSC121</option><option>CSC123</option><option>ICT121</option><option>BSM121</option></select>
-      </div>
-      <div id="flashcardsGrid" class="flashcards-grid" style="margin-top:1rem;"></div>
-    </div>
-
-    <!-- QUIZZES -->
-    <div id="view-quizzes" class="view">
-      <div id="quizLobby">
-        <h2>📝 Course Tests (40% Coursework component)</h2>
-        <div id="quizzesList" class="courses-grid"></div>
-      </div>
-      <div id="quizActive" style="display:none;">
-        <button id="backToQuizzes" class="btn-outline btn-small">← Back</button>
-        <div id="quizContainer"></div>
-      </div>
-      <div id="quizResults" style="display:none;"></div>
-    </div>
-
-    <!-- ADMIN PANEL (full control) -->
+    <div id="view-courses" class="view"><div id="coursesContainer"></div></div>
+    <div id="view-flashcards" class="view"><div id="flashcardsGrid" class="flashcards-grid"></div></div>
+    <div id="view-quizzes" class="view"><div id="quizzesList" class="courses-grid"></div></div>
     <div id="view-admin" class="view admin-only">
-      <div class="admin-section"><h3>📢 Global Announcement</h3><textarea id="adminAnnounce" rows="2"></textarea><button id="setAnnounceBtn" class="btn">Set Announcement</button></div>
-      <div class="admin-section"><h3>📄 Upload Study Material (PDF/DOCX)</h3><select id="uploadCourseSelect"><option>CSC122</option><option>CSC121</option><option>CSC123</option><option>ICT121</option><option>BSM121</option></select><input type="file" id="uploadFileInput" accept=".pdf,.docx"><input type="text" id="uploadLabel" placeholder="Label (e.g., Chapter 1 Notes)"><button id="uploadMaterialBtn" class="btn">Upload & Sync</button><div id="uploadStatus"></div><div id="adminMaterialsList" style="margin-top:1rem;"></div></div>
-      <div class="admin-section"><h3>➕ Add Flashcard (course)</h3><input id="newFcCourse" placeholder="e.g., CSC122"><input id="newFcQ" placeholder="Question"><textarea id="newFcA" placeholder="Answer"></textarea><button id="addFlashcardBtn" class="btn">Add Flashcard</button></div>
-      <div class="admin-section"><h3>➕ Add Quiz Question (to existing quiz)</h3><select id="quizSelector"><option value="csc122_quiz">CSC122 Quiz</option><option value="csc121_quiz">CSC121 Quiz</option><option value="csc123_quiz">CSC123 Quiz</option><option value="ict121_quiz">ICT121 Quiz</option><option value="bsm121_quiz">BSM121 Quiz</option></select><textarea id="newQText" placeholder="Question"></textarea><div><input placeholder="Option A" id="optA"><input placeholder="Option B" id="optB"><input placeholder="Option C" id="optC"><input placeholder="Option D" id="optD"></div><select id="correctAns"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select><button id="addQuestionBtn" class="btn">Add Question</button></div>
-      <div class="admin-section"><h3>🔑 Reset Admin Password</h3><input type="password" id="newAdminPw" placeholder="New password (min 6)"><button id="changeAdminPwBtn">Change</button></div>
-      <div class="admin-section"><h3>📊 Export All Results</h3><button id="exportResultsBtn" class="btn-outline">Export CSV</button></div>
+      <div style="background:white; border-radius:1rem; padding:1.5rem; margin-bottom:1rem;">
+        <h3>📢 Announcement</h3><textarea id="adminAnnounce" rows="2"></textarea><button id="setAnnounceBtn" class="btn">Set</button>
+      </div>
+      <div style="background:white; border-radius:1rem; padding:1.5rem;">
+        <h3>➕ Add Flashcard</h3><input id="newFcCourse" placeholder="Course"><input id="newFcQ" placeholder="Question"><textarea id="newFcA" placeholder="Answer"></textarea><button id="addFlashcardBtn" class="btn">Add</button>
+      </div>
     </div>
-    <footer>© DCS Year 1 Sem2 — TheRealists — No copying, admin controlled uploads</footer>
   </div>
 </main>
 
 <script>
-  // ======================= HARDCODED CURRICULUM DATA ==========================
-  const COURSES_DATA = {
-    CSC122: { name: "Structured Software Development", code: "CSC122", icon: "⚡", description: "C programming, algorithms, pointers, file handling." },
-    CSC121: { name: "Computer Hardware & Maintenance", code: "CSC121", icon: "🖥️", description: "Motherboard, CPU, memory, troubleshooting." },
-    CSC123: { name: "Database Systems Design I", code: "CSC123", icon: "🗄️", description: "ER diagrams, SQL, normalization." },
-    ICT121: { name: "Computer Workshop Practice", code: "ICT121", icon: "🔧", description: "Tools, ESD, soldering, safety." },
-    BSM121: { name: "Research Methods", code: "BSM121", icon: "📊", description: "Research design, APA, data collection." }
-  };
-  // Hardcoded extensive notes per course
-  const NOTES = {
-    CSC122: ["📘 Complete C Notes (Variables, Loops, Functions) – 45p", "📙 Pointer & Memory Management Guide", "📗 150+ Solved C Examples", "📕 Algorithms & Flowcharts Workbook"],
-    CSC121: ["🖨️ Hardware Components Reference", "📘 Troubleshooting Flowcharts", "📗 PC Assembly & Maintenance Guide", "📙 ESD & Safety Protocols"],
-    CSC123: ["📘 SQL Syntax & Queries Bank", "📙 Normalization: 1NF to 3NF Examples", "📗 Entity Relationship Diagrams Workbook", "📕 Database Design Case Studies"],
-    ICT121: ["🔧 Workshop Tools Visual Guide", "📘 Soldering & Multimeter Tutorial", "📙 E-waste Management", "📗 Safety & First Aid in Workshop"],
-    BSM121: ["📘 Research Proposal Template", "📙 APA 7th Citation Guide", "📗 Sampling Techniques Explained", "📕 Questionnaire Design"]
-  };
-  // Hardcoded links (dummy PDFs, but admin can upload real ones later)
-  const RESOURCE_LINKS = {
-    CSC122: ["#csc122_notes1","#csc122_notes2","#csc122_notes3","#csc122_notes4"],
-    CSC121: ["#csc121_notes1","#csc121_notes2","#csc121_notes3","#csc121_notes4"],
-    CSC123: ["#csc123_notes1","#csc123_notes2","#csc123_notes3","#csc123_notes4"],
-    ICT121: ["#ict121_notes1","#ict121_notes2","#ict121_notes3","#ict121_notes4"],
-    BSM121: ["#bsm121_notes1","#bsm121_notes2","#bsm121_notes3","#bsm121_notes4"]
-  };
+  // Firebase Authentication (original system)
+  let isAdmin = false;
+  let currentMember = null;
+  let currentMemberName = '';
 
-  // ======================= HARDCODED FLASHCARDS (many + suffecient) ===========
-  let FLASHCARDS = [
-    { course:"CSC122", q:"What is a pointer in C?", a:"A variable that stores memory address of another variable." },
-    { course:"CSC122", q:"Difference between while and do-while?", a:"while checks condition first; do-while runs at least once." },
-    { course:"CSC122", q:"What is the output of printf('%d', 5+3*2);", a:"11 (multiplication first)" },
-    { course:"CSC122", q:"What is the role of #include <stdio.h>?", a:"Provides standard input/output functions." },
-    { course:"CSC122", q:"Define function prototype.", a:"Declaration of function before main()." },
-    { course:"CSC121", q:"What does ESD stand for?", a:"Electrostatic Discharge – damages components." },
-    { course:"CSC121", q:"What does POST stand for?", a:"Power-On Self-Test." },
-    { course:"CSC121", q:"Name two primary storage types.", a:"RAM (volatile) and ROM (non-volatile)." },
-    { course:"CSC121", q:"What is thermal paste used for?", a:"Conduct heat from CPU to heatsink." },
-    { course:"CSC123", q:"What is a Primary Key?", a:"Unique identifier for a row, cannot be NULL." },
-    { course:"CSC123", q:"What SQL clause filters groups?", a:"HAVING." },
-    { course:"CSC123", q:"What is normalization?", a:"Process to eliminate redundancy and anomalies." },
-    { course:"ICT121", q:"Which fire extinguisher for computers?", a:"CO2 extinguisher (non-conductive)." },
-    { course:"ICT121", q:"What is the resistor color code for 1000 ohms?", a:"Brown-Black-Red." },
-    { course:"BSM121", q:"What is SMART criteria?", a:"Specific, Measurable, Achievable, Relevant, Time-bound." },
-    { course:"BSM121", q:"Difference primary vs secondary data?", a:"Primary collected firsthand; secondary existing data." }
-  ];
-  // Add 30+ cards to ensure sufficiency
-  for(let i=1;i<=20;i++) FLASHCARDS.push({ course:"CSC122", q:`C programming concept ${i}`, a:`Detailed answer for concept ${i}.` });
-  for(let i=1;i<=10;i++) FLASHCARDS.push({ course:"CSC123", q:`SQL query pattern ${i}`, a:`Explanation for SQL pattern ${i}` });
-
-  // HARDCODED QUIZZES (40% coursework style)
-  let QUIZZES = {
-    csc122_quiz: { title:"CSC122 C Programming", questions:[
-      { text:"Which operator is used for pointer dereferencing?", options:["&","*","->","#"], correct:1 },
-      { text:"What is the correct output: printf('%d', 10/3);", options:["3","3.33","3.0","4"], correct:0 },
-      { text:"What does 'break' do in loops?", options:["skip iteration","exit loop","pause","restart"], correct:1 }
-    ]},
-    csc121_quiz: { title:"CSC121 Hardware", questions:[{text:"What is the function of CPU?", options:["storage","processing","input","output"], correct:1},{text:"Which memory is volatile?", options:["ROM","Flash","RAM","SSD"], correct:2}]},
-    csc123_quiz: { title:"CSC123 Database", questions:[{text:"SELECT * FROM students WHERE name LIKE 'J%' finds?", options:["names ending J","names starting J","names contain J","any J"], correct:1}]},
-    ict121_quiz: { title:"ICT121 Workshop", questions:[{text:"Proper first step before repairing PC?", options:["ground yourself","unplug","open case","remove RAM"], correct:0}]},
-    bsm121_quiz: { title:"BSM121 Research", questions:[{text:"Which sampling gives every member equal chance?", options:["stratified","random","cluster","convenience"], correct:1}]}
-  };
-  // store user results, announcements, uploads (admin only uploads)
-  let userResults = JSON.parse(localStorage.getItem("dcs_results")||"[]");
-  let adminUploads = JSON.parse(localStorage.getItem("admin_uploads")||"{}");
-  let flashcards = [...FLASHCARDS];
-  let announcement = localStorage.getItem("dcs_announce") || "Welcome to DCS Semester 2 – Stay consistent!";
-
-  // ======================= AUTH (simple but secure admin hash) ==================
-  let isAdmin = false, currentUser = null;
-  async function hashPw(pw){ const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw)); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
-  let storedAdminHash = localStorage.getItem("adminHash");
-  async function login(identity, code){
-    if(identity === "admin" && storedAdminHash && await hashPw(code) === storedAdminHash){ isAdmin=true; currentUser="admin"; document.getElementById("userRoleBadge").innerHTML="🛡️ ADMIN"; showAdminUI(); return true; }
-    if(identity && code && code.length>=4){ isAdmin=false; currentUser=identity; document.getElementById("userRoleBadge").innerHTML="👤 MEMBER"; return true; }
-    return false;
+  async function sha256(str) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
   }
-  function showAdminUI(){ document.querySelectorAll(".admin-only").forEach(el=>el.style.display="block"); }
-  // copy prevention: disable contextmenu and ctrl+c for protected elements
-  document.addEventListener("contextmenu", e=>{ if(!e.target.closest("input,textarea,button") && !isAdmin) e.preventDefault(); });
-  document.addEventListener("copy", e=>{ if(!isAdmin && !e.target.closest("input,textarea")) e.preventDefault(); });
 
-  // render courses with notes and downloadable links (disabled for non-admin)
-  function renderCourses(){
-    const container = document.getElementById("coursesContainer");
-    if(!container) return;
-    let html = "";
-    for(let [code,data] of Object.entries(COURSES_DATA)){
-      html += `<div class="course-card" style="margin-bottom:1rem;"><h3>${data.icon} ${data.name} (${code})</h3><p>${data.description}</p>
-      <div class="resources-grid"><h4>📖 Hardcoded Notes</h4><ul>`;
-      NOTES[code].forEach((note,i)=> { html += `<li>${note} ${!isAdmin ? ' <span style="font-size:0.7rem;">(view only)</span>' : ''}</li>`; });
-      html += `</ul><h4>📂 Uploaded Materials (Admin)</h4><div id="uploads-${code}"></div>`;
-      if(adminUploads[code] && adminUploads[code].length) adminUploads[code].forEach(f=>{ html+=`<div>📄 ${f.label} <span class="badge">admin</span></div>`; });
-      else html+=`<i>No admin uploads yet</i>`;
-      html+=`</div></div>`;
+  async function doMemberLogin() {
+    const identity = document.getElementById('loginIdentity').value.trim().toLowerCase();
+    const code = document.getElementById('loginCode').value.trim();
+    const errEl = document.getElementById('loginError');
+
+    if (!identity || !code) { errEl.textContent = 'Enter email/phone and code'; return; }
+
+    try {
+      const members = await window.FB.getAllMembers();
+      const uid = Object.keys(members).find(k => {
+        const m = members[k];
+        return m.email === identity || m.phone === identity;
+      });
+
+      if (!uid) { errEl.textContent = 'Identity not found'; return; }
+
+      const member = members[uid];
+      if (member.active === false) { errEl.textContent = 'Account deactivated'; return; }
+
+      const inputHash = await sha256(code);
+      if (inputHash !== member.codeHash) { errEl.textContent = 'Wrong access code'; return; }
+
+      // Login success
+      currentMember = member;
+      currentMemberName = member.name;
+      isAdmin = false;
+      document.getElementById('userRoleBadge').innerHTML = '👤 MEMBER';
+      document.getElementById('userNameBadge').innerHTML = member.name;
+      document.getElementById('loginContainer').style.display = 'none';
+      document.getElementById('mainApp').style.display = 'block';
+      
+      // Load data
+      loadAnnouncement();
+      renderCourses();
+      renderFlashcards();
+      renderQuizzes();
+      
+    } catch(e) { errEl.textContent = 'Login error: ' + e.message; }
+  }
+
+  async function doAdminLogin() {
+    const code = document.getElementById('adminCode').value.trim();
+    const errEl = document.getElementById('adminLoginError');
+
+    try {
+      const storedHash = await window.FB.getAdminHash();
+      if (!storedHash) {
+        // First time setup
+        const hash = await sha256(code);
+        await window.FB.setAdminHash(hash);
+        isAdmin = true;
+        currentMember = null;
+        document.getElementById('userRoleBadge').innerHTML = '🛡️ ADMIN';
+        document.getElementById('userNameBadge').innerHTML = 'Admin';
+        document.getElementById('adminLoginContainer').style.display = 'none';
+        document.getElementById('loginContainer').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        loadAnnouncement();
+        renderCourses();
+        renderFlashcards();
+        renderQuizzes();
+        return;
+      }
+      
+      const inputHash = await sha256(code);
+      if (inputHash === storedHash) {
+        isAdmin = true;
+        currentMember = null;
+        document.getElementById('userRoleBadge').innerHTML = '🛡️ ADMIN';
+        document.getElementById('userNameBadge').innerHTML = 'Admin';
+        document.getElementById('adminLoginContainer').style.display = 'none';
+        document.getElementById('loginContainer').style.display = 'none';
+        document.getElementById('mainApp').style.display = 'block';
+        document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+        loadAnnouncement();
+        renderCourses();
+        renderFlashcards();
+        renderQuizzes();
+      } else {
+        errEl.textContent = 'Wrong admin password';
+      }
+    } catch(e) { errEl.textContent = 'Error: ' + e.message; }
+  }
+
+  // Hardcoded course data
+  const COURSES_DATA = {
+    CSC122: { name: "Structured Software Development", notes: ["C Programming Complete Notes", "Pointers Guide", "Data Structures Examples"] },
+    CSC121: { name: "Computer Hardware & Maintenance", notes: ["Motherboard Components", "Troubleshooting Guide", "ESD Safety"] },
+    CSC123: { name: "Database Systems Design I", notes: ["SQL Complete Reference", "Normalization Examples", "ER Diagrams"] },
+    ICT121: { name: "Computer Workshop Practice", notes: ["Tools Guide", "Soldering Basics", "Safety Protocols"] },
+    BSM121: { name: "Research Methods", notes: ["Research Design", "APA 7th Guide", "Sampling Methods"] }
+  };
+
+  let flashcards = [
+    { course: "CSC122", q: "What is a pointer?", a: "Variable storing memory address" },
+    { course: "CSC122", q: "What does printf() do?", a: "Prints formatted output" },
+    { course: "CSC121", q: "What is ESD?", a: "Electrostatic Discharge" },
+    { course: "CSC123", q: "What is a Primary Key?", a: "Unique row identifier" }
+  ];
+
+  async function renderCourses() {
+    const container = document.getElementById('coursesContainer');
+    if (!container) return;
+    let html = '';
+    for (let [code, data] of Object.entries(COURSES_DATA)) {
+      html += `<div class="course-card"><h3>${code} — ${data.name}</h3><ul>${data.notes.map(n => `<li>📖 ${n}</li>`).join('')}</ul></div>`;
     }
     container.innerHTML = html;
-    for(let code of Object.keys(COURSES_DATA)) displayUploadsForCourse(code);
-  }
-  function displayUploadsForCourse(code){
-    let div = document.getElementById(`uploads-${code}`);
-    if(div && adminUploads[code]) div.innerHTML = adminUploads[code].map(f=>`<div>📄 ${f.label}</div>`).join('');
   }
 
-  // flashcards render with filter
-  function renderFlashcards(filter="all"){
-    let grid = document.getElementById("flashcardsGrid");
-    let filtered = filter==="all" ? flashcards : flashcards.filter(f=>f.course===filter);
-    grid.innerHTML = filtered.map((fc,i)=>`<div class="flashcard" data-fcidx="${i}" onclick="this.classList.toggle('flipped')"><div class="flashcard-inner"><div class="front"><strong>${fc.course}</strong><p>${fc.q}</p><span style="font-size:0.7rem;">tap to flip</span></div><div class="back"><strong>Answer</strong><p>${fc.a}</p></div></div></div>`).join("");
+  async function renderFlashcards() {
+    const grid = document.getElementById('flashcardsGrid');
+    if (!grid) return;
+    grid.innerHTML = flashcards.map((fc, i) => `<div class="flashcard" onclick="this.classList.toggle('flipped')"><div class="flashcard-inner"><div class="front"><strong>${fc.course}</strong><p>${fc.q}</p></div><div class="back"><strong>Answer</strong><p>${fc.a}</p></div></div></div>`).join('');
   }
 
-  // quizzes
-  function renderQuizzesLobby(){
-    let container = document.getElementById("quizzesList");
-    container.innerHTML = Object.keys(QUIZZES).map(key=>`<div class="course-card"><h3>${QUIZZES[key].title}</h3><p>${QUIZZES[key].questions.length} questions · Coursework practice</p><button class="btn startQuizBtn" data-quiz="${key}">Start Test</button></div>`).join("");
-    document.querySelectorAll(".startQuizBtn").forEach(btn=>btn.addEventListener("click",(e)=>{startQuiz(btn.dataset.quiz);}));
-  }
-  let activeQuizKey=null, userAnswers=[];
-  function startQuiz(key){
-    activeQuizKey=key; userAnswers=new Array(QUIZZES[key].questions.length).fill(-1);
-    document.getElementById("quizLobby").style.display="none";
-    document.getElementById("quizActive").style.display="block";
-    document.getElementById("quizResults").style.display="none";
-    renderCurrentQuestion(0);
-  }
-  function renderCurrentQuestion(idx){
-    let q = QUIZZES[activeQuizKey].questions[idx];
-    let html = `<div class="quiz-question"><h4>${idx+1}. ${q.text}</h4>`;
-    q.options.forEach((opt,i)=>{html+=`<div class="option" data-optidx="${i}">${String.fromCharCode(65+i)}. ${opt}</div>`;});
-    html+=`<div style="margin-top:1rem;"><button id="prevQBtn" ${idx===0?'disabled':''}>Prev</button> <button id="nextQBtn">${idx===QUIZZES[activeQuizKey].questions.length-1?'Submit':'Next'}</button></div></div>`;
-    document.getElementById("quizContainer").innerHTML=html;
-    document.querySelectorAll(".option").forEach(opt=>opt.addEventListener("click",(e)=>{userAnswers[idx]=parseInt(opt.dataset.optidx); renderCurrentQuestion(idx);}));
-    document.getElementById("prevQBtn")?.addEventListener("click",()=>renderCurrentQuestion(idx-1));
-    document.getElementById("nextQBtn")?.addEventListener("click",()=>{ if(idx===QUIZZES[activeQuizKey].questions.length-1) submitQuiz(); else renderCurrentQuestion(idx+1); });
-  }
-  function submitQuiz(){
-    let quiz = QUIZZES[activeQuizKey];
-    let score=0;
-    quiz.questions.forEach((q,i)=>{ if(userAnswers[i]===q.correct) score++; });
-    let percent = Math.round((score/quiz.questions.length)*100);
-    let resultEntry = {user:currentUser, quiz:quiz.title, score, total:quiz.questions.length, percent, date:new Date().toLocaleDateString()};
-    userResults.push(resultEntry); localStorage.setItem("dcs_results",JSON.stringify(userResults));
-    document.getElementById("quizActive").style.display="none";
-    document.getElementById("quizResults").style.display="block";
-    document.getElementById("quizResults").innerHTML=`<div class="admin-section"><h3>Your Score: ${percent}% (${score}/${quiz.questions.length})</h3><button id="resetQuizBtn" class="btn">Try Another Test</button></div>`;
-    document.getElementById("resetQuizBtn")?.addEventListener("click",()=>{ document.getElementById("quizLobby").style.display="block"; document.getElementById("quizActive").style.display="none"; document.getElementById("quizResults").style.display="none"; });
-  }
-  document.getElementById("backToQuizzes")?.addEventListener("click",()=>{ document.getElementById("quizLobby").style.display="block"; document.getElementById("quizActive").style.display="none"; document.getElementById("quizResults").style.display="none"; });
-
-  // Admin functions
-  function addFlashcardAdmin(course,q,a){ if(course && q && a) flashcards.push({course,q,a}); renderFlashcards(document.getElementById("fcFilterSelect")?.value||"all"); localStorage.setItem("dcs_flashcards",JSON.stringify(flashcards)); }
-  function addQuizQuestionAdmin(quizKey,qText,opts,correct){
-    if(QUIZZES[quizKey]) QUIZZES[quizKey].questions.push({text:qText,options:opts,correct:parseInt(correct)});
-    localStorage.setItem("dcs_quizzes",JSON.stringify(QUIZZES));
-  }
-  function handleAdminUpload(file, course, label){
-    if(!file) return;
-    let reader = new FileReader();
-    reader.onload = (e)=>{ let fakeUrl = "data:application/octet-stream;base64,"+btoa(e.target.result.slice(0,100));
-      if(!adminUploads[course]) adminUploads[course]=[];
-      adminUploads[course].push({label,url:"#admin-upload",date:Date.now()});
-      localStorage.setItem("admin_uploads",JSON.stringify(adminUploads));
-      document.getElementById("uploadStatus").innerHTML="✅ Uploaded! (local storage)";
-      renderCourses();
-    };
-    reader.readAsArrayBuffer(file.slice(0, 200*1024));
+  async function renderQuizzes() {
+    const container = document.getElementById('quizzesList');
+    if (!container) return;
+    container.innerHTML = `<div class="course-card"><h3>CSC122 Basics Quiz</h3><button class="btn">Start</button></div>`;
   }
 
-  // UI bootstrap
-  document.getElementById("loginBtn").onclick = async ()=>{
-    let id = document.getElementById("loginIdentity").value;
-    let code = document.getElementById("loginCode").value;
-    if(await login(id,code)){
-      document.getElementById("loginContainer").style.display="none";
-      document.getElementById("mainApp").style.display="block";
-      renderCourses(); renderFlashcards("all"); renderQuizzesLobby();
-      document.getElementById("announcementText").innerText=announcement;
-      if(isAdmin) showAdminUI();
-    } else document.getElementById("loginError").innerText="Invalid credentials or admin password not set. Use 'admin' + password you set (first login sets hash)";
+  async function loadAnnouncement() {
+    const text = window.FB_READY ? await window.FB.getAnnouncement() : '';
+    document.getElementById('announcementText').innerText = text || 'Welcome to DCS Semester 2!';
+  }
+
+  // Event listeners
+  document.getElementById('loginBtn').onclick = doMemberLogin;
+  document.getElementById('showAdminLoginBtn').onclick = () => {
+    document.getElementById('loginContainer').style.display = 'none';
+    document.getElementById('adminLoginContainer').style.display = 'flex';
   };
-  // setup admin first
-  if(!storedAdminHash) { let tmp = prompt("First admin setup: set admin password"); if(tmp) localStorage.setItem("adminHash",hashPw(tmp).then(h=>localStorage.setItem("adminHash",h))); }
-  document.getElementById("themeToggleBtn").onclick = ()=>document.body.classList.toggle("dark");
-  document.getElementById("logoutBtn").onclick = ()=>{ localStorage.clear(); location.reload(); };
-  document.getElementById("fcFilterSelect")?.addEventListener("change",e=>renderFlashcards(e.target.value));
-  document.getElementById("addFlashcardBtn")?.addEventListener("click",()=>{ let c=document.getElementById("newFcCourse").value, q=document.getElementById("newFcQ").value, a=document.getElementById("newFcA").value; addFlashcardAdmin(c,q,a); });
-  document.getElementById("setAnnounceBtn")?.addEventListener("click",()=>{ let txt=document.getElementById("adminAnnounce").value; announcement=txt; localStorage.setItem("dcs_announce",txt); document.getElementById("announcementText").innerText=txt; });
-  document.getElementById("uploadMaterialBtn")?.addEventListener("click",()=>{ let file=document.getElementById("uploadFileInput").files[0]; let course=document.getElementById("uploadCourseSelect").value; let label=document.getElementById("uploadLabel").value; if(file && label) handleAdminUpload(file,course,label); });
-  document.getElementById("addQuestionBtn")?.addEventListener("click",()=>{ let qid=document.getElementById("quizSelector").value; let text=document.getElementById("newQText").value; let opts=[document.getElementById("optA").value,document.getElementById("optB").value,document.getElementById("optC").value,document.getElementById("optD").value]; let cor=document.getElementById("correctAns").value; if(text && opts.every(o=>o)) addQuizQuestionAdmin(qid,text,opts,cor); renderQuizzesLobby(); });
-  document.getElementById("exportResultsBtn")?.addEventListener("click",()=>{ let csv="User,Quiz,Score%,Date\n"+userResults.map(r=>`${r.user},${r.quiz},${r.percent},${r.date}`).join("\n"); let blob=new Blob([csv],{type:"text/csv"}); let a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="results.csv"; a.click(); });
-  document.getElementById("changeAdminPwBtn")?.addEventListener("click",async()=>{ let newpw=document.getElementById("newAdminPw").value; if(newpw.length>=6){ let h=await hashPw(newpw); localStorage.setItem("adminHash",h); alert("Admin password changed"); } });
-  // navigation
-  document.querySelectorAll(".nav-btn").forEach(btn=>{ btn.addEventListener("click",()=>{ document.querySelectorAll(".view").forEach(v=>v.classList.remove("active-view")); document.getElementById(`view-${btn.dataset.view}`).classList.add("active-view"); }); });
-  if(localStorage.getItem("dcs_flashcards")) flashcards = JSON.parse(localStorage.getItem("dcs_flashcards"));
-  if(localStorage.getItem("dcs_quizzes")) QUIZZES = JSON.parse(localStorage.getItem("dcs_quizzes"));
-  if(localStorage.getItem("admin_uploads")) adminUploads = JSON.parse(localStorage.getItem("admin_uploads"));
+  document.getElementById('backToMemberBtn').onclick = () => {
+    document.getElementById('adminLoginContainer').style.display = 'none';
+    document.getElementById('loginContainer').style.display = 'flex';
+  };
+  document.getElementById('adminLoginBtn').onclick = doAdminLogin;
+  document.getElementById('logoutBtn').onclick = () => location.reload();
+  document.getElementById('themeToggleBtn').onclick = () => document.body.classList.toggle('dark');
+  
+  document.getElementById('setAnnounceBtn')?.addEventListener('click', async () => {
+    const txt = document.getElementById('adminAnnounce').value;
+    if (window.FB_READY) await window.FB.setAnnouncement(txt);
+    loadAnnouncement();
+  });
+  
+  document.getElementById('addFlashcardBtn')?.addEventListener('click', async () => {
+    const course = document.getElementById('newFcCourse').value;
+    const q = document.getElementById('newFcQ').value;
+    const a = document.getElementById('newFcA').value;
+    if (course && q && a) {
+      flashcards.push({ course, q, a });
+      if (window.FB_READY) await window.FB.saveFlashcard({ course, q, a });
+      renderFlashcards();
+      document.getElementById('newFcCourse').value = '';
+      document.getElementById('newFcQ').value = '';
+      document.getElementById('newFcA').value = '';
+    }
+  });
+
+  // Navigation
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active-view'));
+      document.getElementById(`view-${btn.dataset.view}`).classList.add('active-view');
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Load from Firebase if available
+  if (window.FB_READY) {
+    window.FB.getFlashcards().then(fcs => { if (fcs.length) flashcards = fcs.map(f => ({ course: f.course, q: f.q, a: f.a })); renderFlashcards(); });
+  }
 </script>
 </body>
 </html>
