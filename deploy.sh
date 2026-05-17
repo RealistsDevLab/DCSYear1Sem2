@@ -1,5 +1,5 @@
 #!/bin/bash
-# ══ TheRealistDevLab — Deploy Script v4.0 ═════════════════════════════════════
+# ══ TheRealists Study Hub — Deploy Script v4.1 ════════════════════════════════
 # Usage: bash deploy.sh
 #
 # Supports two project modes — auto-detected:
@@ -10,11 +10,57 @@
 #   • Pull latest from remote before pushing (avoids conflicts)
 #   • Security check for hardcoded passwords
 #   • Friendly error messages
+#
+# Fix v4.1: Helper functions moved to top so they're defined before being called
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ══════════════════════════════════════════════════════════════════════════════
+# HELPER FUNCTIONS — defined first so they're available everywhere below
+# ══════════════════════════════════════════════════════════════════════════════
+
+function _stash_and_pull() {
+  cd "$REPO_DIR"
+  STASHED=false
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    git stash push -m "deploy-autostash" 2>&1 && STASHED=true
+  fi
+  if ! git pull --rebase 2>&1; then
+    $STASHED && git stash pop 2>/dev/null
+    echo "❌ git pull --rebase failed. Resolve conflicts manually then re-run."
+    exit 1
+  fi
+  $STASHED && git stash pop 2>/dev/null || true
+  echo "✅ Up to date with remote"
+}
+
+function _print_success_vanilla() {
+  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "✅ Deployed successfully!"
+  echo "   🌐 https://realistsdevlab.github.io/DCSYear1Sem2"
+  echo ""
+  echo "   📱 Members will see updates automatically."
+  echo "   🔑 Manage members: Admin → Settings → 👥 Members"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+}
+
+function _print_push_error() {
+  echo ""
+  echo "❌ git push failed. Possible causes:"
+  echo "   • No internet connection"
+  echo "   • GitHub token expired — run: git remote -v"
+  echo "   • Remote has new commits — run: git pull --rebase then re-run"
+  echo ""
+  echo "   Your commit is saved locally. Run 'git push' once fixed."
+}
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MAIN SCRIPT
 # ══════════════════════════════════════════════════════════════════════════════
 
 echo ""
-echo "🚀 TheRealistDevLab — Deploy v4.0"
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "📚 TheRealists Study Hub — Deploy v4.1"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # ── Resolve repo root ──────────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,7 +86,6 @@ MODE=""
 
 if [ -d "$REACT_DIR" ] && [ -f "$REACT_DIR/package.json" ]; then
   if [ -f "$VANILLA_HTML" ]; then
-    # Both exist — ask which to deploy
     echo ""
     echo "🔀 Detected BOTH projects:"
     echo "   [1] Vanilla  — index.html (current live site)"
@@ -135,7 +180,7 @@ PYEOF
   echo ""
   printf "✏️  Describe changes (Enter for auto message): "
   read -r USER_MSG
-  COMMIT_MSG="${USER_MSG:-Deploy $(date '+%Y-%m-%d %H:%M') — vanilla}"
+  COMMIT_MSG="${USER_MSG:-Deploy $(date '+%Y-%m-%d %H:%M') — Study Hub update}"
   git commit -m "$COMMIT_MSG"
   echo ""
   echo "📤 Pushing to GitHub..."
@@ -183,7 +228,6 @@ if [ "$MODE" = "react" ]; then
     echo "     VITE_FIREBASE_PROJECT_ID=therealistdevlab"
     exit 1
   fi
-  # Check all required VITE_ keys exist
   REQUIRED_KEYS=("VITE_FIREBASE_API_KEY" "VITE_FIREBASE_AUTH_DOMAIN" "VITE_FIREBASE_DATABASE_URL" "VITE_FIREBASE_PROJECT_ID")
   MISSING_KEYS=()
   for key in "${REQUIRED_KEYS[@]}"; do
@@ -208,7 +252,6 @@ if [ "$MODE" = "react" ]; then
       exit 1
     fi
   else
-    # Quick check: if package.json is newer than node_modules, reinstall
     if [ "package.json" -nt "node_modules" ]; then
       echo "   package.json changed — running npm install..."
       npm install && echo "✅ Dependencies updated" || { echo "❌ npm install failed."; exit 1; }
@@ -217,7 +260,6 @@ if [ "$MODE" = "react" ]; then
     fi
   fi
 
-  # Check gh-pages is available
   if ! npx gh-pages --version &>/dev/null; then
     echo "   Installing gh-pages..."
     npm install --save-dev gh-pages || { echo "❌ Could not install gh-pages."; exit 1; }
@@ -226,7 +268,6 @@ if [ "$MODE" = "react" ]; then
   # ── Step 4: Security check ───────────────────────────────────────────────────
   echo ""
   echo "🔐 Step 4 — Security check..."
-  # Warn if .env is somehow committed
   if git -C "$REPO_DIR" ls-files --error-unmatch rdl-react/.env &>/dev/null 2>&1; then
     echo "⚠️  WARNING: rdl-react/.env is tracked by git!"
     echo "   This means your Firebase keys will be public on GitHub."
@@ -292,12 +333,10 @@ if [ "$MODE" = "react" ]; then
     exit 1
   fi
 
-  # Also commit source changes to main branch (not the built files)
   echo ""
   echo "📦 Saving source changes to main branch..."
   cd "$REPO_DIR"
   git add rdl-react/ --ignore-errors 2>/dev/null || true
-  # Exclude node_modules and dist from tracking
   git reset HEAD rdl-react/node_modules 2>/dev/null || true
   git reset HEAD rdl-react/dist 2>/dev/null || true
   if ! git diff --cached --quiet; then
@@ -309,43 +348,3 @@ if [ "$MODE" = "react" ]; then
   fi
 
 fi
-
-# ══════════════════════════════════════════════════════════════════════════════
-# SHARED HELPERS (defined at bottom, called above via subshell-safe approach)
-# ══════════════════════════════════════════════════════════════════════════════
-
-function _stash_and_pull() {
-  cd "$REPO_DIR"
-  STASHED=false
-  if ! git diff --quiet || ! git diff --cached --quiet; then
-    git stash push -m "deploy-autostash" 2>&1 && STASHED=true
-  fi
-  if ! git pull --rebase 2>&1; then
-    $STASHED && git stash pop 2>/dev/null
-    echo "❌ git pull --rebase failed. Resolve conflicts manually then re-run."
-    exit 1
-  fi
-  $STASHED && git stash pop 2>/dev/null || true
-  echo "✅ Up to date with remote"
-}
-
-function _print_success_vanilla() {
-  echo ""
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "✅ Deployed successfully!"
-  echo "   🌐 https://realistsdevlab.github.io/DCSYear1Sem2"
-  echo ""
-  echo "   📱 Members will see updates automatically."
-  echo "   🔑 Manage members: Admin → Settings → 👥 Members"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-}
-
-function _print_push_error() {
-  echo ""
-  echo "❌ git push failed. Possible causes:"
-  echo "   • No internet connection"
-  echo "   • GitHub token expired — run: git remote -v"
-  echo "   • Remote has new commits — run: git pull --rebase then re-run"
-  echo ""
-  echo "   Your commit is saved locally. Run 'git push' once fixed."
-}
