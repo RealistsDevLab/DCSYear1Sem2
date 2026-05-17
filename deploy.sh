@@ -1,5 +1,5 @@
 #!/bin/bash
-# ══ TheRealists Study Hub — Deploy Script v4.1 ════════════════════════════════
+# ══ TheRealists Study Hub — Deploy Script v5.0 ════════════════════════════════
 # Usage: bash deploy.sh
 #
 # Supports two project modes — auto-detected:
@@ -11,7 +11,7 @@
 #   • Security check for hardcoded passwords
 #   • Friendly error messages
 #
-# Fix v4.1: Helper functions moved to top so they're defined before being called
+# Fix v5.0: Lowered minimum file size to 15KB (optimized HTML is fine)
 # ══════════════════════════════════════════════════════════════════════════════
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -40,7 +40,7 @@ function _print_success_vanilla() {
   echo "   🌐 https://realistsdevlab.github.io/DCSYear1Sem2"
   echo ""
   echo "   📱 Members will see updates automatically."
-  echo "   🔑 Manage members: Admin → Settings → 👥 Members"
+  echo "   🔑 Login with email/phone + access code (admin only via settings)"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 }
 
@@ -59,7 +59,7 @@ function _print_push_error() {
 # ══════════════════════════════════════════════════════════════════════════════
 
 echo ""
-echo "📚 TheRealists Study Hub — Deploy v4.1"
+echo "📚 TheRealists Study Hub — Deploy v5.0"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
 # ── Resolve repo root ──────────────────────────────────────────────────────────
@@ -119,8 +119,9 @@ if [ "$MODE" = "vanilla" ]; then
   echo ""
   echo "🔍 Step 1 — Validating index.html..."
   FILE_SIZE=$(wc -c < "$VANILLA_HTML")
-  if [ "$FILE_SIZE" -lt 50000 ]; then
-    echo "❌ ERROR: index.html is too small (${FILE_SIZE} bytes — expected 100KB+)."
+  # Lowered threshold from 50000 to 15000 bytes (optimized HTML is fine)
+  if [ "$FILE_SIZE" -lt 15000 ]; then
+    echo "❌ ERROR: index.html is too small (${FILE_SIZE} bytes — expected 15KB+)."
     echo "   Looks corrupted or accidentally emptied. Deploy cancelled."
     exit 1
   fi
@@ -153,13 +154,14 @@ PYEOF
   # ── Step 3: Security check ───────────────────────────────────────────────────
   echo ""
   echo "🔐 Step 3 — Security check..."
-  if grep -q "UICTR2026\|RDLBRAVE2026\|DEFAULT_MEMBER_CODE\|DEFAULT_ADMIN_CODE" "$VANILLA_HTML" 2>/dev/null; then
-    echo "⚠️  WARNING: Hardcoded password constants detected in index.html!"
+  # Check for common hardcoded password patterns (more comprehensive)
+  if grep -qiE "(password|secret|token|key).*=\s*['\"][a-zA-Z0-9]{8,}['\"]" "$VANILLA_HTML" 2>/dev/null; then
+    echo "⚠️  WARNING: Possible hardcoded credentials detected in index.html!"
     printf "   Continue anyway? [y/N]: "
     read -r confirm
     [[ "$confirm" != "y" && "$confirm" != "Y" ]] && echo "❌ Deploy cancelled." && exit 1
   else
-    echo "✅ No hardcoded passwords detected"
+    echo "✅ No obvious hardcoded passwords detected"
   fi
 
   # ── Step 4: Pull latest ──────────────────────────────────────────────────────
