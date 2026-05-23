@@ -455,12 +455,57 @@ select.form-input{cursor:pointer;}
 .modal-box h2{font-size:20px;font-weight:800;margin-bottom:10px;}
 .modal-box p{font-size:13px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;margin-bottom:24px;}
 
+/* ══ MOBILE BOTTOM NAV ══ */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:var(--bg2);border-top:1px solid var(--border);padding:6px 4px calc(6px + env(safe-area-inset-bottom));flex-direction:row;gap:2px;}
+.mob-nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 2px;border-radius:8px;cursor:pointer;transition:all .15s;min-width:0;}
+.mob-nav-item .mob-icon{font-size:18px;line-height:1;}
+.mob-nav-item .mob-label{font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text3);text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;}
+.mob-nav-item.active .mob-label{color:var(--accent);}
+.mob-nav-item.active{background:rgba(124,109,250,.1);}
+/* Mobile menu overlay */
+.mob-more-menu{display:none;position:fixed;bottom:calc(68px + env(safe-area-inset-bottom));left:8px;right:8px;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;z-index:400;padding:12px;box-shadow:0 -20px 60px rgba(0,0,0,.5);}
+.mob-more-menu.open{display:block;}
+.mob-more-item{display:flex;align-items:center;gap:12px;padding:12px 10px;border-radius:9px;cursor:pointer;transition:.15s;font-size:14px;font-weight:600;}
+.mob-more-item:hover,.mob-more-item.active{background:rgba(124,109,250,.08);color:var(--accent);}
+.mob-more-item .mob-more-icon{font-size:20px;width:30px;text-align:center;}
+/* Mobile sidebar overlay */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:250;backdrop-filter:blur(3px);}
+.sidebar-overlay.open{display:block;}
+
 /* ══ RESPONSIVE ══ */
-@media(max-width:600px){
-  .login-box{width:95%;padding:32px 24px;}
-  .code-layout{grid-template-columns:1fr;}
-  .fc-card-scene{width:90vw;height:260px;}
+@media(max-width:768px){
+  .sidebar{display:none;}
+  .mobile-nav{display:flex;}
+  .main{padding:16px;padding-bottom:calc(80px + env(safe-area-inset-bottom));}
+  .home-grid{grid-template-columns:1fr;}
+  .admin-grid{grid-template-columns:1fr;}
+  .notes-grid{grid-template-columns:1fr;}
+  .fc-grid{grid-template-columns:1fr 1fr;}
+  .quiz-list{grid-template-columns:1fr 1fr;}
+  .challenges-list{grid-template-columns:1fr;}
+  .att-grid{grid-template-columns:1fr 1fr;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
   .hdr-user-chip{display:none;}
+  .hdr{padding:0 12px;}
+  .hdr-logo-text small{display:none;}
+  .page-hdr h1{font-size:20px;}
+  .code-layout{grid-template-columns:1fr;height:auto;}
+  .code-editor{min-height:220px;}
+  .fc-card-scene{width:90vw;height:260px;}
+  .fc-card-text{font-size:14px;}
+  .quiz-active-wrap{max-width:100%;}
+  .lb-podium-block{width:64px;}
+  .settings-tabs{gap:3px;}
+  .stab{padding:6px 10px;font-size:11px;}
+  .member-actions{flex-wrap:wrap;gap:3px;}
+}
+@media(max-width:480px){
+  .login-box{width:95%;padding:28px 20px;}
+  .fc-grid{grid-template-columns:1fr;}
+  .quiz-list{grid-template-columns:1fr;}
+  .att-grid{grid-template-columns:1fr;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+  .home-grid{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -567,6 +612,9 @@ select.form-input{cursor:pointer;}
         <div class="nav-item" id="nav-quiz" onclick="showView('quiz')"><span class="nav-icon">🧠</span> Quizzes</div>
         <div class="nav-item" id="nav-lb" onclick="showView('lb')"><span class="nav-icon">🏆</span> Leaderboard</div>
       </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Learn C</div>
+        <div class="nav-item" id="nav-clearn" onclick="showView('clearn')"><span class="nav-icon">🎬</span> C Video Lessons</div>
       <div class="sidebar-section">
         <div class="sidebar-section-label">Community</div>
         <div class="nav-item" id="nav-discuss" onclick="showView('discuss')"><span class="nav-icon">💬</span> Discussion</div>
@@ -818,6 +866,41 @@ int main() {
         <div class="att-grid fade-in" id="att-grid"><div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;">Loading attendance...</div></div>
       </div>
 
+      <!-- ── C VIDEO LESSONS ── -->
+      <div class="view" id="view-clearn">
+        <div class="page-hdr fade-in">
+          <h1>🎬 C Video Lessons</h1>
+          <p>Learn C Programming with Ease — <span>video guides + resources</span></p>
+        </div>
+        <div class="card fade-in" style="margin-bottom:20px;background:linear-gradient(135deg,rgba(47,232,160,.06),rgba(124,109,250,.04));border-color:rgba(47,232,160,.2);">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="font-size:32px;">📁</div>
+            <div>
+              <div style="font-weight:800;font-size:14px;">Local Video Library</div>
+              <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:3px;">These videos are in your repo folder — open them with VLC, your phone's file manager, or serve them locally.</div>
+            </div>
+          </div>
+        </div>
+        <!-- PDF & Doc Resources -->
+        <div class="section-title fade-in">📄 Resources</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;" class="fade-in">
+          <a href="LEARN C PROGRAMMING WITH EASE/Common_C_Mistakes.pdf" target="_blank" class="pdf-link-btn">📄 Common C Mistakes (PDF)</a>
+          <a href="LEARN C PROGRAMMING WITH EASE/project ideas.docx" target="_blank" class="pdf-link-btn">📄 C Project Ideas (DOCX)</a>
+          <a href="LEARN C PROGRAMMING WITH EASE/c learner videos/C learner video guide 1.pdf" target="_blank" class="pdf-link-btn">📄 Video Guide 1 (PDF)</a>
+        </div>
+        <!-- Video List -->
+        <div class="section-title fade-in">🎬 Video Lessons</div>
+        <div class="notes-grid fade-in" id="clearn-video-grid"></div>
+        <div style="margin-top:24px;" class="fade-in">
+          <div class="section-title">💡 Tip</div>
+          <div class="card" style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.8;">
+            These .mp4 files are stored locally in your <code>LEARN C PROGRAMMING WITH EASE/c learner videos/</code> folder.<br>
+            To watch them here, you can run a local server: <code>python3 -m http.server 8080</code> from your project root,<br>
+            then visit <code>http://localhost:8080</code> — the videos will stream directly.
+          </div>
+        </div>
+      </div>
+
       <!-- ── ADMIN PANEL ── -->
       <div class="view" id="view-admin">
         <div class="page-hdr fade-in">
@@ -888,7 +971,7 @@ int main() {
           <div class="admin-card">
             <h3><div class="admin-card-icon" style="background:rgba(47,232,160,.12);">➕</div> Add Quiz Question</h3>
             <div class="form-group"><label class="form-label">Quiz</label>
-              <select id="add-q-quiz" class="form-input">
+              <select id="add-q-quiz" class="form-input" onchange="renderQuizQuestionList(this.value)">
                 <option value="csc122">CSC 122 — C Programming & Software Dev</option>
                 <option value="csc121">CSC 121 — Computer Hardware</option>
                 <option value="csc123">CSC 123 — Database Systems</option>
@@ -909,6 +992,7 @@ int main() {
             <div class="form-group"><label class="form-label">Explanation</label><input type="text" id="add-q-exp" class="form-input" placeholder="Why is this the correct answer?"></div>
             <button class="btn btn-primary" onclick="adminAddQuestion()">Add Question →</button>
             <div id="quiz-add-status" style="margin-top:10px;font-size:12px;font-family:'JetBrains Mono',monospace;display:none;"></div>
+            <div id="quiz-question-list" style="margin-top:14px;"></div>
           </div>
         </div>
 
@@ -933,7 +1017,7 @@ int main() {
           <div class="admin-card">
             <h3><div class="admin-card-icon" style="background:rgba(124,109,250,.12);">📄</div> Upload Notes / Past Papers</h3>
             <div class="form-group"><label class="form-label">Course</label>
-              <select id="upload-course" class="form-input">
+              <select id="upload-course" class="form-input" onchange="loadAdminUploadedFiles()">
                 <option>CSC 122</option><option>CSC 121</option><option>CSC 123</option><option>ICT 121</option><option>BSM 121</option>
               </select>
             </div>
@@ -1050,6 +1134,42 @@ int main() {
       <button class="btn btn-ghost" onclick="fcRestart()">🔄 Restart</button>
       <button class="btn btn-primary" onclick="closeStudyMode()">✓ Done</button>
     </div>
+  </div>
+</div>
+
+<!-- SIDEBAR OVERLAY (mobile tap-outside to close) -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav" id="mobile-nav">
+  <div class="mob-nav-item active" id="mob-home" onclick="showView('home');setMobActive('home')">
+    <div class="mob-icon">🏠</div><div class="mob-label">Home</div>
+  </div>
+  <div class="mob-nav-item" id="mob-notes" onclick="showView('notes');setMobActive('notes')">
+    <div class="mob-icon">📚</div><div class="mob-label">Notes</div>
+  </div>
+  <div class="mob-nav-item" id="mob-flash" onclick="showView('flash');setMobActive('flash')">
+    <div class="mob-icon">🃏</div><div class="mob-label">Cards</div>
+  </div>
+  <div class="mob-nav-item" id="mob-quiz" onclick="showView('quiz');setMobActive('quiz')">
+    <div class="mob-icon">🧠</div><div class="mob-label">Quiz</div>
+  </div>
+  <div class="mob-nav-item" id="mob-more" onclick="toggleMobMore()">
+    <div class="mob-icon">☰</div><div class="mob-label">More</div>
+  </div>
+</nav>
+
+<!-- MOBILE MORE MENU -->
+<div class="mob-more-menu" id="mob-more-menu">
+  <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:0 10px 8px;border-bottom:1px solid var(--border);margin-bottom:6px;">MORE PAGES</div>
+  <div class="mob-more-item" onclick="showView('code');setMobActive('code');closeMobMore()"><span class="mob-more-icon">💻</span><span>C Practice</span></div>
+  <div class="mob-more-item" onclick="showView('clearn');setMobActive('clearn');closeMobMore()"><span class="mob-more-icon">🎬</span><span>C Video Lessons</span></div>
+  <div class="mob-more-item" onclick="showView('lb');setMobActive('lb');closeMobMore()"><span class="mob-more-icon">🏆</span><span>Leaderboard</span></div>
+  <div class="mob-more-item" onclick="showView('discuss');setMobActive('discuss');closeMobMore()"><span class="mob-more-icon">💬</span><span>Discussion</span></div>
+  <div class="mob-more-item" onclick="showView('attend');setMobActive('attend');closeMobMore()"><span class="mob-more-icon">📆</span><span>Attendance</span></div>
+  <div class="mob-more-item" id="mob-admin-item" style="display:none;" onclick="showView('admin');setMobActive('admin');closeMobMore()"><span class="mob-more-icon">🛡️</span><span>Admin Panel</span></div>
+  <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;">
+    <div class="mob-more-item" onclick="logout();closeMobMore()" style="color:var(--accent2);"><span class="mob-more-icon">🚪</span><span>Sign Out</span></div>
   </div>
 </div>
 
@@ -1281,7 +1401,6 @@ function enterApp() {
   const app = document.getElementById('app');
   app.style.display='flex';
 
-  // Set username in header
   const name = _isAdmin ? 'Bravehart (Admin)' : (_currentMember?.name || 'Member');
   document.getElementById('hdr-username').textContent = name;
   document.getElementById('home-greeting-text').textContent = `Welcome back, ${_isAdmin ? 'Bravehart' : (_currentMember?.name?.split(' ')[0] || 'Realist')} 👋`;
@@ -1289,11 +1408,39 @@ function enterApp() {
   if (_isAdmin) {
     document.getElementById('settings-btn').style.display='flex';
     document.getElementById('admin-nav-section').style.display='block';
+    const mobAdmin = document.getElementById('mob-admin-item');
+    if (mobAdmin) mobAdmin.style.display='flex';
   }
 
   startSessionTimeout();
+  buildCVideoGrid();
   initApp();
 }
+
+// ── Mobile Nav ─────────────────────────────────────────────
+function setMobActive(id) {
+  document.querySelectorAll('.mob-nav-item').forEach(el=>el.classList.remove('active'));
+  const el = document.getElementById('mob-'+id);
+  if (el) el.classList.add('active');
+  else document.getElementById('mob-more').classList.add('active');
+}
+function toggleMobMore() {
+  const menu = document.getElementById('mob-more-menu');
+  menu.classList.toggle('open');
+  document.getElementById('mob-more').classList.toggle('active', menu.classList.contains('open'));
+}
+function closeMobMore() {
+  document.getElementById('mob-more-menu').classList.remove('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar-overlay').classList.remove('open');
+}
+// Close more menu on outside click
+document.addEventListener('click', e=>{
+  const menu = document.getElementById('mob-more-menu');
+  const btn  = document.getElementById('mob-more');
+  if (menu && !menu.contains(e.target) && !btn.contains(e.target)) menu.classList.remove('open');
+});
 
 function logout() {
   if (_sessionWatcher) { _sessionWatcher(); _sessionWatcher=null; }
@@ -1337,15 +1484,18 @@ function showView(id) {
   if (v) v.classList.add('active');
   const n = document.getElementById('nav-'+id);
   if (n) n.classList.add('active');
+  // Sync desktop scroll to top
+  const main = document.getElementById('main-content');
+  if (main) main.scrollTop=0;
+  // Close mobile more menu
+  closeMobMore();
 
-  if (id==='lb') loadLeaderboard();
-  if (id==='attend') loadAttendance();
-  if (id==='admin') { loadAdminMembers(); loadAdminStats(); loadAdminAttempts(); loadAdminPosts(); loadDeviceBindings(); loadBlocklist(); }
-  if (id==='flash') { loadFlashcards(); }
-  if (id==='notes') { loadUploadedFiles(); }
-
-  // close notif panel
-  document.getElementById('notif-panel').classList.remove('open');
+  if (id==='lb')      loadLeaderboard();
+  if (id==='attend')  loadAttendance();
+  if (id==='admin')   { loadAdminMembers(); loadAdminStats(); loadAdminAttempts(); loadAdminPosts(); loadDeviceBindings(); loadBlocklist(); }
+  if (id==='flash')   loadFlashcards();
+  if (id==='notes')   loadUploadedFiles();
+  if (id==='discuss') loadPosts();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1946,12 +2096,82 @@ async function loadUploadedFiles() {
   for (const c of courses) {
     const files = await window.FB.getFiles(c);
     files.forEach(f=>{
-      html+=`<a href="${f.url}" target="_blank" class="pdf-link-btn">📄 ${f.name}</a>`;
+      html+=`<div style="display:inline-flex;align-items:center;gap:6px;margin:3px;">
+        <a href="${f.url}" target="_blank" class="pdf-link-btn" style="margin:0;">📄 ${f.name}</a>
+        ${_isAdmin?`<button onclick="adminDeleteFile('${c}','${f._key}','${f.name}')" style="background:rgba(240,93,140,.1);border:1px solid rgba(240,93,140,.25);color:var(--accent2);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;" title="Delete">🗑️</button>`:''}
+      </div>`;
     });
   }
   const wrap = document.getElementById('notes-uploaded-files');
   const list = document.getElementById('notes-uploaded-list');
   if (html) { wrap.style.display='block'; list.innerHTML=html; }
+}
+
+async function adminDeleteFile(course, key, name) {
+  if (!confirm(`Delete "${name}"? This is permanent.`)) return;
+  if (window.FB_READY) await window.FB.deleteFile(course, key);
+  loadUploadedFiles();
+  loadAdminUploadedFiles();
+}
+
+// C Videos Grid
+const C_VIDEOS = [
+  {title:'Learn C Variables',           file:'Learn C variables.mp4',                 icon:'📦', topic:'Variables & Data Types'},
+  {title:'Format Specifiers',           file:'Format specifiers.mp4',                 icon:'🔤', topic:'Input / Output'},
+  {title:'Learn C Arithmetic Operators',file:'Learn C arithmetic operators.mp4',      icon:'➕', topic:'Operators'},
+  {title:'Logical Operators',           file:'Logical operators.mp4',                 icon:'🔀', topic:'Operators'},
+  {title:'If Statements',               file:'If statements.mp4',                     icon:'❓', topic:'Control Flow'},
+  {title:'Nested If Statements',        file:'Nested if statements.mp4',              icon:'🔁', topic:'Control Flow'},
+  {title:'Switches in C',               file:'Switches in C.mp4',                     icon:'🔦', topic:'Control Flow'},
+  {title:'Learn C For Loops',           file:'Learn C for loops.mp4',                 icon:'🔄', topic:'Loops'},
+  {title:'While Loops in C',            file:'While loops in C.mp4',                  icon:'🔄', topic:'Loops'},
+  {title:'Learn Nested Loops',          file:'Learn nested loops.mp4',                icon:'🌀', topic:'Loops'},
+  {title:'Learn Break & Continue',      file:'Learn break _ continue.mp4',            icon:'⛔', topic:'Loops'},
+  {title:'Functions in C',              file:'Functions in C.mp4',                    icon:'⚙️', topic:'Functions'},
+  {title:'Learn Function Prototypes',   file:'Learn function prototypes.mp4',         icon:'📋', topic:'Functions'},
+  {title:'Return Statements in C',      file:'Return statements in C.mp4',            icon:'↩️', topic:'Functions'},
+  {title:'Learn Variable Scope',        file:'Learn variable scope.mp4',              icon:'🔭', topic:'Functions'},
+  {title:'Arrays',                      file:'Arrays.mp4',                            icon:'📊', topic:'Arrays'},
+  {title:'Arrays of Structs',           file:'Arrays of structs.mp4',                 icon:'🗂️', topic:'Arrays'},
+  {title:'Learn 2D Arrays',             file:'Learn 2D arrays.mp4',                   icon:'📐', topic:'Arrays'},
+  {title:'Initialize Array with Input', file:'Initialize an array with user input.mp4',icon:'⌨️', topic:'Arrays'},
+  {title:'String Arrays',               file:'String Arrays.mp4',                     icon:'🔡', topic:'Strings'},
+  {title:'Learn C Math Functions',      file:'Learn C math functions.mp4',            icon:'📐', topic:'Math'},
+  {title:'How to Enter User Input',     file:'Learn how to enter user input.mp4',     icon:'⌨️', topic:'Input / Output'},
+  {title:'Pointers',                    file:'Pointers.mp4',                          icon:'🧭', topic:'Pointers'},
+  {title:'Structs in C',                file:'Structs in C.mp4',                      icon:'🏗️', topic:'Structs'},
+  {title:'Learn typedef',               file:'Learn typedef.mp4',                     icon:'🏷️', topic:'Structs'},
+];
+
+const VIDEO_BASE = 'LEARN C PROGRAMMING WITH EASE/c learner videos/';
+
+function buildCVideoGrid() {
+  const grid = document.getElementById('clearn-video-grid');
+  if (!grid) return;
+  // Group by topic
+  const topics = [...new Set(C_VIDEOS.map(v=>v.topic))];
+  let html='';
+  topics.forEach(topic=>{
+    const vids = C_VIDEOS.filter(v=>v.topic===topic);
+    vids.forEach(v=>{
+      const path = VIDEO_BASE + v.file;
+      html+=`<div class="note-card" style="cursor:default;">
+        <div style="position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent3);"></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="font-size:24px;">${v.icon}</div>
+          <div>
+            <div style="font-size:13px;font-weight:700;line-height:1.3;">${v.title}</div>
+            <span class="chip chip-green" style="font-size:9px;margin-top:4px;">${v.topic}</span>
+          </div>
+        </div>
+        <video src="${path}" controls preload="none" style="width:100%;border-radius:8px;background:#000;max-height:180px;" poster="">
+          Your browser does not support video.
+        </video>
+        <a href="${path}" download class="pdf-link-btn" style="margin-top:10px;font-size:11px;">⬇️ Download</a>
+      </div>`;
+    });
+  });
+  grid.innerHTML = html;
 }
 
 // ══════════════════════════════════════════════════════════
@@ -2031,11 +2251,14 @@ function renderFlashcardGrid() {
   document.getElementById('fc-count-filter').textContent = filtered.length;
   const grid = document.getElementById('fc-grid');
   grid.innerHTML = filtered.map((f,i)=>`
-    <div class="fc-preview-card" onclick="startStudyModeFrom(${_allFlashcards.indexOf(f)})">
+    <div class="fc-preview-card">
       <div class="fc-preview-q">${f.q}</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;gap:6px;flex-wrap:wrap;">
         <span class="chip chip-purple" style="font-size:9px;">${f.course}</span>
-        <span class="fc-preview-hint">👆 tap to study</span>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span class="fc-preview-hint" onclick="startStudyModeFrom(${_allFlashcards.indexOf(f)})" style="cursor:pointer;">▶ Study</span>
+          ${_isAdmin && f._key ? `<button onclick="adminDeleteFlashcard('${f._key}')" style="background:rgba(240,93,140,.08);border:1px solid rgba(240,93,140,.2);color:var(--accent2);border-radius:5px;padding:2px 7px;cursor:pointer;font-size:10px;font-family:'JetBrains Mono',monospace;" title="Delete">🗑️</button>` : ''}
+        </div>
       </div>
     </div>`).join('');
 }
@@ -2670,6 +2893,8 @@ function switchAdminTab(id) {
   if (id==='stats') { loadAdminStats(); loadAdminAttempts(); }
   if (id==='danger') loadAdminPosts();
   if (id==='security') { loadAdminMembers(); loadDeviceBindings(); }
+  if (id==='upload') loadAdminUploadedFiles();
+  if (id==='quizbuild') { const sel=document.getElementById('add-q-quiz'); if(sel) renderQuizQuestionList(sel.value); }
 }
 
 // ── Admin Stats ────────────────────────────────────────────
@@ -2783,6 +3008,31 @@ async function adminAddQuestion() {
   if (quiz) { quiz.questions.push({q:text,opts:[a,b,c,d],ans,exp}); }
   ['add-q-text','add-q-a','add-q-b','add-q-c','add-q-d','add-q-exp'].forEach(id=>document.getElementById(id).value='');
   showFeedback(st,`✅ Question added to ${qid.toUpperCase()}!`,'var(--accent3)');
+  renderQuizQuestionList(qid);
+}
+
+function renderQuizQuestionList(qid) {
+  const el = document.getElementById('quiz-question-list');
+  if (!el) return;
+  const quiz = BUILTIN_QUIZZES.find(q=>q.id===qid);
+  if (!quiz) { el.innerHTML=''; return; }
+  // Only show questions beyond the built-in count (session-added ones)
+  el.innerHTML = quiz.questions.length
+    ? `<div style="font-size:11px;font-weight:700;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:8px;">${quiz.questions.length} questions in this quiz (session-added show here)</div>`+
+      quiz.questions.slice(-10).map((q,i)=>`
+        <div style="display:flex;align-items:flex-start;gap:8px;padding:8px;background:var(--bg3);border-radius:7px;margin-bottom:5px;font-size:12px;">
+          <div style="flex:1;font-family:'JetBrains Mono',monospace;">${q.q}</div>
+          <button onclick="removeSessionQuestion('${qid}',${quiz.questions.indexOf(q)})" style="background:rgba(240,93,140,.08);border:1px solid rgba(240,93,140,.2);color:var(--accent2);border-radius:5px;padding:3px 7px;cursor:pointer;font-size:10px;flex-shrink:0;">🗑️</button>
+        </div>`).join('')
+    : '<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No session-added questions.</div>';
+}
+
+function removeSessionQuestion(qid, idx) {
+  const quiz = BUILTIN_QUIZZES.find(q=>q.id===qid);
+  if (!quiz) return;
+  if (!confirm('Remove this question from the current session?')) return;
+  quiz.questions.splice(idx, 1);
+  renderQuizQuestionList(qid);
 }
 
 // ── Admin Flashcard ────────────────────────────────────────
@@ -2799,6 +3049,12 @@ async function adminAddFlashcard() {
   loadFlashcards();
 }
 
+async function adminDeleteFlashcard(key) {
+  if (!confirm('Delete this flashcard permanently?')) return;
+  if (window.FB_READY) await window.FB.deleteFlashcard(key);
+  loadFlashcards();
+}
+
 // ── Admin File Upload ──────────────────────────────────────
 async function uploadCourseFile() {
   const file   = document.getElementById('file-upload').files[0];
@@ -2811,10 +3067,28 @@ async function uploadCourseFile() {
     await window.FB.uploadFile(file, course, label||file.name);
     showFeedback(st,`✅ Uploaded to ${course}!`,'var(--accent3)');
     document.getElementById('upload-label').value='';
+    document.getElementById('file-upload').value='';
     loadUploadedFiles();
+    loadAdminUploadedFiles();
   } catch(e) {
     showFeedback(st,'❌ Upload failed: '+e.message,'var(--accent2)');
   }
+}
+
+async function loadAdminUploadedFiles() {
+  if (!window.FB_READY) return;
+  const course = document.getElementById('upload-course')?.value || 'CSC 122';
+  const files  = await window.FB.getFiles(course);
+  const el = document.getElementById('file-manage');
+  if (!el) return;
+  if (!files.length) { el.innerHTML='<div style="color:var(--text3);font-size:11px;font-family:\'JetBrains Mono\',monospace;">No files uploaded for this course yet.</div>'; return; }
+  el.innerHTML = `<div style="font-size:10px;font-weight:700;letter-spacing:1px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:8px;">UPLOADED FILES</div>`+
+    files.map(f=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:5px;">
+        <span style="font-size:12px;flex:1;font-family:'JetBrains Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">📄 ${f.name}</span>
+        <a href="${f.url}" target="_blank" style="color:var(--accent);font-size:11px;font-family:'JetBrains Mono',monospace;text-decoration:none;">View</a>
+        <button onclick="adminDeleteFile('${course}','${f._key}','${f.name}')" style="background:rgba(240,93,140,.08);border:1px solid rgba(240,93,140,.2);color:var(--accent2);border-radius:5px;padding:3px 8px;cursor:pointer;font-size:11px;">🗑️ Delete</button>
+      </div>`).join('');
 }
 
 // ── Admin Password Change ──────────────────────────────────

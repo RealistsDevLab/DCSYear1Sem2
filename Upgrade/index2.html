@@ -1,0 +1,2853 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TheRealistDevLab — DCS Study Portal</title>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getDatabase, ref, set, get, onValue, push, remove, update, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDgwfW0y5RaTj7XDLfvFUkueiU_OC1uamw",
+    authDomain: "therealistdevlab.firebaseapp.com",
+    databaseURL: "https://therealistdevlab-default-rtdb.firebaseio.com",
+    projectId: "therealistdevlab",
+    storageBucket: "therealistdevlab.firebasestorage.app",
+    messagingSenderId: "174775227684",
+    appId: "1:174775227684:web:221575868fbb00e254cfb1"
+  };
+
+  const fbApp = initializeApp(firebaseConfig);
+  const db    = getDatabase(fbApp);
+
+  const CLOUD_NAME    = 'dze1ff3s9';
+  const UPLOAD_PRESET = 'rdl_uploads';
+
+  async function cloudinaryUpload(file) {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('upload_preset', UPLOAD_PRESET);
+    form.append('folder', 'therealistdevlab');
+    form.append('public_id', `rdl_${Date.now()}_${Math.random().toString(36).slice(2,7)}`);
+    const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method:'POST', body:form });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Upload failed');
+    return { url: data.secure_url, public_id: data.public_id };
+  }
+
+  window.FB = {
+    // Auth
+    getAdminHash:  async () => { const s = await get(ref(db,'config/adminHash'));  return s.exists() ? s.val() : null; },
+    setAdminHash:  (h) => set(ref(db,'config/adminHash'), h),
+    // Members
+    createMember:  (uid, data) => set(ref(db,'members/'+uid), data),
+    updateMember:  (uid, data) => update(ref(db,'members/'+uid), data),
+    deleteMember:  (uid) => remove(ref(db,'members/'+uid)),
+    getAllMembers:  async () => { const s = await get(ref(db,'members')); return s.exists() ? s.val() : {}; },
+    getMemberByUid:async (uid) => { const s = await get(ref(db,'members/'+uid)); return s.exists() ? s.val() : null; },
+    onMembers:     (cb) => onValue(ref(db,'members'), s => cb(s.exists() ? s.val() : {})),
+    // Announcements
+    getAnnouncement: async () => { const s = await get(ref(db,'config/announcement')); return s.exists() ? s.val() : ''; },
+    setAnnouncement: (v) => set(ref(db,'config/announcement'), v),
+    onAnnouncement:  (cb) => onValue(ref(db,'config/announcement'), s => cb(s.exists() ? s.val() : '')),
+    // Blocklist
+    getBlocklist: async () => { const s = await get(ref(db,'blocklist')); return s.exists() ? Object.values(s.val()) : []; },
+    addBlock:    (n) => set(ref(db,'blocklist/'+n.replace(/\s/g,'_')), n),
+    removeBlock: (n) => remove(ref(db,'blocklist/'+n.replace(/\s/g,'_'))),
+    isBlocked:   async (n) => { const s = await get(ref(db,'blocklist/'+n.replace(/\s/g,'_'))); return s.exists(); },
+    // Quiz Results
+    saveResult:   (r) => push(ref(db,'results'), r),
+    getAllResults: async () => { const s = await get(ref(db,'results')); return s.exists() ? Object.values(s.val()) : []; },
+    clearResults: () => remove(ref(db,'results')),
+    // Posts
+    savePost:   (p) => push(ref(db,'posts'), p),
+    getPosts:   async () => { const s = await get(ref(db,'posts')); if (!s.exists()) return []; const a=[]; s.forEach(c=>a.unshift({...c.val(),_key:c.key})); return a; },
+    deletePost: (k) => remove(ref(db,'posts/'+k)),
+    clearPosts: () => remove(ref(db,'posts')),
+    onPosts:    (cb) => onValue(ref(db,'posts'), s => { const a=[]; if(s.exists()) s.forEach(c=>a.unshift({...c.val(),_key:c.key})); cb(a); }),
+    // Flashcards
+    saveFlashcard:   (f) => push(ref(db,'flashcards'), f),
+    getFlashcards:   async () => { const s = await get(ref(db,'flashcards')); if (!s.exists()) return []; const a=[]; s.forEach(c=>a.push({...c.val(),_key:c.key})); return a; },
+    deleteFlashcard: (k) => remove(ref(db,'flashcards/'+k)),
+    onFlashcards:    (cb) => onValue(ref(db,'flashcards'), s => { const a=[]; if(s.exists()) s.forEach(c=>a.push({...c.val(),_key:c.key})); cb(a); }),
+    // Sessions (anti-sharing)
+    writeSession:  (uid, token) => set(ref(db,'sessions/'+uid), { token, ts: Date.now(), device: navigator.userAgent.slice(0,120) }),
+    readSession:   async (uid)  => { const s = await get(ref(db,'sessions/'+uid)); return s.exists() ? s.val() : null; },
+    watchSession:  (uid, cb)    => onValue(ref(db,'sessions/'+uid), s => cb(s.exists() ? s.val() : null)),
+    clearSession:  (uid)        => remove(ref(db,'sessions/'+uid)),
+    // Device Binding
+    getDeviceBinding:   async (uid) => { const s = await get(ref(db,'deviceBindings/'+uid)); return s.exists() ? s.val() : null; },
+    setDeviceBinding:   (uid, fp)   => set(ref(db,'deviceBindings/'+uid), { fingerprint: fp, boundAt: Date.now(), ua: navigator.userAgent.slice(0,200) }),
+    clearDeviceBinding: (uid)       => remove(ref(db,'deviceBindings/'+uid)),
+    // Notifications
+    pushNotification: (msg) => push(ref(db,'notifications'), { msg, ts: Date.now(), read: false }),
+    onNotifications:  (cb) => onValue(ref(db,'notifications'), s => { const a=[]; if(s.exists()) s.forEach(c=>a.push({...c.val(),_key:c.key})); cb(a); }),
+    markRead: (k) => update(ref(db,'notifications/'+k), { read: true }),
+    // Attendance
+    checkIn: (name) => {
+      const today = new Date().toISOString().split('T')[0];
+      const key = name.replace(/\s/g,'_');
+      return set(ref(db,'attendance/'+key+'/'+today), { name, date: today, ts: Date.now() });
+    },
+    getAttendance: async () => { const s = await get(ref(db,'attendance')); return s.exists() ? s.val() : {}; },
+    onAttendance:  (cb) => onValue(ref(db,'attendance'), s => cb(s.exists() ? s.val() : {})),
+    // Streaks
+    getStreak: async (name) => {
+      const att = await get(ref(db,'attendance/'+name.replace(/\s/g,'_')));
+      if (!att.exists()) return 0;
+      const days = Object.keys(att.val()).sort().reverse();
+      let streak=0, d=new Date();
+      for (const day of days) {
+        if (day === d.toISOString().split('T')[0]) { streak++; d.setDate(d.getDate()-1); } else break;
+      }
+      return streak;
+    },
+    // File uploads
+    uploadFile: async (file, course, label) => {
+      const { url, public_id } = await cloudinaryUpload(file);
+      await push(ref(db,'files/'+course.replace(/\s/g,'_')), { name: label||file.name, url, public_id, ts: Date.now() });
+      return url;
+    },
+    getFiles: async (course) => { const s = await get(ref(db,'files/'+course.replace(/\s/g,'_'))); if (!s.exists()) return []; const a=[]; s.forEach(c=>a.push({...c.val(),_key:c.key})); return a; },
+    deleteFile: async (course, key) => { await remove(ref(db,'files/'+course.replace(/\s/g,'_')+'/'+key)); },
+    // Quiz results
+    saveQuizResult: (r) => push(ref(db,'results'), r),
+  };
+
+  window.FB_READY = true;
+  window.dispatchEvent(new Event('fb-ready'));
+  console.log('✅ Firebase connected — TheRealistDevLab');
+</script>
+
+<style>
+/* ══ TOKENS ══ */
+:root {
+  --bg:      #07070f;
+  --bg2:     #0d0d1a;
+  --bg3:     #111120;
+  --card:    #0f0f1e;
+  --border:  #1a1a30;
+  --border2: #242440;
+  --accent:  #7c6dfa;
+  --accent2: #f05d8c;
+  --accent3: #2fe8a0;
+  --accent4: #f7b731;
+  --text:    #e4e4f4;
+  --text2:   #8888b0;
+  --text3:   #4a4a70;
+  --hdr:     56px;
+  --sidebar: 260px;
+  --radius:  12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--bg2);}
+::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px;}
+
+/* ══ UTILITIES ══ */
+.hidden{display:none!important;}
+.fade-in{animation:fadeUp .5s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;border:none;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),#a78bfa);color:#fff;}
+.btn-primary:hover{opacity:.88;transform:translateY(-1px);}
+.btn-danger{background:rgba(240,93,140,.15);border:1px solid rgba(240,93,140,.3);color:var(--accent2);}
+.btn-danger:hover{background:rgba(240,93,140,.25);}
+.btn-ghost{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-green{background:rgba(47,232,160,.12);border:1px solid rgba(47,232,160,.3);color:var(--accent3);}
+.btn-green:hover{background:rgba(47,232,160,.22);}
+.chip{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;}
+.chip-purple{background:rgba(124,109,250,.15);border:1px solid rgba(124,109,250,.3);color:var(--accent);}
+.chip-green{background:rgba(47,232,160,.12);border:1px solid rgba(47,232,160,.3);color:var(--accent3);}
+.chip-red{background:rgba(240,93,140,.1);border:1px solid rgba(240,93,140,.25);color:var(--accent2);}
+.chip-yellow{background:rgba(247,183,49,.1);border:1px solid rgba(247,183,49,.25);color:var(--accent4);}
+.form-group{margin-bottom:16px;}
+.form-label{display:block;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:7px;font-family:'JetBrains Mono',monospace;}
+.form-input{width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:9px;padding:11px 14px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;}
+.form-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(124,109,250,.12);}
+.form-input::placeholder{color:var(--text3);}
+textarea.form-input{resize:vertical;min-height:80px;line-height:1.6;}
+select.form-input{cursor:pointer;}
+.section-title{font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+.error-msg{background:rgba(240,93,140,.08);border:1px solid rgba(240,93,140,.25);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--accent2);font-family:'JetBrains Mono',monospace;display:none;}
+.success-msg{background:rgba(47,232,160,.08);border:1px solid rgba(47,232,160,.25);border-radius:8px;padding:9px 13px;font-size:12px;color:var(--accent3);font-family:'JetBrains Mono',monospace;}
+
+/* ══ LOGIN ══ */
+#login-page{min-height:100vh;display:flex;align-items:center;justify-content:center;position:relative;background:var(--bg);overflow:hidden;}
+.login-grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(124,109,250,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(124,109,250,.04) 1px,transparent 1px);background-size:48px 48px;}
+.login-glow{position:absolute;width:600px;height:600px;border-radius:50%;background:radial-gradient(ellipse,rgba(124,109,250,.12) 0%,transparent 70%);top:-100px;left:-100px;}
+.login-glow2{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(ellipse,rgba(240,93,140,.08) 0%,transparent 70%);bottom:-50px;right:-50px;}
+.login-box{position:relative;z-index:10;width:440px;background:rgba(13,13,26,.92);backdrop-filter:blur(24px);border:1px solid rgba(124,109,250,.2);border-radius:20px;padding:48px 42px;box-shadow:0 48px 96px rgba(0,0,0,.7),0 0 0 1px rgba(124,109,250,.08);}
+.login-logo-row{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
+.login-logo-icon{width:46px;height:46px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;}
+.login-logo-text{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;line-height:1.25;}
+.login-logo-text small{display:block;font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;}
+.login-title{font-size:26px;font-weight:800;margin:20px 0 5px;background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.login-sub{font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:32px;line-height:1.6;}
+.login-sub span{color:var(--accent3);}
+.login-btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),#a78bfa);border:none;border-radius:10px;color:#fff;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-top:6px;letter-spacing:.5px;}
+.login-btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(124,109,250,.4);}
+.login-toggle{margin-top:20px;text-align:center;font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.login-toggle a{color:var(--accent);cursor:pointer;text-decoration:none;}
+.login-toggle a:hover{text-decoration:underline;}
+.login-footer{margin-top:24px;padding-top:16px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.login-footer span{color:var(--accent3);}
+@keyframes loginSlide{from{opacity:0;transform:translateY(24px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.login-box{animation:loginSlide .55s cubic-bezier(.16,1,.3,1) both;}
+
+/* ══ APP SHELL ══ */
+#app{display:none;height:100vh;overflow:hidden;flex-direction:column;}
+/* Header */
+.hdr{height:var(--hdr);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;position:fixed;top:0;left:0;right:0;z-index:200;}
+.hdr-logo{display:flex;align-items:center;gap:9px;flex-shrink:0;}
+.hdr-logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.hdr-logo-text{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;}
+.hdr-logo-text small{display:block;font-size:8px;color:var(--text3);letter-spacing:1.5px;}
+.hdr-sep{width:1px;height:28px;background:var(--border);flex-shrink:0;}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.hdr-user-chip{display:flex;align-items:center;gap:7px;padding:5px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);}
+.hdr-user-chip strong{color:var(--text);}
+.hdr-icon-btn{width:34px;height:34px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:all .15s;position:relative;}
+.hdr-icon-btn:hover{border-color:var(--accent);background:rgba(124,109,250,.08);}
+.notif-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--accent2);border-radius:50%;border:1.5px solid var(--bg2);}
+/* Layout */
+.layout{display:flex;margin-top:var(--hdr);height:calc(100vh - var(--hdr));overflow:hidden;}
+/* Sidebar */
+.sidebar{width:var(--sidebar);flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;padding:16px 0;}
+.sidebar-section{padding:0 12px;margin-bottom:4px;}
+.sidebar-section-label{font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:10px 8px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:9px;cursor:pointer;transition:all .15s;color:var(--text2);font-size:13px;font-weight:600;margin-bottom:2px;}
+.nav-item:hover{background:rgba(124,109,250,.06);color:var(--text);}
+.nav-item.active{background:rgba(124,109,250,.12);color:var(--accent);border:1px solid rgba(124,109,250,.15);}
+.nav-item .nav-icon{font-size:16px;width:22px;text-align:center;}
+.nav-item .nav-badge{margin-left:auto;font-size:9px;padding:2px 6px;background:var(--accent);color:#fff;border-radius:10px;font-family:'JetBrains Mono',monospace;}
+/* Main */
+.main{flex:1;overflow-y:auto;padding:28px;}
+/* Views */
+.view{display:none;}
+.view.active{display:block;}
+/* Page header */
+.page-hdr{margin-bottom:28px;}
+.page-hdr h1{font-size:26px;font-weight:800;background:linear-gradient(135deg,var(--text) 30%,var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.page-hdr p{font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:5px;}
+.page-hdr p span{color:var(--accent3);}
+
+/* ══ HOME / DASHBOARD ══ */
+.announcement-bar{background:linear-gradient(135deg,rgba(124,109,250,.12),rgba(240,93,140,.08));border:1px solid rgba(124,109,250,.2);border-radius:12px;padding:14px 18px;margin-bottom:24px;font-size:13px;display:flex;align-items:center;gap:10px;}
+.announcement-bar .ann-icon{font-size:20px;flex-shrink:0;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:14px;margin-bottom:28px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:border-color .2s;}
+.stat-card:hover{border-color:var(--border2);}
+.stat-num{font-size:28px;font-weight:800;font-family:'Space Mono',monospace;}
+.stat-label{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:4px;}
+.home-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+@media(max-width:900px){.home-grid{grid-template-columns:1fr;}.sidebar{display:none;}}
+.quick-links{display:flex;flex-direction:column;gap:8px;}
+.quick-link{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;text-decoration:none;color:var(--text);}
+.quick-link:hover{border-color:var(--accent);transform:translateX(3px);}
+.quick-link-icon{font-size:20px;width:36px;height:36px;background:var(--bg2);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.quick-link-text strong{display:block;font-size:13px;font-weight:700;}
+.quick-link-text small{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.activity-feed{display:flex;flex-direction:column;gap:8px;}
+.activity-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:8px;font-size:12px;}
+.activity-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* ══ NOTES ══ */
+.course-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
+.course-tab{padding:7px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;font-family:'JetBrains Mono',monospace;}
+.course-tab.active,.course-tab:hover{background:rgba(124,109,250,.12);border-color:var(--accent);color:var(--accent);}
+.notes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+.note-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;transition:all .2s;cursor:pointer;position:relative;overflow:hidden;}
+.note-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
+.note-card:hover{border-color:rgba(124,109,250,.3);transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.3);}
+.note-card-icon{font-size:28px;margin-bottom:12px;}
+.note-card-title{font-size:14px;font-weight:700;margin-bottom:6px;}
+.note-card-meta{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;}
+.note-card-tag{display:inline-flex;margin-top:10px;}
+/* Notes Content Modal */
+.notes-modal{display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto;}
+.notes-modal.open{display:flex;}
+.notes-modal-box{width:100%;max-width:820px;background:var(--bg2);border:1px solid var(--border2);border-radius:16px;margin:auto;overflow:hidden;}
+.notes-modal-hdr{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.notes-modal-hdr h2{font-size:18px;font-weight:800;flex:1;}
+.notes-modal-body{padding:24px;max-height:75vh;overflow-y:auto;font-size:14px;line-height:1.8;color:var(--text2);}
+.notes-modal-body h3{color:var(--accent);font-size:15px;margin:20px 0 8px;font-family:'Space Mono',monospace;}
+.notes-modal-body h4{color:var(--text);font-size:13px;margin:14px 0 6px;}
+.notes-modal-body ul,.notes-modal-body ol{padding-left:20px;margin:8px 0;}
+.notes-modal-body li{margin-bottom:4px;}
+.notes-modal-body code{background:var(--bg3);border:1px solid var(--border);padding:2px 7px;border-radius:5px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--accent3);}
+.notes-modal-body pre{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:16px;overflow-x:auto;margin:12px 0;}
+.notes-modal-body pre code{background:none;border:none;padding:0;font-size:13px;}
+.notes-modal-body .definition{background:rgba(124,109,250,.06);border-left:3px solid var(--accent);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;}
+.notes-modal-body .important{background:rgba(247,183,49,.06);border-left:3px solid var(--accent4);padding:10px 14px;border-radius:0 8px 8px 0;margin:10px 0;}
+.pdf-link-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:rgba(124,109,250,.1);border:1px solid rgba(124,109,250,.25);border-radius:9px;color:var(--accent);font-size:12px;font-family:'JetBrains Mono',monospace;cursor:pointer;text-decoration:none;transition:all .15s;margin-right:8px;margin-top:10px;}
+.pdf-link-btn:hover{background:rgba(124,109,250,.18);}
+
+/* ══ FLASHCARDS ══ */
+.fc-filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center;}
+.fc-stats-row{display:flex;gap:12px;margin-bottom:20px;}
+.fc-stat{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 16px;text-align:center;}
+.fc-stat strong{display:block;font-size:18px;font-weight:800;font-family:'Space Mono',monospace;}
+.fc-stat small{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+/* Study mode */
+.fc-study-overlay{display:none;position:fixed;inset:0;z-index:800;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:24px;}
+.fc-study-overlay.open{display:flex;}
+.fc-progress-bar-wrap{width:100%;max-width:600px;height:4px;background:var(--bg3);border-radius:2px;}
+.fc-progress-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:2px;transition:width .3s;}
+.fc-card-scene{width:560px;max-width:90vw;height:320px;perspective:1200px;cursor:pointer;}
+.fc-card-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1);}
+.fc-card-inner.flipped{transform:rotateY(180deg);}
+.fc-card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;text-align:center;}
+.fc-card-front{background:var(--card);border:1px solid rgba(124,109,250,.25);}
+.fc-card-back{background:linear-gradient(135deg,rgba(124,109,250,.08),rgba(47,232,160,.06));border:1px solid rgba(47,232,160,.2);transform:rotateY(180deg);}
+.fc-card-label{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;font-family:'JetBrains Mono',monospace;margin-bottom:14px;}
+.fc-card-front .fc-card-label{color:var(--accent);}
+.fc-card-back .fc-card-label{color:var(--accent3);}
+.fc-card-text{font-size:17px;font-weight:700;line-height:1.5;color:var(--text);}
+.fc-card-hint{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:16px;}
+.fc-nav-row{display:flex;gap:12px;align-items:center;}
+.fc-course-chip{font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:700;padding:3px 10px;border-radius:10px;}
+.fc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;}
+.fc-preview-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;cursor:pointer;transition:all .2s;}
+.fc-preview-card:hover{border-color:rgba(124,109,250,.3);transform:translateY(-2px);}
+.fc-preview-q{font-size:13px;font-weight:600;margin-bottom:8px;line-height:1.5;}
+.fc-preview-hint{font-size:11px;color:var(--accent);font-family:'JetBrains Mono',monospace;}
+
+/* ══ C CODE PRACTICE ══ */
+.code-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;height:calc(100vh - var(--hdr) - 120px);}
+@media(max-width:800px){.code-layout{grid-template-columns:1fr;height:auto;}}
+.code-panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);display:flex;flex-direction:column;overflow:hidden;}
+.code-panel-hdr{padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.code-panel-hdr h3{font-size:12px;font-weight:700;font-family:'JetBrains Mono',monospace;flex:1;}
+.code-editor{flex:1;background:var(--bg);font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--accent3);padding:16px;border:none;outline:none;resize:none;line-height:1.7;overflow-y:auto;}
+.code-output{flex:1;font-family:'JetBrains Mono',monospace;font-size:12px;padding:16px;overflow-y:auto;line-height:1.7;}
+.output-line{margin-bottom:2px;}
+.output-ok{color:var(--accent3);}
+.output-err{color:var(--accent2);}
+.output-info{color:var(--text3);}
+.challenges-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:20px;}
+.challenge-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;cursor:pointer;transition:all .2s;}
+.challenge-card:hover{border-color:rgba(47,232,160,.3);transform:translateY(-2px);}
+.challenge-card-title{font-size:14px;font-weight:700;margin-bottom:6px;}
+.challenge-card-desc{font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.5;margin-bottom:10px;}
+.challenge-difficulty{font-size:10px;font-family:'JetBrains Mono',monospace;font-weight:700;}
+.diff-easy{color:var(--accent3);}
+.diff-medium{color:var(--accent4);}
+.diff-hard{color:var(--accent2);}
+
+/* ══ QUIZ ══ */
+.quiz-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;}
+.quiz-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;}
+.quiz-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(124,109,250,.04),transparent);opacity:0;transition:opacity .2s;}
+.quiz-card:hover{border-color:rgba(124,109,250,.3);transform:translateY(-2px);}
+.quiz-card:hover::after{opacity:1;}
+.quiz-card-icon{font-size:30px;margin-bottom:12px;}
+.quiz-card-title{font-size:14px;font-weight:700;margin-bottom:5px;}
+.quiz-card-meta{font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+/* Active quiz */
+.quiz-active-wrap{max-width:680px;margin:0 auto;}
+.quiz-progress-wrap{height:4px;background:var(--bg3);border-radius:2px;margin-bottom:24px;overflow:hidden;}
+.quiz-progress{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:2px;transition:width .3s;}
+.quiz-question-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;margin-bottom:16px;}
+.quiz-q-num{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:700;letter-spacing:1px;margin-bottom:10px;}
+.quiz-q-text{font-size:16px;font-weight:700;line-height:1.6;}
+.quiz-options{display:flex;flex-direction:column;gap:10px;}
+.quiz-opt{padding:14px 18px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;cursor:pointer;transition:all .15s;font-size:13px;font-weight:600;text-align:left;}
+.quiz-opt:hover{border-color:var(--accent);background:rgba(124,109,250,.06);}
+.quiz-opt.correct{border-color:var(--accent3);background:rgba(47,232,160,.08);color:var(--accent3);}
+.quiz-opt.wrong{border-color:var(--accent2);background:rgba(240,93,140,.08);color:var(--accent2);}
+.quiz-opt.reveal-correct{border-color:var(--accent3);background:rgba(47,232,160,.05);}
+.quiz-explanation{background:rgba(124,109,250,.06);border:1px solid rgba(124,109,250,.15);border-radius:8px;padding:12px 16px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text2);margin-top:12px;line-height:1.6;}
+/* Results */
+.quiz-result-wrap{max-width:560px;margin:0 auto;text-align:center;}
+.quiz-result-score{font-size:72px;font-weight:800;font-family:'Space Mono',monospace;background:linear-gradient(135deg,var(--accent),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.quiz-result-label{font-size:13px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:24px;}
+
+/* ══ DISCUSSION ══ */
+.post-form{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px;}
+.post-list{display:flex;flex-direction:column;gap:12px;}
+.post-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
+.post-item-hdr{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.post-avatar{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
+.post-author{font-size:13px;font-weight:700;}
+.post-time{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+.post-body{font-size:13px;line-height:1.7;color:var(--text2);}
+.post-delete-btn{margin-left:auto;font-size:11px;color:var(--accent2);cursor:pointer;background:none;border:none;padding:4px 8px;border-radius:5px;transition:.15s;}
+.post-delete-btn:hover{background:rgba(240,93,140,.1);}
+
+/* ══ LEADERBOARD ══ */
+.lb-podium{display:flex;justify-content:center;align-items:flex-end;gap:10px;margin-bottom:28px;}
+.lb-podium-item{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.lb-podium-block{width:80px;border-radius:8px 8px 0 0;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8px;font-family:'Space Mono',monospace;font-size:20px;font-weight:800;}
+.lb-podium-block.p1{height:100px;background:linear-gradient(180deg,rgba(247,183,49,.3),rgba(247,183,49,.1));border:1px solid rgba(247,183,49,.3);color:var(--accent4);}
+.lb-podium-block.p2{height:72px;background:linear-gradient(180deg,rgba(124,109,250,.2),rgba(124,109,250,.05));border:1px solid rgba(124,109,250,.2);color:var(--accent);}
+.lb-podium-block.p3{height:52px;background:linear-gradient(180deg,rgba(240,93,140,.15),rgba(240,93,140,.03));border:1px solid rgba(240,93,140,.15);color:var(--accent2);}
+.lb-podium-name{font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace;text-align:center;}
+.lb-row{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;transition:.15s;}
+.lb-row:hover{border-color:var(--border2);}
+.lb-rank{font-size:14px;font-weight:800;font-family:'Space Mono',monospace;width:28px;text-align:center;flex-shrink:0;}
+.lb-name{flex:1;font-size:13px;font-weight:700;}
+.lb-score{font-size:14px;font-weight:800;font-family:'Space Mono',monospace;color:var(--accent);}
+.lb-quiz{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+
+/* ══ ADMIN PANEL ══ */
+.admin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;}
+.admin-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;}
+.admin-card h3{font-size:13px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.admin-card h3 .admin-card-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.member-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;font-size:12px;}
+.member-row-avatar{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.member-row-name{flex:1;font-weight:700;}
+.member-row-status{font-size:10px;font-family:'JetBrains Mono',monospace;}
+.member-actions{display:flex;gap:5px;margin-left:auto;}
+.member-action-btn{padding:3px 8px;border-radius:5px;font-size:10px;font-family:'JetBrains Mono',monospace;cursor:pointer;border:1px solid;transition:.15s;font-weight:700;}
+.mab-reset{border-color:rgba(124,109,250,.3);color:var(--accent);background:rgba(124,109,250,.05);}
+.mab-reset:hover{background:rgba(124,109,250,.12);}
+.mab-toggle{border-color:rgba(247,183,49,.3);color:var(--accent4);background:rgba(247,183,49,.05);}
+.mab-toggle:hover{background:rgba(247,183,49,.12);}
+.mab-delete{border-color:rgba(240,93,140,.3);color:var(--accent2);background:rgba(240,93,140,.05);}
+.mab-delete:hover{background:rgba(240,93,140,.12);}
+.mab-bind{border-color:rgba(47,232,160,.3);color:var(--accent3);background:rgba(47,232,160,.05);}
+.mab-bind:hover{background:rgba(47,232,160,.12);}
+.blocklist-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:rgba(240,93,140,.08);border:1px solid rgba(240,93,140,.2);border-radius:20px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--accent2);margin:3px;}
+.blocklist-tag button{background:none;border:none;color:var(--accent2);cursor:pointer;font-size:12px;line-height:1;}
+.settings-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.stab{padding:7px 14px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text2);transition:.15s;font-family:'JetBrains Mono',monospace;}
+.stab:hover{color:var(--text);}
+.stab.active{background:rgba(124,109,250,.12);color:var(--accent);border:1px solid rgba(124,109,250,.2);}
+.stab-panel{display:none;}
+.stab-panel.active{display:block;}
+
+/* ══ ATTENDANCE ══ */
+.att-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.att-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:12px;}
+.att-avatar{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0;}
+.att-name{font-size:13px;font-weight:700;}
+.att-streak{font-size:11px;color:var(--accent4);font-family:'JetBrains Mono',monospace;}
+.att-last{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;}
+
+/* ══ NOTIFICATION PANEL ══ */
+.notif-panel{display:none;position:fixed;top:calc(var(--hdr) + 8px);right:12px;width:320px;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;z-index:300;box-shadow:0 20px 60px rgba(0,0,0,.5);overflow:hidden;}
+.notif-panel.open{display:block;}
+.notif-panel-hdr{padding:14px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;}
+.notif-item{padding:12px 18px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);font-family:'JetBrains Mono',monospace;cursor:pointer;transition:.15s;}
+.notif-item:hover{background:var(--bg3);}
+.notif-item.unread{border-left:3px solid var(--accent);}
+.notif-empty{padding:20px 18px;font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;text-align:center;}
+
+/* ══ SESSION KICKED MODAL ══ */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.9);align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--bg2);border:1px solid rgba(240,93,140,.3);border-radius:16px;padding:40px;max-width:420px;width:90%;text-align:center;}
+.modal-box h2{font-size:20px;font-weight:800;margin-bottom:10px;}
+.modal-box p{font-size:13px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.6;margin-bottom:24px;}
+
+/* ══ RESPONSIVE ══ */
+@media(max-width:600px){
+  .login-box{width:95%;padding:32px 24px;}
+  .code-layout{grid-template-columns:1fr;}
+  .fc-card-scene{width:90vw;height:260px;}
+  .hdr-user-chip{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     LOGIN PAGE
+══════════════════════════════════════ -->
+<div id="login-page">
+  <div class="login-grid-bg"></div>
+  <div class="login-glow"></div>
+  <div class="login-glow2"></div>
+
+  <!-- MEMBER LOGIN -->
+  <div class="login-box" id="member-login-box">
+    <div class="login-logo-row">
+      <div class="login-logo-icon">🚀</div>
+      <div class="login-logo-text">TheRealistDevLab<small>// DCS STUDY PORTAL</small></div>
+    </div>
+    <h2 class="login-title">Welcome Back</h2>
+    <p class="login-sub">Enter your identity + access code to continue<br><span>// UICT · DCS Year 1 · Semester 2 · 2026</span></p>
+
+    <div class="form-group">
+      <label class="form-label" for="login-identity">Email or Phone Number</label>
+      <input type="text" id="login-identity" class="form-input" placeholder="your@email.com or 07XXXXXXXX" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Access Code</label>
+      <input type="password" id="access-code" class="form-input" placeholder="Enter your personal code..." autocomplete="off">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Access Study Portal →</button>
+    <div class="error-msg" id="login-error" style="margin-top:12px;"></div>
+
+    <div class="login-toggle">— or — <a onclick="showAdminLogin()">Admin access</a></div>
+    <div class="login-footer">TheRealists · UICT · <span>2026</span></div>
+  </div>
+
+  <!-- ADMIN LOGIN -->
+  <div class="login-box" id="admin-login-box" style="display:none;">
+    <div class="login-logo-row">
+      <div class="login-logo-icon" style="background:linear-gradient(135deg,var(--accent2),#f72585);">🛡️</div>
+      <div class="login-logo-text">Admin Access<small>// BRAVEHART ONLY</small></div>
+    </div>
+    <h2 class="login-title" style="background:linear-gradient(135deg,var(--text),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Restricted Access</h2>
+    <p class="login-sub">Authorised administrator only<br><span>// Bravehart · TheRealists</span></p>
+
+    <div class="form-group">
+      <label class="form-label">Admin Password</label>
+      <input type="password" id="admin-code-input" class="form-input" placeholder="Enter admin password...">
+    </div>
+    <button class="login-btn" onclick="doAdminLogin()" style="background:linear-gradient(135deg,var(--accent2),#f72585);">Enter Admin Panel →</button>
+    <div class="error-msg" id="admin-login-error" style="margin-top:12px;"></div>
+
+    <div class="login-toggle"><a onclick="showMemberLogin()">← Back to member login</a></div>
+    <div class="login-footer">
+      <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.7;text-align:left;margin-top:12px;padding:10px;background:rgba(124,109,250,.04);border-radius:8px;border:1px solid var(--border);">
+        🔒 SHA-256 hashed · 5-attempt lockout · Session enforced
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MAIN APP
+══════════════════════════════════════ -->
+<div id="app" style="display:none;flex-direction:column;">
+
+  <!-- HEADER -->
+  <header class="hdr">
+    <div class="hdr-logo">
+      <div class="hdr-logo-icon">🚀</div>
+      <div class="hdr-logo-text">TheRealistDevLab<small>DCS STUDY PORTAL</small></div>
+    </div>
+    <div class="hdr-sep"></div>
+    <div class="hdr-user-chip">
+      <span>👤</span>
+      <span id="hdr-username">Member</span>
+    </div>
+    <div class="hdr-right">
+      <div class="hdr-icon-btn" id="notif-btn" onclick="toggleNotifPanel()" title="Notifications">
+        🔔<div class="notif-dot" id="notif-dot" style="display:none;"></div>
+      </div>
+      <div class="hdr-icon-btn" id="settings-btn" onclick="showView('admin')" title="Admin Panel" style="display:none;">⚙️</div>
+      <button class="btn btn-ghost" onclick="logout()" style="font-size:12px;padding:6px 12px;">Sign Out</button>
+    </div>
+  </header>
+
+  <!-- NOTIFICATION PANEL -->
+  <div class="notif-panel" id="notif-panel">
+    <div class="notif-panel-hdr">🔔 Notifications</div>
+    <div id="notif-list"><div class="notif-empty">No notifications yet.</div></div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <nav class="sidebar" id="sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Navigate</div>
+        <div class="nav-item active" id="nav-home" onclick="showView('home')"><span class="nav-icon">🏠</span> Home</div>
+        <div class="nav-item" id="nav-notes" onclick="showView('notes')"><span class="nav-icon">📚</span> Study Notes</div>
+        <div class="nav-item" id="nav-flash" onclick="showView('flash')"><span class="nav-icon">🃏</span> Flashcards</div>
+        <div class="nav-item" id="nav-code" onclick="showView('code')"><span class="nav-icon">💻</span> C Practice</div>
+        <div class="nav-item" id="nav-quiz" onclick="showView('quiz')"><span class="nav-icon">🧠</span> Quizzes</div>
+        <div class="nav-item" id="nav-lb" onclick="showView('lb')"><span class="nav-icon">🏆</span> Leaderboard</div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-label">Community</div>
+        <div class="nav-item" id="nav-discuss" onclick="showView('discuss')"><span class="nav-icon">💬</span> Discussion</div>
+        <div class="nav-item" id="nav-attend" onclick="showView('attend')"><span class="nav-icon">📆</span> Attendance</div>
+      </div>
+      <div class="sidebar-section" id="admin-nav-section" style="display:none;">
+        <div class="sidebar-section-label">Admin</div>
+        <div class="nav-item" id="nav-admin" onclick="showView('admin')"><span class="nav-icon">🛡️</span> Admin Panel</div>
+      </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="main" id="main-content">
+
+      <!-- ── HOME ── -->
+      <div class="view active" id="view-home">
+        <div class="page-hdr fade-in">
+          <h1 id="home-greeting-text">Welcome back 👋</h1>
+          <p>DCS Year 1 Semester 2 · <span>TheRealists · UICT 2026</span></p>
+        </div>
+        <div id="announcement-bar" style="display:none;" class="announcement-bar fade-in">
+          <div class="ann-icon">📢</div>
+          <div id="announcement-text"></div>
+        </div>
+        <div class="stat-grid fade-in" id="home-stats">
+          <div class="stat-card"><div class="stat-num" style="color:var(--accent);" id="stat-courses">5</div><div class="stat-label">Course Units</div></div>
+          <div class="stat-card"><div class="stat-num" style="color:var(--accent3);" id="stat-flashcards">0</div><div class="stat-label">Flashcards</div></div>
+          <div class="stat-card"><div class="stat-num" style="color:var(--accent2);" id="stat-quizzes">5</div><div class="stat-label">Quiz Sets</div></div>
+          <div class="stat-card"><div class="stat-num" style="color:var(--accent4);" id="stat-streak">0</div><div class="stat-label">Day Streak 🔥</div></div>
+        </div>
+        <div class="home-grid fade-in">
+          <div>
+            <div class="section-title">Quick Access</div>
+            <div class="quick-links">
+              <div class="quick-link" onclick="showView('notes')"><div class="quick-link-icon">📚</div><div class="quick-link-text"><strong>Study Notes</strong><small>Summarised notes for all 5 units</small></div><span style="margin-left:auto;color:var(--text3);">→</span></div>
+              <div class="quick-link" onclick="showView('flash')"><div class="quick-link-icon">🃏</div><div class="quick-link-text"><strong>Flashcards</strong><small>Practice key concepts</small></div><span style="margin-left:auto;color:var(--text3);">→</span></div>
+              <div class="quick-link" onclick="showView('code')"><div class="quick-link-icon">💻</div><div class="quick-link-text"><strong>C Programming Practice</strong><small>Challenges + code editor</small></div><span style="margin-left:auto;color:var(--text3);">→</span></div>
+              <div class="quick-link" onclick="showView('quiz')"><div class="quick-link-icon">🧠</div><div class="quick-link-text"><strong>Take a Quiz</strong><small>Test your knowledge</small></div><span style="margin-left:auto;color:var(--text3);">→</span></div>
+              <div class="quick-link" onclick="showView('discuss')"><div class="quick-link-icon">💬</div><div class="quick-link-text"><strong>Discussion</strong><small>Ask & answer with TheRealists</small></div><span style="margin-left:auto;color:var(--text3);">→</span></div>
+            </div>
+          </div>
+          <div>
+            <div class="section-title">Course Units</div>
+            <div class="activity-feed">
+              <div class="activity-item"><div class="activity-dot" style="background:var(--accent);"></div><div><strong style="font-size:12px;">CSC 122</strong> — Structured Software Development</div></div>
+              <div class="activity-item"><div class="activity-dot" style="background:var(--accent2);"></div><div><strong style="font-size:12px;">CSC 121</strong> — Computer Hardware Maintenance</div></div>
+              <div class="activity-item"><div class="activity-dot" style="background:var(--accent3);"></div><div><strong style="font-size:12px;">CSC 123</strong> — Database Systems Design I</div></div>
+              <div class="activity-item"><div class="activity-dot" style="background:var(--accent4);"></div><div><strong style="font-size:12px;">ICT 121</strong> — Computer Workshop Practice</div></div>
+              <div class="activity-item"><div class="activity-dot" style="background:#a78bfa;"></div><div><strong style="font-size:12px;">BSM 121</strong> — Research Methods</div></div>
+            </div>
+            <div class="section-title" style="margin-top:20px;">PDF Resources</div>
+            <div style="display:flex;flex-direction:column;gap:6px;" id="home-pdfs">
+              <a href="CSC122_Structured_Software_Dev.pdf" target="_blank" class="pdf-link-btn">📄 CSC 122 — Structured Software Dev</a>
+              <a href="CSC121_Computer_Hardware_Maintenance.pdf" target="_blank" class="pdf-link-btn">📄 CSC 121 — Hardware Maintenance</a>
+              <a href="CSC123_Database_Systems_Design_I.pdf" target="_blank" class="pdf-link-btn">📄 CSC 123 — Database Systems</a>
+              <a href="ICT121_Computer_Workshop_Practice.pdf" target="_blank" class="pdf-link-btn">📄 ICT 121 — Workshop Practice</a>
+              <a href="BSM121_Research_Methods.pdf" target="_blank" class="pdf-link-btn">📄 BSM 121 — Research Methods</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── STUDY NOTES ── -->
+      <div class="view" id="view-notes">
+        <div class="page-hdr fade-in">
+          <h1>📚 Study Notes</h1>
+          <p>Summarised notes for all course units — <span>tap any card to study</span></p>
+        </div>
+        <div class="course-tabs fade-in">
+          <div class="course-tab active" onclick="filterNotes('all',this)">All Units</div>
+          <div class="course-tab" onclick="filterNotes('csc122',this)">CSC 122</div>
+          <div class="course-tab" onclick="filterNotes('csc121',this)">CSC 121</div>
+          <div class="course-tab" onclick="filterNotes('csc123',this)">CSC 123</div>
+          <div class="course-tab" onclick="filterNotes('ict121',this)">ICT 121</div>
+          <div class="course-tab" onclick="filterNotes('bsm121',this)">BSM 121</div>
+        </div>
+        <div class="notes-grid fade-in" id="notes-grid"></div>
+        <div style="margin-top:24px;">
+          <div class="section-title">📥 Download Full PDFs</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <a href="CSC122_Structured_Software_Dev.pdf" target="_blank" class="pdf-link-btn">📄 CSC 122 PDF</a>
+            <a href="CSC121_Computer_Hardware_Maintenance.pdf" target="_blank" class="pdf-link-btn">📄 CSC 121 PDF</a>
+            <a href="CSC123_Database_Systems_Design_I.pdf" target="_blank" class="pdf-link-btn">📄 CSC 123 PDF</a>
+            <a href="ICT121_Computer_Workshop_Practice.pdf" target="_blank" class="pdf-link-btn">📄 ICT 121 PDF</a>
+            <a href="BSM121_Research_Methods.pdf" target="_blank" class="pdf-link-btn">📄 BSM 121 PDF</a>
+            <a href="Diploma-in-DCS.pdf" target="_blank" class="pdf-link-btn">🎓 Diploma DCS Programme</a>
+          </div>
+        </div>
+        <!-- Admin: extra uploaded files -->
+        <div id="notes-uploaded-files" style="margin-top:20px;display:none;">
+          <div class="section-title">📁 Uploaded by Admin</div>
+          <div id="notes-uploaded-list"></div>
+        </div>
+      </div>
+
+      <!-- ── FLASHCARDS ── -->
+      <div class="view" id="view-flash">
+        <div class="page-hdr fade-in">
+          <h1>🃏 Flashcards</h1>
+          <p>Flip, study, repeat — <span>all course units covered</span></p>
+        </div>
+        <div class="fc-filter-row fade-in">
+          <div class="course-tab active" onclick="filterFlash('all',this)">All</div>
+          <div class="course-tab" onclick="filterFlash('CSC 122',this)">CSC 122</div>
+          <div class="course-tab" onclick="filterFlash('CSC 121',this)">CSC 121</div>
+          <div class="course-tab" onclick="filterFlash('CSC 123',this)">CSC 123</div>
+          <div class="course-tab" onclick="filterFlash('ICT 121',this)">ICT 121</div>
+          <div class="course-tab" onclick="filterFlash('BSM 121',this)">BSM 121</div>
+          <button class="btn btn-primary" style="margin-left:auto;" onclick="startStudyMode()">▶ Study Mode</button>
+        </div>
+        <div class="fc-stats-row fade-in">
+          <div class="fc-stat"><strong id="fc-count-total">0</strong><small>Total Cards</small></div>
+          <div class="fc-stat"><strong id="fc-count-filter">0</strong><small>In Filter</small></div>
+        </div>
+        <div class="fc-grid fade-in" id="fc-grid"></div>
+      </div>
+
+      <!-- ── C CODE PRACTICE ── -->
+      <div class="view" id="view-code">
+        <div class="page-hdr fade-in">
+          <h1>💻 C Programming Practice</h1>
+          <p>Write, test concepts, tackle challenges — <span>CSC 122</span></p>
+        </div>
+        <div class="code-layout fade-in">
+          <div class="code-panel">
+            <div class="code-panel-hdr">
+              <span style="font-size:14px;">📝</span>
+              <h3>C Code Editor</h3>
+              <select id="challenge-select" class="form-input" style="width:auto;padding:5px 10px;font-size:11px;" onchange="loadChallenge()">
+                <option value="">-- Load Challenge --</option>
+              </select>
+              <button class="btn btn-green" style="font-size:11px;padding:6px 12px;" onclick="runCode()">▶ Run</button>
+              <button class="btn btn-ghost" style="font-size:11px;padding:6px 10px;" onclick="clearEditor()">Clear</button>
+            </div>
+            <textarea class="code-editor" id="code-editor" spellcheck="false" placeholder="// Write your C code here...
+#include &lt;stdio.h&gt;
+
+int main() {
+    printf(&quot;Hello, TheRealists!\n&quot;);
+    return 0;
+}"></textarea>
+          </div>
+          <div class="code-panel">
+            <div class="code-panel-hdr">
+              <span style="font-size:14px;">⚡</span>
+              <h3>Output / Notes</h3>
+              <button class="btn btn-ghost" style="font-size:11px;padding:6px 10px;" onclick="clearOutput()">Clear</button>
+            </div>
+            <div class="code-output" id="code-output">
+              <div class="output-info">// Simulated output — C runs conceptually here</div>
+              <div class="output-info">// Real compilation requires a server. Use this to</div>
+              <div class="output-info">// practice syntax, logic & get concept feedback.</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <div class="section-title fade-in">🏆 Practice Challenges</div>
+          <div class="challenges-list fade-in" id="challenges-list"></div>
+        </div>
+      </div>
+
+      <!-- ── QUIZ ── -->
+      <div class="view" id="view-quiz">
+        <!-- Quiz list -->
+        <div id="quiz-list-view">
+          <div class="page-hdr fade-in">
+            <h1>🧠 Quizzes</h1>
+            <p>Test your knowledge — <span>instant results + explanations</span></p>
+          </div>
+          <div class="quiz-list fade-in" id="quiz-list"></div>
+        </div>
+        <!-- Active quiz -->
+        <div id="quiz-active-view" style="display:none;">
+          <div class="quiz-active-wrap">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+              <button class="btn btn-ghost" style="font-size:12px;" onclick="exitQuiz()">← Back</button>
+              <div style="flex:1;">
+                <div style="font-size:14px;font-weight:800;" id="active-quiz-title"></div>
+                <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;" id="active-quiz-meta"></div>
+              </div>
+            </div>
+            <div class="quiz-progress-wrap"><div class="quiz-progress" id="quiz-progress"></div></div>
+            <div id="quiz-question-area"></div>
+            <div id="quiz-nav" style="display:flex;gap:10px;margin-top:16px;"></div>
+          </div>
+        </div>
+        <!-- Results -->
+        <div id="quiz-result-view" style="display:none;">
+          <div class="quiz-result-wrap fade-in">
+            <div style="font-size:40px;margin-bottom:12px;" id="result-emoji"></div>
+            <div class="quiz-result-score" id="result-score"></div>
+            <div class="quiz-result-label" id="result-label"></div>
+            <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+              <button class="btn btn-primary" onclick="retakeQuiz()">🔄 Retake</button>
+              <button class="btn btn-ghost" onclick="exitQuiz()">← All Quizzes</button>
+              <button class="btn btn-ghost" onclick="showView('lb')">🏆 Leaderboard</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── LEADERBOARD ── -->
+      <div class="view" id="view-lb">
+        <div class="page-hdr fade-in">
+          <h1>🏆 Leaderboard</h1>
+          <p>Top scores across all quizzes — <span>TheRealists Rankings</span></p>
+        </div>
+        <div id="lb-podium" class="lb-podium fade-in"></div>
+        <div id="lb-list" class="fade-in"></div>
+      </div>
+
+      <!-- ── DISCUSSION ── -->
+      <div class="view" id="view-discuss">
+        <div class="page-hdr fade-in">
+          <h1>💬 Discussion</h1>
+          <p>Ask questions · share tips · help each other — <span>TheRealists</span></p>
+        </div>
+        <div class="post-form fade-in">
+          <div class="form-group">
+            <label class="form-label">Your Name</label>
+            <input type="text" id="post-author" class="form-input" placeholder="e.g. Bravehart">
+          </div>
+          <div class="form-group" style="margin-bottom:12px;">
+            <label class="form-label">Message</label>
+            <textarea id="post-body" class="form-input" placeholder="Ask a question or share a study tip..." style="min-height:90px;"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="submitPost()">Post →</button>
+          <div class="error-msg" id="post-error" style="margin-top:10px;"></div>
+        </div>
+        <div class="post-list fade-in" id="post-list"><div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;">Loading posts...</div></div>
+      </div>
+
+      <!-- ── ATTENDANCE ── -->
+      <div class="view" id="view-attend">
+        <div class="page-hdr fade-in">
+          <h1>📆 Attendance</h1>
+          <p>Who's been studying — <span>check in daily</span></p>
+        </div>
+        <div class="card fade-in" style="max-width:420px;margin-bottom:24px;">
+          <h3 style="font-size:13px;font-weight:800;margin-bottom:12px;">✅ Check In Today</h3>
+          <p style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px;">Mark yourself as present for today's study session.</p>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="checkin-name" class="form-input" placeholder="Your name..." style="flex:1;">
+            <button class="btn btn-green" onclick="doCheckIn()">Check In ✓</button>
+          </div>
+          <div class="error-msg" id="checkin-error" style="margin-top:8px;"></div>
+        </div>
+        <div class="section-title fade-in">👥 Study Group Activity</div>
+        <div class="att-grid fade-in" id="att-grid"><div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;">Loading attendance...</div></div>
+      </div>
+
+      <!-- ── ADMIN PANEL ── -->
+      <div class="view" id="view-admin">
+        <div class="page-hdr fade-in">
+          <h1>🛡️ Admin Panel <span class="chip chip-red">ADMIN</span></h1>
+          <p>Full control — <span>Bravehart only</span></p>
+        </div>
+
+        <!-- SETTINGS TABS -->
+        <div class="settings-tabs fade-in">
+          <div class="stab active" id="stab-members" onclick="switchAdminTab('members')">👥 Members</div>
+          <div class="stab" id="stab-announce" onclick="switchAdminTab('announce')">📢 Announce</div>
+          <div class="stab" id="stab-quizbuild" onclick="switchAdminTab('quizbuild')">🧠 Quiz Builder</div>
+          <div class="stab" id="stab-flashbuild" onclick="switchAdminTab('flashbuild')">🃏 Flashcards</div>
+          <div class="stab" id="stab-upload" onclick="switchAdminTab('upload')">📁 Upload</div>
+          <div class="stab" id="stab-stats" onclick="switchAdminTab('stats')">📊 Stats</div>
+          <div class="stab" id="stab-danger" onclick="switchAdminTab('danger')">⚠️ Danger</div>
+          <div class="stab" id="stab-security" onclick="switchAdminTab('security')">🔑 Security</div>
+        </div>
+
+        <!-- MEMBERS TAB -->
+        <div class="stab-panel active fade-in" id="stab-panel-members">
+          <div class="admin-grid">
+            <div class="admin-card">
+              <h3><div class="admin-card-icon" style="background:rgba(47,232,160,.12);">➕</div> Add New Member</h3>
+              <div class="form-group"><label class="form-label">Full Name</label><input type="text" id="nm-name" class="form-input" placeholder="e.g. Dreamboat"></div>
+              <div class="form-group"><label class="form-label">Email</label><input type="email" id="nm-email" class="form-input" placeholder="email@gmail.com"></div>
+              <div class="form-group"><label class="form-label">Phone (optional)</label><input type="text" id="nm-phone" class="form-input" placeholder="07XXXXXXXX"></div>
+              <div class="form-group"><label class="form-label">Access Code (min 6 chars)</label><input type="password" id="nm-code" class="form-input" placeholder="Create code..."></div>
+              <button class="btn btn-green" onclick="adminAddMember()">➕ Add Member</button>
+              <div id="nm-feedback" style="margin-top:10px;font-size:12px;font-family:'JetBrains Mono',monospace;display:none;"></div>
+            </div>
+            <div class="admin-card" style="grid-column:span 2;">
+              <h3><div class="admin-card-icon" style="background:rgba(124,109,250,.12);">👥</div> All Members</h3>
+              <div id="admin-members-list"><div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;">Loading...</div></div>
+            </div>
+          </div>
+          <div class="admin-card" style="margin-top:16px;">
+            <h3><div class="admin-card-icon" style="background:rgba(240,93,140,.12);">⛔</div> Block / Unblock Members</h3>
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+              <input type="text" id="block-name" class="form-input" placeholder="Member name to block..." style="flex:1;">
+              <button class="btn btn-danger" onclick="blockMember()">⛔ Block</button>
+            </div>
+            <div id="blocklist"></div>
+          </div>
+        </div>
+
+        <!-- ANNOUNCE TAB -->
+        <div class="stab-panel fade-in" id="stab-panel-announce" style="display:none;">
+          <div class="admin-grid">
+            <div class="admin-card">
+              <h3><div class="admin-card-icon" style="background:rgba(124,109,250,.12);">📢</div> Post Announcement</h3>
+              <div class="form-group"><label class="form-label">Announcement</label><textarea id="admin-announcement" class="form-input" placeholder="Write announcement for all members..." style="min-height:100px;"></textarea></div>
+              <div style="display:flex;gap:8px;">
+                <button class="btn btn-primary" onclick="postAnnouncement()">Post →</button>
+                <button class="btn btn-ghost" onclick="clearAnnouncement()">Clear</button>
+              </div>
+            </div>
+            <div class="admin-card">
+              <h3><div class="admin-card-icon" style="background:rgba(247,183,49,.12);">🔔</div> Send Notification</h3>
+              <div class="form-group"><label class="form-label">Message</label><input type="text" id="notif-msg" class="form-input" placeholder="Notification message..."></div>
+              <button class="btn btn-primary" onclick="sendNotification()">Send 🔔</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- QUIZ BUILDER TAB -->
+        <div class="stab-panel fade-in" id="stab-panel-quizbuild" style="display:none;">
+          <div class="admin-card">
+            <h3><div class="admin-card-icon" style="background:rgba(47,232,160,.12);">➕</div> Add Quiz Question</h3>
+            <div class="form-group"><label class="form-label">Quiz</label>
+              <select id="add-q-quiz" class="form-input">
+                <option value="csc122">CSC 122 — C Programming & Software Dev</option>
+                <option value="csc121">CSC 121 — Computer Hardware</option>
+                <option value="csc123">CSC 123 — Database Systems</option>
+                <option value="ict121">ICT 121 — Workshop Practice</option>
+                <option value="bsm121">BSM 121 — Research Methods</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Question</label><textarea id="add-q-text" class="form-input" placeholder="Type the question..." style="min-height:70px;"></textarea></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+              <div class="form-group"><label class="form-label">Option A</label><input type="text" id="add-q-a" class="form-input" placeholder="Option A"></div>
+              <div class="form-group"><label class="form-label">Option B</label><input type="text" id="add-q-b" class="form-input" placeholder="Option B"></div>
+              <div class="form-group"><label class="form-label">Option C</label><input type="text" id="add-q-c" class="form-input" placeholder="Option C"></div>
+              <div class="form-group"><label class="form-label">Option D</label><input type="text" id="add-q-d" class="form-input" placeholder="Option D"></div>
+            </div>
+            <div class="form-group"><label class="form-label">Correct Answer</label>
+              <select id="add-q-ans" class="form-input"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select>
+            </div>
+            <div class="form-group"><label class="form-label">Explanation</label><input type="text" id="add-q-exp" class="form-input" placeholder="Why is this the correct answer?"></div>
+            <button class="btn btn-primary" onclick="adminAddQuestion()">Add Question →</button>
+            <div id="quiz-add-status" style="margin-top:10px;font-size:12px;font-family:'JetBrains Mono',monospace;display:none;"></div>
+          </div>
+        </div>
+
+        <!-- FLASHCARD BUILDER TAB -->
+        <div class="stab-panel fade-in" id="stab-panel-flashbuild" style="display:none;">
+          <div class="admin-card">
+            <h3><div class="admin-card-icon" style="background:rgba(124,109,250,.12);">🃏</div> Add Flashcard</h3>
+            <div class="form-group"><label class="form-label">Course</label>
+              <select id="add-fc-course" class="form-input">
+                <option>CSC 122</option><option>CSC 121</option><option>CSC 123</option><option>ICT 121</option><option>BSM 121</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Question (Front)</label><input type="text" id="add-fc-q" class="form-input" placeholder="e.g. What is a pointer in C?"></div>
+            <div class="form-group"><label class="form-label">Answer (Back)</label><textarea id="add-fc-a" class="form-input" placeholder="The answer shown when flipped..." style="min-height:80px;"></textarea></div>
+            <button class="btn btn-primary" onclick="adminAddFlashcard()">Add Flashcard →</button>
+            <div id="fc-add-status" style="margin-top:10px;font-size:12px;font-family:'JetBrains Mono',monospace;display:none;"></div>
+          </div>
+        </div>
+
+        <!-- UPLOAD TAB -->
+        <div class="stab-panel fade-in" id="stab-panel-upload" style="display:none;">
+          <div class="admin-card">
+            <h3><div class="admin-card-icon" style="background:rgba(124,109,250,.12);">📄</div> Upload Notes / Past Papers</h3>
+            <div class="form-group"><label class="form-label">Course</label>
+              <select id="upload-course" class="form-input">
+                <option>CSC 122</option><option>CSC 121</option><option>CSC 123</option><option>ICT 121</option><option>BSM 121</option>
+              </select>
+            </div>
+            <div class="form-group"><label class="form-label">Label</label><input type="text" id="upload-label" class="form-input" placeholder="e.g. CSC122 Past Paper 2024"></div>
+            <input type="file" id="file-upload" accept=".pdf,.docx,.doc" style="display:none;" onchange="uploadCourseFile()">
+            <button class="btn btn-primary" onclick="document.getElementById('file-upload').click()">📁 Choose File (PDF/DOCX)</button>
+            <div id="file-status" style="margin-top:10px;font-size:12px;font-family:'JetBrains Mono',monospace;display:none;"></div>
+            <div id="file-manage" style="margin-top:16px;"></div>
+          </div>
+        </div>
+
+        <!-- STATS TAB -->
+        <div class="stab-panel fade-in" id="stab-panel-stats" style="display:none;">
+          <div class="admin-card" style="max-width:600px;">
+            <h3><div class="admin-card-icon" style="background:rgba(124,109,250,.12);">📊</div> Site Statistics</h3>
+            <div id="admin-stats-content" style="font-family:'JetBrains Mono',monospace;font-size:12px;line-height:2;color:var(--text2);">Loading stats...</div>
+          </div>
+          <div class="admin-card" style="max-width:600px;margin-top:16px;">
+            <h3><div class="admin-card-icon" style="background:rgba(47,232,160,.12);">📋</div> All Quiz Attempts</h3>
+            <div id="admin-attempts" style="max-height:350px;overflow-y:auto;"></div>
+            <div style="margin-top:12px;">
+              <button class="btn btn-ghost" onclick="exportResults()" style="font-size:12px;">📤 Export CSV</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- DANGER TAB -->
+        <div class="stab-panel fade-in" id="stab-panel-danger" style="display:none;">
+          <div class="admin-card" style="border-color:rgba(240,93,140,.2);max-width:500px;">
+            <h3><div class="admin-card-icon" style="background:rgba(240,93,140,.12);">⚠️</div> Danger Zone</h3>
+            <p style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:16px;line-height:1.6;">These actions are irreversible. Be absolutely sure.</p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <button class="btn btn-danger" onclick="clearAllResults()">🗑️ Clear All Quiz Results</button>
+              <button class="btn btn-danger" onclick="clearAllPostsAdmin()">🗑️ Clear All Discussion Posts</button>
+              <button class="btn btn-danger" onclick="clearAllSessions()">🔐 Force Logout All Members</button>
+            </div>
+          </div>
+          <div class="admin-card" style="margin-top:16px;max-width:500px;">
+            <h3><div class="admin-card-icon" style="background:rgba(124,109,250,.12);">💬</div> Manage Posts</h3>
+            <div id="admin-posts-list" style="max-height:300px;overflow-y:auto;"></div>
+          </div>
+        </div>
+
+        <!-- SECURITY TAB -->
+        <div class="stab-panel fade-in" id="stab-panel-security" style="display:none;">
+          <div class="admin-grid">
+            <div class="admin-card">
+              <h3><div class="admin-card-icon" style="background:rgba(240,93,140,.12);">🔑</div> Change Admin Password</h3>
+              <div class="form-group"><label class="form-label">Current Password</label><input type="password" id="current-admin-pw" class="form-input" placeholder="Current password..."></div>
+              <div class="form-group"><label class="form-label">New Password (min 6)</label><input type="password" id="new-admin-pw" class="form-input" placeholder="New password..."></div>
+              <div class="form-group"><label class="form-label">Confirm New</label><input type="password" id="confirm-admin-pw" class="form-input" placeholder="Confirm new password..."></div>
+              <button class="btn btn-primary" onclick="changeAdminPassword()" style="background:linear-gradient(135deg,var(--accent2),#f72585);">Change Password</button>
+              <div id="pw-change-status" style="margin-top:10px;font-size:12px;font-family:'JetBrains Mono',monospace;display:none;"></div>
+            </div>
+            <div class="admin-card">
+              <h3><div class="admin-card-icon" style="background:rgba(47,232,160,.12);">🔒</div> Security Info</h3>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);line-height:2;">
+                🔒 Passwords → SHA-256 hashes only<br>
+                🔑 Access codes tied to email/phone<br>
+                🚫 Codes are not shareable<br>
+                📱 Device binding (1 device per member)<br>
+                🔄 Single active session enforced<br>
+                ⏱️ 30-min inactivity auto-logout<br>
+                🛡️ 5-attempt lockout (30s)<br>
+                ⛔ Blocklist prevents quiz/post access
+              </div>
+            </div>
+          </div>
+          <div class="admin-card" style="margin-top:16px;">
+            <h3><div class="admin-card-icon" style="background:rgba(247,183,49,.12);">📱</div> Device Bindings</h3>
+            <p style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:12px;">Clear a member's device binding to let them log in from a new device.</p>
+            <div id="device-binding-list"><div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;">Loading members...</div></div>
+          </div>
+        </div>
+
+      </div><!-- end view-admin -->
+
+    </main>
+  </div><!-- end layout -->
+</div><!-- end app -->
+
+<!-- FLASHCARD STUDY OVERLAY -->
+<div class="fc-study-overlay" id="fc-study-overlay">
+  <div style="position:absolute;top:16px;right:16px;">
+    <button class="btn btn-ghost" onclick="closeStudyMode()">✕ Close</button>
+  </div>
+  <div style="width:100%;max-width:600px;padding:0 20px;">
+    <div class="fc-progress-bar-wrap"><div class="fc-progress-bar" id="fc-progress-bar" style="width:0%"></div></div>
+  </div>
+  <div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;" id="fc-study-counter">1 / 1</div>
+  <div class="fc-card-scene" onclick="flipStudyCard()">
+    <div class="fc-card-inner" id="fc-card-inner">
+      <div class="fc-card-face fc-card-front">
+        <div class="fc-card-label">❓ Question</div>
+        <div class="fc-card-text" id="fc-study-q">Loading...</div>
+        <div class="fc-card-hint">👆 tap to reveal answer</div>
+      </div>
+      <div class="fc-card-face fc-card-back">
+        <div class="fc-card-label">✅ Answer</div>
+        <div class="fc-card-text" id="fc-study-a">...</div>
+        <div class="fc-card-hint">← → to navigate · Space to flip</div>
+      </div>
+    </div>
+  </div>
+  <div class="fc-nav-row">
+    <button class="btn btn-ghost" onclick="fcPrev()">← Prev</button>
+    <button class="btn btn-primary" onclick="fcNext()">Next →</button>
+  </div>
+  <div id="fc-done-screen" style="display:none;text-align:center;">
+    <div style="font-size:48px;margin-bottom:12px;">🎉</div>
+    <div style="font-size:20px;font-weight:800;margin-bottom:8px;">Deck Complete!</div>
+    <div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-bottom:20px;">You reviewed all cards.</div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button class="btn btn-ghost" onclick="fcRestart()">🔄 Restart</button>
+      <button class="btn btn-primary" onclick="closeStudyMode()">✓ Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- NOTES CONTENT MODAL -->
+<div class="notes-modal" id="notes-modal">
+  <div class="notes-modal-box">
+    <div class="notes-modal-hdr">
+      <div style="font-size:24px;" id="modal-icon"></div>
+      <h2 id="modal-title"></h2>
+      <button class="btn btn-ghost" style="font-size:12px;" onclick="closeNotesModal()">✕ Close</button>
+    </div>
+    <div class="notes-modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<!-- SESSION KICKED MODAL -->
+<div class="modal-overlay" id="session-kicked-modal">
+  <div class="modal-box">
+    <div style="font-size:40px;margin-bottom:12px;">🔒</div>
+    <h2>Session Ended</h2>
+    <p>Your account was logged in on another device. Only one active session is allowed.<br><br>Contact Bravehart if this wasn't you.</p>
+    <button class="btn btn-primary" onclick="logout()">← Back to Login</button>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  SECURITY — SHA-256, Lockout, Device Fingerprint, Sessions
+// ══════════════════════════════════════════════════════════
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function getDeviceFingerprint() {
+  const raw = [
+    navigator.userAgent, navigator.language, screen.width, screen.height,
+    screen.colorDepth, navigator.hardwareConcurrency||'',
+    navigator.deviceMemory||'', Intl.DateTimeFormat().resolvedOptions().timeZone,
+    navigator.platform||''
+  ].join('|');
+  return await sha256(raw);
+}
+
+const LOCKOUT = { member:{attempts:0,lockedUntil:0}, admin:{attempts:0,lockedUntil:0} };
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS   = 30*1000;
+const SESSION_TIMEOUT_MS = 30*60*1000;
+
+function isLockedOut(type) {
+  const l = LOCKOUT[type];
+  if (l.lockedUntil && Date.now() < l.lockedUntil) return true;
+  if (l.lockedUntil && Date.now() >= l.lockedUntil) { l.attempts=0; l.lockedUntil=0; }
+  return false;
+}
+function recordFail(type) {
+  const l = LOCKOUT[type];
+  l.attempts++;
+  if (l.attempts >= MAX_ATTEMPTS) l.lockedUntil = Date.now()+LOCKOUT_MS;
+}
+function lockoutMsg(type) {
+  const rem = Math.ceil((LOCKOUT[type].lockedUntil - Date.now())/1000);
+  return `🔒 Too many attempts. Wait ${rem}s.`;
+}
+
+// ── State ──────────────────────────────────────────────────
+let _isAdmin       = false;
+let _sessionRole   = null;
+let _currentMember = null;
+let _sessionToken  = null;
+let _sessionWatcher= null;
+let _sessionTimer  = null;
+
+function normaliseIdentity(v) {
+  return (v||'').toLowerCase().replace(/\s/g,'').replace(/[^\w@.+]/g,'');
+}
+
+// ── Login page toggles ─────────────────────────────────────
+function showAdminLogin() {
+  document.getElementById('member-login-box').style.display='none';
+  document.getElementById('admin-login-box').style.display='block';
+}
+function showMemberLogin() {
+  document.getElementById('admin-login-box').style.display='none';
+  document.getElementById('member-login-box').style.display='block';
+}
+
+// ── MEMBER LOGIN ───────────────────────────────────────────
+async function doLogin() {
+  const identity = normaliseIdentity(document.getElementById('login-identity').value);
+  const code     = document.getElementById('access-code').value.trim();
+  const err      = document.getElementById('login-error');
+  const btn      = document.querySelector('#member-login-box .login-btn');
+
+  if (isLockedOut('member')) { showErr(err, lockoutMsg('member')); return; }
+  if (!identity || !code) { showErr(err,'❌ Enter your email/phone and access code.'); return; }
+
+  btn.textContent='Verifying...'; btn.disabled=true;
+  try {
+    if (!window.FB_READY) throw new Error('no-firebase');
+    const members = await window.FB.getAllMembers();
+    const uid = Object.keys(members).find(k=>{
+      const m=members[k];
+      return normaliseIdentity(m.email)===identity || normaliseIdentity(m.phone)===identity;
+    });
+
+    if (!uid) {
+      recordFail('member');
+      const left = MAX_ATTEMPTS - LOCKOUT.member.attempts;
+      showErr(err, isLockedOut('member') ? lockoutMsg('member') : `❌ Identity not found. ${left} attempt${left!==1?'s':''} left.`);
+      return;
+    }
+
+    const member = members[uid];
+    if (member.active === false) {
+      showErr(err,'🚫 Your account has been deactivated. Contact Bravehart.');
+      return;
+    }
+
+    const inputHash = await sha256(code);
+    if (inputHash !== member.codeHash) {
+      recordFail('member');
+      const left = MAX_ATTEMPTS - LOCKOUT.member.attempts;
+      showErr(err, isLockedOut('member') ? lockoutMsg('member') : `❌ Wrong access code. ${left} attempt${left!==1?'s':''} left.`);
+      return;
+    }
+
+    // ✅ Correct credentials
+    LOCKOUT.member.attempts = 0;
+    _currentMember = { uid, ...member };
+    _isAdmin = false; _sessionRole = 'member';
+
+    // Device binding
+    const fp = await getDeviceFingerprint();
+    const binding = await window.FB.getDeviceBinding(uid);
+    if (!binding) {
+      await window.FB.setDeviceBinding(uid, fp);
+    } else if (binding.fingerprint !== fp) {
+      showErr(err,'🔒 This account is bound to a different device. Contact Bravehart to reset.');
+      _sessionRole=null; _currentMember=null;
+      btn.textContent='Access Study Portal →'; btn.disabled=false;
+      return;
+    }
+
+    // Single session
+    _sessionToken = crypto.randomUUID();
+    await window.FB.writeSession(uid, _sessionToken);
+
+    enterApp();
+    startSessionWatcher(uid, _sessionToken);
+
+  } catch(e) {
+    showErr(err, e.message==='no-firebase' ? '⚠️ Cannot log in offline. Firebase required.' : '⚠️ Login error. Please try again.');
+  } finally {
+    btn.textContent='Access Study Portal →'; btn.disabled=false;
+  }
+}
+
+// ── ADMIN LOGIN ───────────────────────────────────────────
+async function doAdminLogin() {
+  const code = document.getElementById('admin-code-input').value.trim();
+  const err  = document.getElementById('admin-login-error');
+  const btn  = document.querySelector('#admin-login-box .login-btn');
+
+  if (isLockedOut('admin')) { showErr(err, lockoutMsg('admin')); return; }
+  if (!code) return;
+
+  btn.textContent='Verifying...'; btn.disabled=true;
+  try {
+    if (!window.FB_READY) throw new Error('no-firebase');
+    const stored = await window.FB.getAdminHash();
+    if (!stored) {
+      await window.FB.setAdminHash(await sha256(code));
+      _isAdmin=true; _sessionRole='admin'; _currentMember=null; enterApp(); return;
+    }
+    const inputHash = await sha256(code);
+    if (inputHash === stored) {
+      LOCKOUT.admin.attempts=0;
+      _isAdmin=true; _sessionRole='admin'; _currentMember=null; enterApp();
+    } else {
+      recordFail('admin');
+      const left = MAX_ATTEMPTS - LOCKOUT.admin.attempts;
+      showErr(err, isLockedOut('admin') ? lockoutMsg('admin') : `❌ Wrong password. ${left} attempt${left!==1?'s':''} left.`);
+    }
+  } catch(e) {
+    showErr(err, e.message==='no-firebase' ? '⚠️ Admin login requires Firebase.' : '⚠️ Login error.');
+  } finally {
+    btn.textContent='Enter Admin Panel →'; btn.disabled=false; }
+}
+
+function showErr(el, msg, ms=4000) {
+  el.textContent=msg; el.style.display='block';
+  setTimeout(()=>el.style.display='none', ms);
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('access-code').addEventListener('keypress',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('login-identity').addEventListener('keypress',e=>{if(e.key==='Enter')doLogin();});
+  document.getElementById('admin-code-input').addEventListener('keypress',e=>{if(e.key==='Enter')doAdminLogin();});
+});
+
+// ── Session timeout ────────────────────────────────────────
+function resetSessionTimer() {
+  clearTimeout(_sessionTimer);
+  if (!_sessionRole) return;
+  _sessionTimer = setTimeout(()=>{ alert('⏱️ Logged out due to 30 min inactivity.'); logout(); }, SESSION_TIMEOUT_MS);
+}
+function startSessionTimeout() {
+  ['mousemove','keydown','touchstart','click'].forEach(evt=>
+    document.addEventListener(evt, resetSessionTimer, {passive:true}));
+  resetSessionTimer();
+}
+
+// ── Single-session watcher ─────────────────────────────────
+function startSessionWatcher(uid, token) {
+  if (_sessionWatcher) { _sessionWatcher(); _sessionWatcher=null; }
+  _sessionWatcher = window.FB.watchSession(uid, data=>{
+    if (!_sessionRole||_isAdmin) return;
+    if (data && data.token && data.token!==token) {
+      if (_sessionWatcher) { _sessionWatcher(); _sessionWatcher=null; }
+      document.getElementById('session-kicked-modal').classList.add('open');
+    }
+  });
+}
+
+// ── Enter App ──────────────────────────────────────────────
+function enterApp() {
+  document.getElementById('login-page').style.display='none';
+  const app = document.getElementById('app');
+  app.style.display='flex';
+
+  // Set username in header
+  const name = _isAdmin ? 'Bravehart (Admin)' : (_currentMember?.name || 'Member');
+  document.getElementById('hdr-username').textContent = name;
+  document.getElementById('home-greeting-text').textContent = `Welcome back, ${_isAdmin ? 'Bravehart' : (_currentMember?.name?.split(' ')[0] || 'Realist')} 👋`;
+
+  if (_isAdmin) {
+    document.getElementById('settings-btn').style.display='flex';
+    document.getElementById('admin-nav-section').style.display='block';
+  }
+
+  startSessionTimeout();
+  initApp();
+}
+
+function logout() {
+  if (_sessionWatcher) { _sessionWatcher(); _sessionWatcher=null; }
+  if (_currentMember && window.FB_READY) window.FB.clearSession(_currentMember.uid).catch(()=>{});
+  clearTimeout(_sessionTimer);
+  _sessionRole=null; _currentMember=null; _isAdmin=false; _sessionToken=null;
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-page').style.display='flex';
+  document.getElementById('session-kicked-modal').classList.remove('open');
+  showMemberLogin();
+}
+
+// ══════════════════════════════════════════════════════════
+//  APP INIT
+// ══════════════════════════════════════════════════════════
+function initApp() {
+  loadNotifications();
+  loadAnnouncement();
+  renderNotes();
+  loadFlashcards();
+  loadQuizList();
+  loadPosts();
+  loadLeaderboard();
+  loadAttendance();
+  if (_isAdmin) {
+    loadAdminMembers();
+    loadBlocklist();
+    loadAdminStats();
+    loadAdminAttempts();
+    loadAdminPosts();
+    loadDeviceBindings();
+  }
+  updateHomeStats();
+  buildChallenges();
+}
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const v = document.getElementById('view-'+id);
+  if (v) v.classList.add('active');
+  const n = document.getElementById('nav-'+id);
+  if (n) n.classList.add('active');
+
+  if (id==='lb') loadLeaderboard();
+  if (id==='attend') loadAttendance();
+  if (id==='admin') { loadAdminMembers(); loadAdminStats(); loadAdminAttempts(); loadAdminPosts(); loadDeviceBindings(); loadBlocklist(); }
+  if (id==='flash') { loadFlashcards(); }
+  if (id==='notes') { loadUploadedFiles(); }
+
+  // close notif panel
+  document.getElementById('notif-panel').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════════════════
+//  NOTIFICATIONS
+// ══════════════════════════════════════════════════════════
+function toggleNotifPanel() {
+  document.getElementById('notif-panel').classList.toggle('open');
+}
+function loadNotifications() {
+  if (!window.FB_READY) return;
+  window.FB.onNotifications(notifs=>{
+    const unread = notifs.filter(n=>!n.read);
+    const dot = document.getElementById('notif-dot');
+    dot.style.display = unread.length ? 'block' : 'none';
+    const list = document.getElementById('notif-list');
+    if (!notifs.length) { list.innerHTML='<div class="notif-empty">No notifications.</div>'; return; }
+    list.innerHTML = notifs.slice().reverse().map(n=>`
+      <div class="notif-item ${n.read?'':'unread'}" onclick="markNotifRead('${n._key}',this)">
+        <div>${n.msg}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:3px;">${new Date(n.ts).toLocaleDateString()}</div>
+      </div>`).join('');
+  });
+}
+function markNotifRead(key, el) {
+  if (window.FB_READY) window.FB.markRead(key);
+  el.classList.remove('unread');
+}
+function sendNotification() {
+  const msg = document.getElementById('notif-msg').value.trim();
+  if (!msg) return;
+  if (window.FB_READY) window.FB.pushNotification(msg);
+  document.getElementById('notif-msg').value='';
+  alert('✅ Notification sent!');
+}
+
+// ══════════════════════════════════════════════════════════
+//  ANNOUNCEMENT
+// ══════════════════════════════════════════════════════════
+function loadAnnouncement() {
+  if (!window.FB_READY) return;
+  window.FB.onAnnouncement(text=>{
+    const bar = document.getElementById('announcement-bar');
+    if (text) {
+      bar.style.display='flex';
+      document.getElementById('announcement-text').textContent = text;
+    } else { bar.style.display='none'; }
+  });
+}
+function postAnnouncement() {
+  const txt = document.getElementById('admin-announcement').value.trim();
+  if (!txt) return;
+  if (window.FB_READY) window.FB.setAnnouncement(txt);
+  alert('✅ Announcement posted!');
+}
+function clearAnnouncement() {
+  if (window.FB_READY) window.FB.setAnnouncement('');
+  document.getElementById('admin-announcement').value='';
+}
+
+// ══════════════════════════════════════════════════════════
+//  HOME STATS
+// ══════════════════════════════════════════════════════════
+async function updateHomeStats() {
+  if (!window.FB_READY) return;
+  const flashcards = await window.FB.getFlashcards();
+  document.getElementById('stat-flashcards').textContent = (flashcards.length + BUILTIN_FLASHCARDS.length) || BUILTIN_FLASHCARDS.length;
+  if (_currentMember) {
+    const streak = await window.FB.getStreak(_currentMember.name);
+    document.getElementById('stat-streak').textContent = streak;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  STUDY NOTES DATA
+// ══════════════════════════════════════════════════════════
+const NOTES_DATA = [
+  // CSC 122 — Structured Software Development / C Programming
+  { id:'csc122_intro', course:'csc122', title:'C Programming — Fundamentals', icon:'💻', tag:'CSC 122', color:'var(--accent)',
+    content:`<h3>What is C?</h3>
+<p>C is a general-purpose, procedural programming language developed by Dennis Ritchie at Bell Labs in 1972. It is the foundation of modern computing.</p>
+<div class="definition"><strong>Key traits:</strong> Compiled, statically typed, close to hardware, fast execution, manual memory management.</div>
+<h3>Program Structure</h3>
+<pre><code>#include &lt;stdio.h&gt;   // Preprocessor directive
+
+int main() {          // Entry point
+    printf("Hello!\n"); // Statement
+    return 0;           // Return to OS
+}</code></pre>
+<h3>Data Types</h3>
+<ul>
+  <li><code>int</code> — Integer (4 bytes on most systems, e.g. -2,147,483,648 to 2,147,483,647)</li>
+  <li><code>float</code> — Single-precision decimal (4 bytes, ~7 decimal digits)</li>
+  <li><code>double</code> — Double-precision decimal (8 bytes, ~15 decimal digits)</li>
+  <li><code>char</code> — Single character (1 byte, e.g. 'A', '5')</li>
+  <li><code>void</code> — Represents no type</li>
+</ul>
+<h3>Variables & Constants</h3>
+<pre><code>int age = 20;           // Variable
+const float PI = 3.14;  // Constant (cannot be changed)
+char grade = 'A';       // Character variable</code></pre>
+<h3>Operators</h3>
+<ul>
+  <li><strong>Arithmetic:</strong> <code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code> (modulus)</li>
+  <li><strong>Comparison:</strong> <code>==</code> <code>!=</code> <code>&lt;</code> <code>&gt;</code> <code>&lt;=</code> <code>&gt;=</code></li>
+  <li><strong>Logical:</strong> <code>&amp;&amp;</code> (AND) <code>||</code> (OR) <code>!</code> (NOT)</li>
+  <li><strong>Assignment:</strong> <code>=</code> <code>+=</code> <code>-=</code> <code>*=</code></li>
+</ul>
+<div class="important">⚠️ <code>=</code> is assignment. <code>==</code> is comparison. Common bug: using <code>=</code> in an <code>if</code> condition.</div>` },
+
+  { id:'csc122_control', course:'csc122', title:'Control Flow in C', icon:'🔀', tag:'CSC 122', color:'var(--accent)',
+    content:`<h3>if / else if / else</h3>
+<pre><code>int score = 75;
+if (score >= 80) {
+    printf("Distinction\n");
+} else if (score >= 60) {
+    printf("Credit\n");
+} else {
+    printf("Pass\n");
+}</code></pre>
+<h3>switch Statement</h3>
+<pre><code>char grade = 'B';
+switch (grade) {
+    case 'A': printf("Excellent"); break;
+    case 'B': printf("Good");     break;
+    default:  printf("Other");
+}</code></pre>
+<div class="important">⚠️ Always use <code>break</code> in switch cases to prevent fall-through.</div>
+<h3>Loops</h3>
+<pre><code>// for loop
+for (int i = 0; i &lt; 5; i++) {
+    printf("%d\n", i);
+}
+
+// while loop
+int n = 0;
+while (n &lt; 5) { n++; }
+
+// do-while (executes at least once)
+do {
+    printf("Runs once minimum\n");
+} while (0);</code></pre>
+<h3>break & continue</h3>
+<ul>
+  <li><code>break</code> — exits the loop entirely</li>
+  <li><code>continue</code> — skips to next iteration</li>
+</ul>` },
+
+  { id:'csc122_functions', course:'csc122', title:'Functions & Arrays in C', icon:'⚙️', tag:'CSC 122', color:'var(--accent)',
+    content:`<h3>Functions</h3>
+<div class="definition">A function is a named block of code that performs a specific task and can be reused.</div>
+<pre><code>// Declaration (prototype)
+int add(int a, int b);
+
+// Definition
+int add(int a, int b) {
+    return a + b;
+}
+
+// Call
+int result = add(3, 5); // result = 8</code></pre>
+<h3>Arrays</h3>
+<pre><code>int marks[5] = {85, 72, 90, 68, 78};
+printf("%d", marks[0]); // First element: 85
+printf("%d", marks[4]); // Last element: 78
+
+// Array size
+int size = sizeof(marks) / sizeof(marks[0]); // 5</code></pre>
+<div class="important">⚠️ Array indices start at 0. Accessing out-of-bounds causes undefined behaviour!</div>
+<h3>String (char array)</h3>
+<pre><code>char name[] = "Bravehart";
+printf("%s\n", name); // Prints: Bravehart
+printf("%c\n", name[0]); // Prints: B</code></pre>
+<h3>Pass by Value vs Reference</h3>
+<ul>
+  <li>C passes by <strong>value</strong> by default (copies the value)</li>
+  <li>Use <strong>pointers</strong> to modify the original variable from a function</li>
+</ul>
+<pre><code>void addOne(int *n) { (*n)++; }
+int x = 5;
+addOne(&x); // x is now 6</code></pre>` },
+
+  { id:'csc122_pointers', course:'csc122', title:'Pointers & Memory in C', icon:'🧭', tag:'CSC 122', color:'var(--accent)',
+    content:`<h3>What is a Pointer?</h3>
+<div class="definition">A pointer is a variable that stores the <strong>memory address</strong> of another variable.</div>
+<pre><code>int x = 10;
+int *p = &x;   // p stores address of x
+
+printf("%d", x);   // 10 — the value
+printf("%p", p);   // address, e.g. 0x7ffd...
+printf("%d", *p);  // 10 — dereferencing</code></pre>
+<h3>Key Operators</h3>
+<ul>
+  <li><code>&amp;</code> — address-of operator (gives memory address)</li>
+  <li><code>*</code> — dereference operator (gets value at address)</li>
+</ul>
+<h3>Dynamic Memory</h3>
+<pre><code>#include &lt;stdlib.h&gt;
+int *arr = malloc(5 * sizeof(int)); // allocate
+arr[0] = 100;
+free(arr); // always free to avoid memory leaks</code></pre>
+<div class="important">⚠️ Always <code>free()</code> dynamically allocated memory. Forgetting causes memory leaks.</div>
+<h3>NULL Pointer</h3>
+<pre><code>int *p = NULL; // safe "empty" pointer
+if (p != NULL) { *p = 5; } // always check!</code></pre>` },
+
+  { id:'csc122_sdlc', course:'csc122', title:'Software Development Life Cycle', icon:'🔄', tag:'CSC 122', color:'var(--accent)',
+    content:`<h3>SDLC Phases</h3>
+<ol>
+  <li><strong>Requirements Analysis</strong> — What does the system need to do?</li>
+  <li><strong>System Design</strong> — Architecture, database, UI planning</li>
+  <li><strong>Implementation (Coding)</strong> — Writing actual code</li>
+  <li><strong>Testing</strong> — Unit, integration, system, UAT</li>
+  <li><strong>Deployment</strong> — Release to production</li>
+  <li><strong>Maintenance</strong> — Bug fixes, updates</li>
+</ol>
+<h3>SDLC Models</h3>
+<ul>
+  <li><strong>Waterfall</strong> — Sequential, each phase complete before next</li>
+  <li><strong>Agile</strong> — Iterative sprints, flexible to change</li>
+  <li><strong>Spiral</strong> — Risk-driven, combines waterfall + prototyping</li>
+  <li><strong>V-Model</strong> — Verification & validation for each phase</li>
+</ul>
+<div class="definition"><strong>Waterfall</strong>: Best for projects with clear, fixed requirements. <strong>Agile</strong>: Best for evolving requirements and rapid delivery.</div>
+<h3>Algorithms & Flowcharts</h3>
+<ul>
+  <li><strong>Algorithm</strong> — Step-by-step solution to a problem</li>
+  <li><strong>Flowchart</strong> — Visual diagram of an algorithm</li>
+  <li>Shapes: Oval (start/end), Rectangle (process), Diamond (decision), Parallelogram (I/O)</li>
+</ul>
+<h3>Pseudocode</h3>
+<pre><code>START
+  INPUT marks
+  IF marks >= 50 THEN
+    PRINT "Pass"
+  ELSE
+    PRINT "Fail"
+  END IF
+END</code></pre>` },
+
+  // CSC 121 — Hardware
+  { id:'csc121_basics', course:'csc121', title:'Computer Hardware Fundamentals', icon:'🖥️', tag:'CSC 121', color:'var(--accent2)',
+    content:`<h3>Components of a Computer</h3>
+<ul>
+  <li><strong>CPU (Central Processing Unit)</strong> — The "brain" — fetches, decodes, executes instructions</li>
+  <li><strong>RAM (Random Access Memory)</strong> — Temporary working memory, volatile (lost on power off)</li>
+  <li><strong>ROM (Read-Only Memory)</strong> — Permanent storage, non-volatile (holds BIOS)</li>
+  <li><strong>Motherboard</strong> — Main PCB connecting all components</li>
+  <li><strong>PSU (Power Supply Unit)</strong> — Converts AC to DC, powers all components</li>
+  <li><strong>HDD/SSD</strong> — Permanent storage (non-volatile)</li>
+  <li><strong>GPU (Graphics Processing Unit)</strong> — Handles graphics rendering</li>
+</ul>
+<h3>CPU Architecture</h3>
+<div class="definition">The CPU has three main parts: <strong>ALU</strong> (Arithmetic Logic Unit — calculations), <strong>CU</strong> (Control Unit — directs operations), and <strong>Registers</strong> (ultra-fast storage).</div>
+<h3>Fetch-Decode-Execute Cycle</h3>
+<ol>
+  <li>Fetch instruction from RAM</li>
+  <li>Decode what the instruction means</li>
+  <li>Execute the instruction</li>
+  <li>Store result</li>
+</ol>
+<h3>Storage Types</h3>
+<ul>
+  <li><strong>Primary:</strong> RAM, Cache (fast, temporary)</li>
+  <li><strong>Secondary:</strong> HDD, SSD, CD/DVD (slow, permanent)</li>
+  <li><strong>Tertiary:</strong> Tape drives, cloud (backup)</li>
+</ul>
+<h3>Cache Memory</h3>
+<p>Cache sits between RAM and CPU. L1 (fastest, smallest) → L2 → L3 (slowest, largest).</p>` },
+
+  { id:'csc121_maintenance', course:'csc121', title:'Hardware Maintenance & Troubleshooting', icon:'🔧', tag:'CSC 121', color:'var(--accent2)',
+    content:`<h3>Preventive Maintenance</h3>
+<ul>
+  <li>Regular cleaning (dust removal from fans, vents)</li>
+  <li>Updating drivers and BIOS</li>
+  <li>Checking cable connections</li>
+  <li>Temperature monitoring (CPU should stay under 80°C)</li>
+  <li>Applying thermal paste to CPU</li>
+</ul>
+<h3>Common Hardware Problems</h3>
+<ul>
+  <li><strong>POST Failure</strong> — Power-On Self Test fails (check RAM, GPU)</li>
+  <li><strong>Blue Screen of Death (BSOD)</strong> — Hardware/driver conflict</li>
+  <li><strong>Overheating</strong> — Clean fans, reapply thermal paste</li>
+  <li><strong>No display</strong> — Check GPU, monitor cable, RAM seating</li>
+  <li><strong>Hard drive failure</strong> — Listen for clicking; back up immediately</li>
+</ul>
+<h3>POST Beep Codes</h3>
+<ul>
+  <li>1 beep — System OK</li>
+  <li>2 beeps — POST error (check documentation)</li>
+  <li>Continuous beeps — Memory error</li>
+</ul>
+<h3>Tools Used</h3>
+<ul>
+  <li>ESD wrist strap (prevent static damage)</li>
+  <li>Phillips & flat-head screwdrivers</li>
+  <li>Thermal paste, isopropyl alcohol</li>
+  <li>Compressed air canister</li>
+  <li>Multimeter (test voltages)</li>
+</ul>
+<div class="important">⚠️ Always power off and unplug before opening a computer. Ground yourself to prevent ESD damage.</div>` },
+
+  { id:'csc121_peripherals', course:'csc121', title:'Peripherals & I/O Devices', icon:'🖱️', tag:'CSC 121', color:'var(--accent2)',
+    content:`<h3>Input Devices</h3>
+<ul>
+  <li>Keyboard — Standard input (QWERTY layout)</li>
+  <li>Mouse — Pointing device</li>
+  <li>Scanner — Converts physical documents to digital</li>
+  <li>Microphone — Audio input</li>
+  <li>Webcam — Video input</li>
+  <li>Touchscreen — Combines input & output</li>
+</ul>
+<h3>Output Devices</h3>
+<ul>
+  <li>Monitor — Visual display (LCD, LED, OLED)</li>
+  <li>Printer — Inkjet (colour, slow), Laser (fast, mono)</li>
+  <li>Speakers — Audio output</li>
+  <li>Projector — Large-scale display</li>
+</ul>
+<h3>Ports & Connectors</h3>
+<ul>
+  <li><strong>USB</strong> (Universal Serial Bus) — Most common; USB-A, USB-C, USB 3.0</li>
+  <li><strong>HDMI</strong> — Audio + video to monitor/TV</li>
+  <li><strong>VGA</strong> — Older video-only connector</li>
+  <li><strong>RJ-45</strong> — Ethernet (network)</li>
+  <li><strong>3.5mm Audio Jack</strong> — Headphones/mic</li>
+  <li><strong>PCIe</strong> — Internal expansion (GPU, NVMe SSD)</li>
+</ul>
+<h3>Buses</h3>
+<div class="definition">A bus is a communication pathway for data. <strong>Data bus</strong> (transfers data), <strong>Address bus</strong> (specifies location), <strong>Control bus</strong> (sends control signals).</div>` },
+
+  // CSC 123 — Database Systems
+  { id:'csc123_basics', course:'csc123', title:'Database Fundamentals', icon:'🗄️', tag:'CSC 123', color:'var(--accent3)',
+    content:`<h3>What is a Database?</h3>
+<div class="definition">A database is an organised collection of structured data, stored and accessed electronically. A DBMS (Database Management System) manages it.</div>
+<h3>Types of Databases</h3>
+<ul>
+  <li><strong>Relational (RDBMS)</strong> — Data in tables (MySQL, PostgreSQL, SQLite)</li>
+  <li><strong>NoSQL</strong> — Document, key-value, graph (MongoDB, Firebase)</li>
+  <li><strong>Hierarchical</strong> — Tree structure (old systems)</li>
+  <li><strong>Network</strong> — Graph structure</li>
+</ul>
+<h3>Key Concepts</h3>
+<ul>
+  <li><strong>Table (Relation)</strong> — Grid of rows and columns</li>
+  <li><strong>Row (Tuple/Record)</strong> — One data entry</li>
+  <li><strong>Column (Attribute/Field)</strong> — One property</li>
+  <li><strong>Primary Key</strong> — Uniquely identifies each row</li>
+  <li><strong>Foreign Key</strong> — Links to primary key of another table</li>
+  <li><strong>Schema</strong> — Structure/blueprint of the database</li>
+</ul>
+<h3>ACID Properties</h3>
+<ul>
+  <li><strong>A</strong>tomicity — Transaction is all-or-nothing</li>
+  <li><strong>C</strong>onsistency — Data remains valid before and after</li>
+  <li><strong>I</strong>solation — Transactions don't interfere</li>
+  <li><strong>D</strong>urability — Committed data persists even after crash</li>
+</ul>` },
+
+  { id:'csc123_sql', course:'csc123', title:'SQL — Structured Query Language', icon:'📊', tag:'CSC 123', color:'var(--accent3)',
+    content:`<h3>DDL — Data Definition Language</h3>
+<pre><code>-- Create a table
+CREATE TABLE students (
+    id       INT PRIMARY KEY,
+    name     VARCHAR(100) NOT NULL,
+    email    VARCHAR(100) UNIQUE,
+    marks    INT DEFAULT 0
+);
+
+-- Modify table
+ALTER TABLE students ADD COLUMN year INT;
+
+-- Delete table
+DROP TABLE students;</code></pre>
+<h3>DML — Data Manipulation Language</h3>
+<pre><code>-- Insert
+INSERT INTO students (id, name, marks)
+VALUES (1, 'Bravehart', 92);
+
+-- Select
+SELECT name, marks FROM students WHERE marks > 70;
+SELECT * FROM students ORDER BY marks DESC;
+
+-- Update
+UPDATE students SET marks = 95 WHERE id = 1;
+
+-- Delete
+DELETE FROM students WHERE id = 1;</code></pre>
+<h3>JOINs</h3>
+<pre><code>-- INNER JOIN — only matching rows
+SELECT s.name, c.title
+FROM students s
+INNER JOIN courses c ON s.course_id = c.id;
+
+-- LEFT JOIN — all rows from left table
+SELECT s.name, c.title
+FROM students s
+LEFT JOIN courses c ON s.course_id = c.id;</code></pre>
+<h3>Aggregate Functions</h3>
+<pre><code>SELECT COUNT(*) FROM students;     -- Count rows
+SELECT AVG(marks) FROM students;   -- Average
+SELECT MAX(marks) FROM students;   -- Maximum
+SELECT SUM(marks) FROM students;   -- Total
+SELECT MIN(marks) FROM students;   -- Minimum
+-- GROUP BY
+SELECT course_id, AVG(marks) FROM students GROUP BY course_id;</code></pre>` },
+
+  { id:'csc123_erd', course:'csc123', title:'ERD & Database Design', icon:'🗺️', tag:'CSC 123', color:'var(--accent3)',
+    content:`<h3>Entity-Relationship Diagram (ERD)</h3>
+<div class="definition">An ERD visually shows entities (things) and relationships between them — the blueprint before building a database.</div>
+<h3>ERD Symbols</h3>
+<ul>
+  <li><strong>Rectangle</strong> — Entity (e.g. Student, Course)</li>
+  <li><strong>Ellipse/Oval</strong> — Attribute (e.g. name, age)</li>
+  <li><strong>Diamond</strong> — Relationship (e.g. Enrols)</li>
+  <li><strong>Double ellipse</strong> — Multi-valued attribute</li>
+  <li><strong>Underlined attribute</strong> — Primary key</li>
+</ul>
+<h3>Cardinality</h3>
+<ul>
+  <li><strong>One-to-One (1:1)</strong> — Person has one Passport</li>
+  <li><strong>One-to-Many (1:N)</strong> — Teacher teaches many Students</li>
+  <li><strong>Many-to-Many (M:N)</strong> — Students enrol in many Courses</li>
+</ul>
+<h3>Normalisation</h3>
+<p>Removing redundancy and improving data integrity.</p>
+<ul>
+  <li><strong>1NF</strong> — Atomic values, no repeating groups</li>
+  <li><strong>2NF</strong> — 1NF + no partial dependencies</li>
+  <li><strong>3NF</strong> — 2NF + no transitive dependencies</li>
+</ul>
+<div class="important">⚠️ Denormalised databases are faster to read but slower to write and prone to anomalies.</div>` },
+
+  // ICT 121 — Workshop Practice
+  { id:'ict121_safety', course:'ict121', title:'Workshop Safety & Practices', icon:'⛑️', tag:'ICT 121', color:'var(--accent4)',
+    content:`<h3>Workshop Safety Rules</h3>
+<ul>
+  <li>Always wear appropriate PPE (gloves, anti-static wrist strap)</li>
+  <li>Never work on live/powered equipment</li>
+  <li>Keep workspace clean and organised</li>
+  <li>Handle components by edges — avoid touching circuits</li>
+  <li>Ground yourself before handling sensitive components</li>
+  <li>Report damaged equipment immediately</li>
+  <li>Know location of fire extinguisher and first aid kit</li>
+</ul>
+<h3>ESD — Electrostatic Discharge</h3>
+<div class="definition">ESD is the sudden flow of electricity between two charged objects. Even small static discharge can permanently damage ICs and motherboards.</div>
+<p>Prevention: anti-static wrist strap, anti-static mat, anti-static bags for storage.</p>
+<h3>Computer Assembly Steps</h3>
+<ol>
+  <li>Install CPU into motherboard socket</li>
+  <li>Apply thermal paste, attach CPU cooler</li>
+  <li>Insert RAM into DIMM slots</li>
+  <li>Mount motherboard in case</li>
+  <li>Install PSU</li>
+  <li>Install storage (HDD/SSD)</li>
+  <li>Install GPU (if separate)</li>
+  <li>Connect all power & data cables</li>
+  <li>Boot and enter BIOS to verify</li>
+</ol>
+<h3>BIOS / UEFI</h3>
+<p>BIOS (Basic Input/Output System) or UEFI is firmware on the motherboard. It initialises hardware and boots the OS. Access via <strong>Del / F2 / F10</strong> on startup.</p>` },
+
+  { id:'ict121_networking', course:'ict121', title:'Basic Networking Concepts', icon:'🌐', tag:'ICT 121', color:'var(--accent4)',
+    content:`<h3>Types of Networks</h3>
+<ul>
+  <li><strong>LAN</strong> (Local Area Network) — Home/office, limited area</li>
+  <li><strong>WAN</strong> (Wide Area Network) — Across cities/countries (the internet is the largest WAN)</li>
+  <li><strong>MAN</strong> (Metropolitan Area Network) — City-scale</li>
+  <li><strong>PAN</strong> (Personal Area Network) — Bluetooth/personal devices</li>
+</ul>
+<h3>Network Devices</h3>
+<ul>
+  <li><strong>Router</strong> — Routes data between networks, assigns IP addresses</li>
+  <li><strong>Switch</strong> — Connects devices within a LAN</li>
+  <li><strong>Hub</strong> — Basic (broadcasts to all devices, inefficient)</li>
+  <li><strong>Modem</strong> — Modulates/demodulates signal for ISP connection</li>
+  <li><strong>NIC</strong> (Network Interface Card) — Computer's network hardware</li>
+</ul>
+<h3>IP Addressing</h3>
+<ul>
+  <li><strong>IPv4</strong> — 32-bit, e.g. 192.168.1.1 (about 4 billion addresses)</li>
+  <li><strong>IPv6</strong> — 128-bit, e.g. 2001:0db8::1 (virtually unlimited)</li>
+  <li><strong>Private IP</strong> — 192.168.x.x, 10.x.x.x (not routed on internet)</li>
+  <li><strong>Public IP</strong> — Assigned by ISP, unique globally</li>
+</ul>
+<h3>OSI Model (7 Layers)</h3>
+<ol>
+  <li>Physical — Cables, signals</li>
+  <li>Data Link — MAC addresses, frames</li>
+  <li>Network — IP addresses, routing</li>
+  <li>Transport — TCP/UDP, ports</li>
+  <li>Session — Connection management</li>
+  <li>Presentation — Encryption, compression</li>
+  <li>Application — HTTP, FTP, SMTP</li>
+</ol>
+<div class="definition">Mnemonic: <strong>"Please Do Not Throw Sausage Pizza Away"</strong></div>` },
+
+  // BSM 121 — Research Methods
+  { id:'bsm121_research', course:'bsm121', title:'Research Methods — Fundamentals', icon:'📋', tag:'BSM 121', color:'#a78bfa',
+    content:`<h3>What is Research?</h3>
+<div class="definition">Research is a systematic, objective process of gathering, recording, analysing and interpreting data to answer a question or solve a problem.</div>
+<h3>Types of Research</h3>
+<ul>
+  <li><strong>Basic (Pure)</strong> — Adds to knowledge without immediate application</li>
+  <li><strong>Applied</strong> — Solves specific, practical problems</li>
+  <li><strong>Qualitative</strong> — Non-numerical; explores behaviours, experiences</li>
+  <li><strong>Quantitative</strong> — Numerical data; statistics, experiments</li>
+  <li><strong>Mixed Methods</strong> — Combines qualitative + quantitative</li>
+</ul>
+<h3>Research Process Steps</h3>
+<ol>
+  <li>Identify the research problem</li>
+  <li>Review existing literature</li>
+  <li>Define research objectives / hypotheses</li>
+  <li>Choose research design & methodology</li>
+  <li>Collect data</li>
+  <li>Analyse data</li>
+  <li>Interpret results</li>
+  <li>Report findings</li>
+</ol>
+<h3>Research Problem vs Hypothesis</h3>
+<ul>
+  <li><strong>Research Problem</strong> — A gap or issue to investigate</li>
+  <li><strong>Hypothesis</strong> — A testable prediction about the relationship between variables</li>
+  <li><strong>Null Hypothesis (H₀)</strong> — No relationship exists</li>
+  <li><strong>Alternative Hypothesis (H₁)</strong> — A relationship exists</li>
+</ul>` },
+
+  { id:'bsm121_methods', course:'bsm121', title:'Data Collection Methods', icon:'📝', tag:'BSM 121', color:'#a78bfa',
+    content:`<h3>Primary Data Collection</h3>
+<p>Data collected first-hand for a specific purpose:</p>
+<ul>
+  <li><strong>Surveys/Questionnaires</strong> — Written questions; easy to distribute</li>
+  <li><strong>Interviews</strong> — Structured, semi-structured, unstructured</li>
+  <li><strong>Observation</strong> — Participant or non-participant</li>
+  <li><strong>Experiments</strong> — Controlled conditions, manipulate variables</li>
+  <li><strong>Focus Groups</strong> — Group discussion on a topic</li>
+</ul>
+<h3>Secondary Data Collection</h3>
+<p>Data already collected by someone else:</p>
+<ul>
+  <li>Books, journals, reports, government records</li>
+  <li>Internet sources, databases</li>
+</ul>
+<h3>Sampling Methods</h3>
+<ul>
+  <li><strong>Random Sampling</strong> — Every member has equal chance of selection</li>
+  <li><strong>Stratified Sampling</strong> — Divided into subgroups, sample from each</li>
+  <li><strong>Systematic Sampling</strong> — Every Nth person</li>
+  <li><strong>Purposive Sampling</strong> — Specifically selected (expert sampling)</li>
+  <li><strong>Convenience Sampling</strong> — Whoever is available (less reliable)</li>
+</ul>
+<h3>Validity & Reliability</h3>
+<ul>
+  <li><strong>Validity</strong> — Does the study measure what it intends to measure?</li>
+  <li><strong>Reliability</strong> — Are the results consistent if repeated?</li>
+</ul>
+<div class="important">⚠️ A study can be reliable without being valid. E.g. a broken scale always gives 5kg too heavy — reliable but not valid.</div>` },
+];
+
+function renderNotes(filter='all') {
+  const grid = document.getElementById('notes-grid');
+  const filtered = filter==='all' ? NOTES_DATA : NOTES_DATA.filter(n=>n.course===filter);
+  grid.innerHTML = filtered.map(n=>`
+    <div class="note-card" onclick="openNoteModal('${n.id}')">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:${n.color};"></div>
+      <div class="note-card-icon">${n.icon}</div>
+      <div class="note-card-title">${n.title}</div>
+      <div class="note-card-meta">${n.tag} · Click to study</div>
+      <span class="chip chip-purple" style="margin-top:10px;">${n.tag}</span>
+    </div>`).join('');
+}
+
+function filterNotes(filter, el) {
+  document.querySelectorAll('#view-notes .course-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderNotes(filter);
+}
+
+function openNoteModal(id) {
+  const note = NOTES_DATA.find(n=>n.id===id);
+  if (!note) return;
+  document.getElementById('modal-icon').textContent = note.icon;
+  document.getElementById('modal-title').textContent = note.title;
+  document.getElementById('modal-body').innerHTML = note.content;
+  document.getElementById('notes-modal').classList.add('open');
+}
+function closeNotesModal() {
+  document.getElementById('notes-modal').classList.remove('open');
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeNotesModal(); });
+
+async function loadUploadedFiles() {
+  if (!window.FB_READY) return;
+  const courses=['CSC 122','CSC 121','CSC 123','ICT 121','BSM 121'];
+  let html='';
+  for (const c of courses) {
+    const files = await window.FB.getFiles(c);
+    files.forEach(f=>{
+      html+=`<a href="${f.url}" target="_blank" class="pdf-link-btn">📄 ${f.name}</a>`;
+    });
+  }
+  const wrap = document.getElementById('notes-uploaded-files');
+  const list = document.getElementById('notes-uploaded-list');
+  if (html) { wrap.style.display='block'; list.innerHTML=html; }
+}
+
+// ══════════════════════════════════════════════════════════
+//  FLASHCARDS
+// ══════════════════════════════════════════════════════════
+const BUILTIN_FLASHCARDS = [
+  // CSC 122
+  {course:'CSC 122',q:'What does #include <stdio.h> do in C?',a:'It includes the Standard Input/Output header file, which provides functions like printf() and scanf().'},
+  {course:'CSC 122',q:'What is the difference between = and == in C?',a:'= is the assignment operator (sets a value). == is the comparison operator (checks equality). Confusing them is a very common bug.'},
+  {course:'CSC 122',q:'What is a pointer in C?',a:'A variable that stores the memory address of another variable. Declared with * and accessed using & (address-of) and * (dereference).'},
+  {course:'CSC 122',q:'What does malloc() do?',a:'malloc() (memory allocation) dynamically allocates a block of memory on the heap. Returns a void pointer. Must be freed with free() to avoid memory leaks.'},
+  {course:'CSC 122',q:'What is the difference between a while loop and a do-while loop?',a:'A while loop checks the condition BEFORE executing the body. A do-while loop executes the body FIRST, then checks the condition — so it always runs at least once.'},
+  {course:'CSC 122',q:'What is a struct in C?',a:'A struct (structure) is a user-defined data type that groups variables of different types under one name. E.g. struct Student { int id; char name[50]; };'},
+  {course:'CSC 122',q:'What is the output of printf("%d", 5/2)?',a:'2 — Integer division in C truncates the decimal. 5/2 = 2 (not 2.5). Use float to get 2.5: printf("%.1f", 5.0/2).'},
+  {course:'CSC 122',q:'What is the Waterfall model?',a:'A sequential SDLC model where each phase must be completed before the next begins: Requirements → Design → Implementation → Testing → Deployment → Maintenance.'},
+  {course:'CSC 122',q:'What is the difference between pass by value and pass by reference?',a:'Pass by value copies the variable\'s value — changes inside the function don\'t affect the original. Pass by reference (using pointers) passes the address — changes affect the original.'},
+  {course:'CSC 122',q:'What does return 0 mean in main()?',a:'It tells the operating system the program ended successfully. Non-zero return values indicate an error.'},
+  // CSC 121
+  {course:'CSC 121',q:'What does CPU stand for and what does it do?',a:'Central Processing Unit. It fetches, decodes and executes instructions. Made up of ALU (arithmetic/logic), CU (control unit), and registers.'},
+  {course:'CSC 121',q:'What is the difference between RAM and ROM?',a:'RAM (Random Access Memory) is volatile — it loses data when powered off. ROM (Read-Only Memory) is non-volatile — retains data permanently. BIOS is stored on ROM.'},
+  {course:'CSC 121',q:'What is ESD and why is it dangerous?',a:'Electrostatic Discharge — a sudden flow of static electricity. Even a tiny discharge can permanently destroy sensitive components like CPUs, RAM, and GPUs.'},
+  {course:'CSC 121',q:'What is the Fetch-Decode-Execute cycle?',a:'The basic CPU operation: 1) Fetch instruction from RAM, 2) Decode what the instruction means, 3) Execute it, 4) Store the result.'},
+  {course:'CSC 121',q:'What is the difference between HDD and SSD?',a:'HDD (Hard Disk Drive) uses spinning magnetic platters — slower, cheaper per GB. SSD (Solid State Drive) uses flash memory — faster, more durable, but more expensive per GB.'},
+  {course:'CSC 121',q:'What is a Motherboard?',a:'The main printed circuit board (PCB) that connects all computer components: CPU, RAM, storage, GPU, and peripherals. Contains the chipset, BIOS chip, and expansion slots.'},
+  {course:'CSC 121',q:'What does POST stand for?',a:'Power-On Self Test. Runs automatically when a computer starts. Checks hardware (CPU, RAM, keyboard, storage) before booting the OS. Signals errors through beep codes.'},
+  {course:'CSC 121',q:'What is cache memory?',a:'Ultra-fast memory built into or near the CPU. Stores frequently used data to reduce access time. Levels: L1 (fastest, smallest) → L2 → L3 (slowest of cache, but still faster than RAM).'},
+  // CSC 123
+  {course:'CSC 123',q:'What is a Primary Key?',a:'A column (or set of columns) that uniquely identifies each row in a table. Must be unique and cannot be NULL. Example: student_id in a Students table.'},
+  {course:'CSC 123',q:'What is a Foreign Key?',a:'A column in one table that references the Primary Key of another table. Enforces referential integrity — ensures the referenced record actually exists.'},
+  {course:'CSC 123',q:'What does SQL SELECT do?',a:'Retrieves data from a database. Syntax: SELECT column FROM table WHERE condition; Example: SELECT name FROM students WHERE marks > 70;'},
+  {course:'CSC 123',q:'What is normalisation in databases?',a:'The process of organising a database to reduce redundancy and improve data integrity. Normal forms: 1NF (atomic values) → 2NF (no partial dependencies) → 3NF (no transitive dependencies).'},
+  {course:'CSC 123',q:'What is the difference between INNER JOIN and LEFT JOIN?',a:'INNER JOIN returns only rows where there is a match in BOTH tables. LEFT JOIN returns all rows from the left table, plus matching rows from the right (NULLs for no match).'},
+  {course:'CSC 123',q:'What does ACID stand for?',a:'Atomicity (all-or-nothing), Consistency (data remains valid), Isolation (transactions don\'t interfere), Durability (committed data persists). Properties that guarantee database transactions are reliable.'},
+  {course:'CSC 123',q:'What is an ERD?',a:'Entity-Relationship Diagram. A visual blueprint showing entities (tables), their attributes (columns), and relationships (how tables connect). Used in database design.'},
+  {course:'CSC 123',q:'What is the difference between DELETE and DROP?',a:'DELETE removes specific rows from a table (data operation, can be rolled back). DROP removes the entire table including its structure (DDL, permanent).'},
+  // ICT 121
+  {course:'ICT 121',q:'What is the OSI Model?',a:'Open Systems Interconnection — a 7-layer framework for network communication. Layers: Physical, Data Link, Network, Transport, Session, Presentation, Application.'},
+  {course:'ICT 121',q:'What is the difference between a Router and a Switch?',a:'A Router connects different networks and routes data between them (Layer 3). A Switch connects devices within the same LAN and uses MAC addresses to direct traffic (Layer 2).'},
+  {course:'ICT 121',q:'What is an IP address?',a:'A unique numerical label assigned to each device on a network. IPv4 is 32-bit (e.g. 192.168.1.1, ~4B addresses). IPv6 is 128-bit (virtually unlimited addresses).'},
+  {course:'ICT 121',q:'What is the difference between TCP and UDP?',a:'TCP (Transmission Control Protocol) is reliable — guarantees delivery, in order, with error checking. UDP (User Datagram Protocol) is faster but unreliable — no guarantee of delivery. Used for streaming, gaming.'},
+  {course:'ICT 121',q:'What steps are involved in assembling a PC?',a:'1) Install CPU, 2) Apply thermal paste & cooler, 3) Insert RAM, 4) Mount motherboard, 5) Install PSU, 6) Install storage, 7) Install GPU, 8) Connect cables, 9) Boot and configure BIOS.'},
+  // BSM 121
+  {course:'BSM 121',q:'What is the difference between qualitative and quantitative research?',a:'Qualitative explores non-numerical data (experiences, behaviours, opinions) using interviews, observations. Quantitative uses numerical data, statistics, and experiments to find measurable patterns.'},
+  {course:'BSM 121',q:'What is a hypothesis?',a:'A testable prediction about the relationship between variables. Null hypothesis (H₀) = no relationship. Alternative hypothesis (H₁) = a relationship exists.'},
+  {course:'BSM 121',q:'What is random sampling?',a:'A sampling method where every member of the population has an equal chance of being selected. Reduces bias and improves representativeness.'},
+  {course:'BSM 121',q:'What is the difference between validity and reliability?',a:'Validity = the study measures what it claims to measure. Reliability = the results are consistent when repeated. A study can be reliable (consistent) without being valid (accurate).'},
+  {course:'BSM 121',q:'What are the main steps in the research process?',a:'1) Identify problem, 2) Literature review, 3) Define objectives/hypothesis, 4) Research design, 5) Collect data, 6) Analyse data, 7) Interpret results, 8) Report findings.'},
+  {course:'BSM 121',q:'What is the difference between primary and secondary data?',a:'Primary data is collected first-hand for the specific study (surveys, interviews, experiments). Secondary data is pre-existing data collected by others (books, journals, reports).'},
+];
+
+let _allFlashcards = [];
+let _filterFlash = 'all';
+let _studyCards = [];
+let _studyIdx = 0;
+let _studyFlipped = false;
+
+async function loadFlashcards() {
+  let extra = [];
+  if (window.FB_READY) {
+    try { extra = await window.FB.getFlashcards(); } catch(e){}
+  }
+  _allFlashcards = [...BUILTIN_FLASHCARDS, ...extra];
+  document.getElementById('fc-count-total').textContent = _allFlashcards.length;
+  renderFlashcardGrid();
+  updateHomeStats();
+}
+
+function filterFlash(filter, el) {
+  _filterFlash = filter;
+  document.querySelectorAll('#view-flash .course-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderFlashcardGrid();
+}
+
+function renderFlashcardGrid() {
+  const filtered = _filterFlash==='all' ? _allFlashcards : _allFlashcards.filter(f=>f.course===_filterFlash);
+  document.getElementById('fc-count-filter').textContent = filtered.length;
+  const grid = document.getElementById('fc-grid');
+  grid.innerHTML = filtered.map((f,i)=>`
+    <div class="fc-preview-card" onclick="startStudyModeFrom(${_allFlashcards.indexOf(f)})">
+      <div class="fc-preview-q">${f.q}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span class="chip chip-purple" style="font-size:9px;">${f.course}</span>
+        <span class="fc-preview-hint">👆 tap to study</span>
+      </div>
+    </div>`).join('');
+}
+
+function startStudyMode() {
+  const filtered = _filterFlash==='all' ? _allFlashcards : _allFlashcards.filter(f=>f.course===_filterFlash);
+  _studyCards = [...filtered].sort(()=>Math.random()-.5);
+  _studyIdx = 0; _studyFlipped = false;
+  openStudyOverlay();
+}
+
+function startStudyModeFrom(idx) {
+  const card = _allFlashcards[idx];
+  const course = card.course;
+  const filtered = _allFlashcards.filter(f=>f.course===course);
+  _studyCards = filtered;
+  _studyIdx = filtered.findIndex(f=>f===card);
+  _studyFlipped = false;
+  openStudyOverlay();
+}
+
+function openStudyOverlay() {
+  document.getElementById('fc-study-overlay').classList.add('open');
+  document.getElementById('fc-done-screen').style.display='none';
+  document.getElementById('fc-card-inner').style.display='';
+  document.querySelectorAll('.fc-nav-row').forEach(r=>r.style.display='');
+  renderStudyCard();
+}
+
+function renderStudyCard() {
+  if (_studyIdx >= _studyCards.length) {
+    document.getElementById('fc-done-screen').style.display='block';
+    document.getElementById('fc-card-inner').style.display='none';
+    document.querySelectorAll('.fc-nav-row').forEach(r=>r.style.display='none');
+    return;
+  }
+  const card = _studyCards[_studyIdx];
+  document.getElementById('fc-study-q').textContent = card.q;
+  document.getElementById('fc-study-a').textContent = card.a;
+  document.getElementById('fc-study-counter').textContent = `${_studyIdx+1} / ${_studyCards.length}`;
+  document.getElementById('fc-progress-bar').style.width = `${((_studyIdx+1)/_studyCards.length)*100}%`;
+  document.getElementById('fc-card-inner').classList.remove('flipped');
+  _studyFlipped = false;
+}
+
+function flipStudyCard() {
+  _studyFlipped = !_studyFlipped;
+  document.getElementById('fc-card-inner').classList.toggle('flipped', _studyFlipped);
+}
+function fcNext() { _studyIdx++; renderStudyCard(); }
+function fcPrev() { if(_studyIdx>0){_studyIdx--;renderStudyCard();} }
+function fcRestart() { _studyIdx=0; renderStudyCard(); document.getElementById('fc-done-screen').style.display='none'; document.getElementById('fc-card-inner').style.display=''; }
+function closeStudyMode() { document.getElementById('fc-study-overlay').classList.remove('open'); }
+
+document.addEventListener('keydown', e=>{
+  if (!document.getElementById('fc-study-overlay').classList.contains('open')) return;
+  if (e.key==='ArrowRight') fcNext();
+  if (e.key==='ArrowLeft') fcPrev();
+  if (e.key===' ') { e.preventDefault(); flipStudyCard(); }
+});
+
+// ══════════════════════════════════════════════════════════
+//  C PROGRAMMING PRACTICE
+// ══════════════════════════════════════════════════════════
+const C_CHALLENGES = [
+  { title:'Hello World', difficulty:'easy', desc:'Write a program that prints "Hello, World!" to the screen.',
+    starter:`#include <stdio.h>
+
+int main() {
+    // Your code here
+    return 0;
+}`,
+    hint:`Use printf("Hello, World!\\n");`,
+    explanation:'This is the simplest C program. printf() outputs text. \\n is a newline character.' },
+  { title:'Sum of Two Numbers', difficulty:'easy', desc:'Read two integers from the user and print their sum.',
+    starter:`#include <stdio.h>
+
+int main() {
+    int a, b;
+    // Read two numbers with scanf
+    // Print their sum
+    return 0;
+}`,
+    hint:`scanf("%d %d", &a, &b); printf("%d", a+b);`,
+    explanation:'scanf reads input. & gives the memory address of the variable. printf with %d prints integers.' },
+  { title:'Odd or Even', difficulty:'easy', desc:'Check if a number is odd or even using the modulus operator.',
+    starter:`#include <stdio.h>
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    // if n % 2 == 0 → even, else odd
+    return 0;
+}`,
+    hint:'Use if (n % 2 == 0) to check even.',
+    explanation:'The % operator gives the remainder. If remainder when divided by 2 is 0, the number is even.' },
+  { title:'Factorial', difficulty:'medium', desc:'Calculate the factorial of a number using a loop (e.g. 5! = 120).',
+    starter:`#include <stdio.h>
+
+int main() {
+    int n, fact = 1;
+    scanf("%d", &n);
+    // Use a for loop to compute factorial
+    printf("Factorial: %d\\n", fact);
+    return 0;
+}`,
+    hint:'for (int i = 1; i <= n; i++) fact *= i;',
+    explanation:'Factorial multiplies all integers from 1 to n. Use a loop and multiply into fact each iteration.' },
+  { title:'Fibonacci Series', difficulty:'medium', desc:'Print the first N numbers of the Fibonacci sequence.',
+    starter:`#include <stdio.h>
+
+int main() {
+    int n, a = 0, b = 1;
+    scanf("%d", &n);
+    // Print fibonacci sequence
+    return 0;
+}`,
+    hint:'Print a, then b, then in loop: temp=b; b=a+b; a=temp;',
+    explanation:'Each Fibonacci number is the sum of the two before it. Swap: store b, set b=a+b, set a=old b.' },
+  { title:'Reverse a String', difficulty:'medium', desc:'Reverse a string without using library functions.',
+    starter:`#include <stdio.h>
+#include <string.h>
+
+int main() {
+    char str[100];
+    scanf("%s", str);
+    int len = strlen(str);
+    // Swap characters from both ends moving inward
+    return 0;
+}`,
+    hint:'Use two pointers: i from start, j from end. Swap str[i] and str[j], move i++, j--.',
+    explanation:'Two-pointer technique: swap the outermost characters repeatedly moving inward until they meet.' },
+  { title:'Bubble Sort', difficulty:'hard', desc:'Sort an array of integers using bubble sort.',
+    starter:`#include <stdio.h>
+
+int main() {
+    int arr[] = {64, 34, 25, 12, 22, 11, 90};
+    int n = 7;
+    // Implement bubble sort
+    // Print sorted array
+    return 0;
+}`,
+    hint:'Outer loop n-1 times. Inner loop: if arr[j]>arr[j+1], swap them.',
+    explanation:'Bubble sort repeatedly compares adjacent elements and swaps them if out of order. O(n²) time complexity.' },
+  { title:'Find Maximum in Array', difficulty:'easy', desc:'Find the largest element in an array of integers.',
+    starter:`#include <stdio.h>
+
+int main() {
+    int arr[] = {3, 1, 4, 1, 5, 9, 2, 6};
+    int n = 8;
+    int max = arr[0];
+    // Find maximum
+    printf("Max: %d\\n", max);
+    return 0;
+}`,
+    hint:'Loop through, if arr[i] > max, set max = arr[i].',
+    explanation:'Start with max = first element. Compare each element — update max if a larger one is found.' },
+  { title:'Count Vowels', difficulty:'medium', desc:'Count the number of vowels in a given string.',
+    starter:`#include <stdio.h>
+#include <ctype.h>
+
+int main() {
+    char str[] = "Hello Realists";
+    int count = 0;
+    // Count vowels (a,e,i,o,u — upper and lower)
+    printf("Vowels: %d\\n", count);
+    return 0;
+}`,
+    hint:'Use tolower() from ctype.h. Check if ch == a, e, i, o, or u.',
+    explanation:'Loop through each character, convert to lowercase, check if it\'s one of the 5 vowels.' },
+  { title:'Pointer Swap', difficulty:'medium', desc:'Swap two integers using pointers (pass by reference).',
+    starter:`#include <stdio.h>
+
+void swap(int *a, int *b) {
+    // Swap the values at these addresses
+}
+
+int main() {
+    int x = 5, y = 10;
+    swap(&x, &y);
+    printf("x=%d, y=%d\\n", x, y);
+    return 0;
+}`,
+    hint:'int temp = *a; *a = *b; *b = temp;',
+    explanation:'Pointers let us modify variables in the calling function. * dereferences (gets value at address).' },
+];
+
+function buildChallenges() {
+  const list = document.getElementById('challenges-list');
+  const sel  = document.getElementById('challenge-select');
+  list.innerHTML = C_CHALLENGES.map((c,i)=>`
+    <div class="challenge-card" onclick="loadChallengeById(${i})">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+        <div class="challenge-card-title">${c.title}</div>
+        <span class="challenge-difficulty diff-${c.difficulty}">[${c.difficulty.toUpperCase()}]</span>
+      </div>
+      <div class="challenge-card-desc">${c.desc}</div>
+      <button class="btn btn-green" style="font-size:11px;padding:5px 12px;" onclick="event.stopPropagation();loadChallengeById(${i})">Load →</button>
+    </div>`).join('');
+  sel.innerHTML = '<option value="">-- Load Challenge --</option>' +
+    C_CHALLENGES.map((c,i)=>`<option value="${i}">${c.title} [${c.difficulty}]</option>`).join('');
+}
+
+function loadChallengeById(idx) {
+  const c = C_CHALLENGES[idx];
+  document.getElementById('code-editor').value = c.starter;
+  document.getElementById('challenge-select').value = idx;
+  document.getElementById('code-output').innerHTML = `
+    <div class="output-info">// Challenge: ${c.title}</div>
+    <div class="output-info">// ${c.desc}</div>
+    <div class="output-info">&nbsp;</div>
+    <div class="output-info">// 💡 Hint: ${c.hint}</div>
+    <div class="output-info">&nbsp;</div>
+    <div class="output-info">// 📖 ${c.explanation}</div>`;
+}
+function loadChallenge() {
+  const idx = document.getElementById('challenge-select').value;
+  if (idx!=='') loadChallengeById(parseInt(idx));
+}
+
+function runCode() {
+  const code = document.getElementById('code-editor').value;
+  const out  = document.getElementById('code-output');
+  out.innerHTML = '';
+
+  // Simulated C execution — parse printf patterns
+  const lines = [];
+  // Check for obvious issues
+  if (!code.includes('main')) { lines.push({t:'err',v:'Error: no main() function found.'}); }
+  else if (!code.includes('#include')) { lines.push({t:'err',v:'Warning: no #include directive.'}); }
+  else {
+    lines.push({t:'info',v:`// ✅ Code compiled (simulated)`});
+    lines.push({t:'info',v:`// C compiler output:`});
+    lines.push({t:'info',v:`//`});
+    // Extract printf strings
+    const pf = [...code.matchAll(/printf\s*\(\s*["'](.+?)["']/g)];
+    if (pf.length) {
+      pf.forEach(m=>{
+        let s = m[1].replace(/\\n/g,'\n').replace(/\\t/g,'\t');
+        s.split('\n').filter(l=>l).forEach(l=>lines.push({t:'ok',v:l}));
+      });
+    } else {
+      lines.push({t:'info',v:'// No printf() calls found — nothing to output'});
+    }
+    // Check for scanf
+    if (code.includes('scanf')) lines.push({t:'info',v:'// (scanf requires real input — simulated here)'});
+    // Check for common errors
+    if (/\bif\s*\([^=!<>]*=[^=]/.test(code)) lines.push({t:'err',v:'Warning: possible assignment in if condition — did you mean ==?'});
+    if (code.includes('malloc') && !code.includes('free')) lines.push({t:'err',v:'Warning: malloc() used without free() — potential memory leak!'});
+  }
+  out.innerHTML = lines.map(l=>`<div class="output-line output-${l.t==='err'?'err':l.t==='info'?'info':'ok'}">${escHtml(l.v)}</div>`).join('');
+}
+function clearEditor() { document.getElementById('code-editor').value=''; }
+function clearOutput() { document.getElementById('code-output').innerHTML='<div class="output-info">// Output cleared</div>'; }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══════════════════════════════════════════════════════════
+//  QUIZZES
+// ══════════════════════════════════════════════════════════
+const BUILTIN_QUIZZES = [
+  { id:'csc122', title:'CSC 122 — C Programming & Software Dev', icon:'💻', color:'var(--accent)',
+    questions:[
+      {q:'Which of the following correctly declares an integer variable in C?',opts:['int x = 5;','integer x = 5;','Int x = 5;','x int = 5;'],ans:0,exp:'In C, integer variables are declared with the keyword int (lowercase).'},
+      {q:'What does the % operator do in C?',opts:['Division','Multiplication','Returns the remainder','Exponentiation'],ans:2,exp:'% is the modulus operator — it returns the remainder of integer division. E.g. 7%3 = 1.'},
+      {q:'Which symbol is used to get the address of a variable?',opts:['*','&','#','@'],ans:1,exp:'& (ampersand) is the address-of operator. e.g. int *p = &x; gives p the address of x.'},
+      {q:'What is the output of: int x = 7/2; printf("%d", x);',opts:['3.5','3','4','Error'],ans:1,exp:'Integer division in C truncates decimals. 7/2 = 3 (not 3.5).'},
+      {q:'Which SDLC model follows a strictly sequential phase-by-phase approach?',opts:['Agile','Spiral','Waterfall','V-Model'],ans:2,exp:'The Waterfall model is sequential: each phase must be fully completed before moving to the next.'},
+      {q:'What does malloc() return if it fails?',opts:['0','NULL','-1','false'],ans:1,exp:'malloc() returns NULL if memory allocation fails. Always check for NULL before using the pointer.'},
+      {q:'A do-while loop always executes its body at least:',opts:['0 times','1 time','2 times','Depends on condition'],ans:1,exp:'A do-while loop checks the condition AFTER executing the body, so it always runs at least once.'},
+      {q:'What header file is needed for printf() and scanf()?',opts:['stdlib.h','math.h','stdio.h','string.h'],ans:2,exp:'stdio.h is the Standard Input/Output header — it provides printf(), scanf(), and file I/O functions.'},
+    ]},
+  { id:'csc121', title:'CSC 121 — Computer Hardware', icon:'🖥️', color:'var(--accent2)',
+    questions:[
+      {q:'What does CPU stand for?',opts:['Computer Processing Unit','Central Processing Unit','Core Processing Utility','Central Program Unit'],ans:1,exp:'CPU = Central Processing Unit. It is the main component that executes program instructions.'},
+      {q:'Which type of memory is volatile (loses data when power is off)?',opts:['ROM','HDD','RAM','SSD'],ans:2,exp:'RAM (Random Access Memory) is volatile — it requires continuous power to retain data.'},
+      {q:'What does POST stand for?',opts:['Power-On Self Test','Program On Start Task','Post-OS Startup Test','Primary Operating System Task'],ans:0,exp:'POST = Power-On Self Test. Runs at boot to check hardware components before loading the OS.'},
+      {q:'Which tool helps prevent ESD damage when handling components?',opts:['Multimeter','Anti-static wrist strap','Compressed air','Screwdriver'],ans:1,exp:'An anti-static wrist strap grounds you, preventing electrostatic discharge from damaging components.'},
+      {q:'What is the correct order of cache memory speed (fastest first)?',opts:['L3 → L2 → L1','L1 → L2 → L3','L2 → L1 → L3','All are equal'],ans:1,exp:'L1 is fastest and smallest (closest to CPU). L2 is next, then L3 (largest but slowest of cache levels).'},
+      {q:'Which port is most commonly used for modern monitors?',opts:['VGA','PS/2','HDMI','RJ-45'],ans:2,exp:'HDMI carries both audio and video digitally. VGA is older analog-only. Modern monitors predominantly use HDMI or DisplayPort.'},
+    ]},
+  { id:'csc123', title:'CSC 123 — Database Systems', icon:'🗄️', color:'var(--accent3)',
+    questions:[
+      {q:'Which SQL command retrieves data from a table?',opts:['INSERT','UPDATE','SELECT','FETCH'],ans:2,exp:'SELECT is the DQL (Data Query Language) command used to retrieve data from one or more tables.'},
+      {q:'What constraint ensures a column value is unique and not NULL?',opts:['FOREIGN KEY','UNIQUE','PRIMARY KEY','INDEX'],ans:2,exp:'A PRIMARY KEY must be unique and cannot be NULL — it uniquely identifies each row.'},
+      {q:'What does ACID stand for in databases?',opts:['Atomicity, Consistency, Isolation, Durability','Array, Constraint, Index, Data','Atomic, Complete, Integral, Durable','Access, Control, Input, Data'],ans:0,exp:'ACID properties guarantee reliable database transactions: Atomicity, Consistency, Isolation, Durability.'},
+      {q:'Which JOIN returns all rows from the left table even if there is no match?',opts:['INNER JOIN','RIGHT JOIN','LEFT JOIN','CROSS JOIN'],ans:2,exp:'LEFT JOIN returns all rows from the left table, with NULLs for columns from the right table where no match exists.'},
+      {q:'What is normalisation used for?',opts:['To speed up queries','To encrypt data','To reduce redundancy and improve data integrity','To back up the database'],ans:2,exp:'Normalisation organises the database to eliminate redundant data and ensure data integrity through normal forms.'},
+      {q:'Which SQL command deletes ALL rows from a table but keeps the structure?',opts:['DROP','DELETE','REMOVE','TRUNCATE'],ans:3,exp:'TRUNCATE removes all rows quickly and cannot be rolled back. DELETE can be rolled back and supports WHERE. DROP removes the table entirely.'},
+    ]},
+  { id:'ict121', title:'ICT 121 — Workshop Practice', icon:'⛑️', color:'var(--accent4)',
+    questions:[
+      {q:'What does LAN stand for?',opts:['Large Area Network','Local Area Network','Limited Access Network','Logical Area Node'],ans:1,exp:'LAN = Local Area Network. Covers a limited area like a home, office, or school building.'},
+      {q:'Which OSI layer handles IP addressing and routing?',opts:['Layer 1 (Physical)','Layer 2 (Data Link)','Layer 3 (Network)','Layer 4 (Transport)'],ans:2,exp:'Layer 3 (Network layer) handles logical addressing (IP addresses) and routing between networks.'},
+      {q:'What is the first step when troubleshooting a hardware problem?',opts:['Replace the motherboard','Check software first','Power off and check connections','Call tech support'],ans:2,exp:'Always start with the basics: power off, check cable connections and component seating before anything else.'},
+      {q:'Which of the following is an INPUT device?',opts:['Monitor','Printer','Scanner','Speaker'],ans:2,exp:'A scanner converts physical documents to digital data — it inputs data into the computer.'},
+      {q:'What does BIOS do?',opts:['Stores user data','Manages RAM allocation','Initialises hardware and boots the OS','Runs the operating system'],ans:2,exp:'BIOS (Basic Input/Output System) is firmware that initialises hardware and loads the OS bootloader on startup.'},
+    ]},
+  { id:'bsm121', title:'BSM 121 — Research Methods', icon:'📋', color:'#a78bfa',
+    questions:[
+      {q:'Which type of research uses numerical data and statistics?',opts:['Qualitative','Descriptive','Quantitative','Ethnographic'],ans:2,exp:'Quantitative research deals with numerical data, measurement, and statistical analysis to test hypotheses.'},
+      {q:'What is a hypothesis?',opts:['A proven fact','A testable prediction about variables','A literature review finding','A research objective'],ans:1,exp:'A hypothesis is a testable prediction or statement about the expected relationship between variables.'},
+      {q:'Which sampling method gives every member an equal chance of selection?',opts:['Convenience sampling','Stratified sampling','Random sampling','Purposive sampling'],ans:2,exp:'Random sampling = every member of the population has an equal and independent chance of being selected, reducing bias.'},
+      {q:'What does "reliability" mean in research?',opts:['The study measures what it claims','Results are consistent when repeated','The sample size is large','Data is collected from primary sources'],ans:1,exp:'Reliability means the same results are obtained when the study is repeated under the same conditions.'},
+      {q:'Which is an example of a primary data collection method?',opts:['Reading a journal article','Checking government statistics','Conducting an interview','Reviewing a textbook'],ans:2,exp:'Primary data is collected first-hand by the researcher. Interviews, surveys, and experiments are primary methods.'},
+    ]},
+];
+
+let _activeQuiz = null;
+let _quizQuestions = [];
+let _quizIdx = 0;
+let _quizScore = 0;
+let _answered = false;
+
+function loadQuizList() {
+  const list = document.getElementById('quiz-list');
+  list.innerHTML = BUILTIN_QUIZZES.map(q=>`
+    <div class="quiz-card" onclick="startQuiz('${q.id}')">
+      <div class="quiz-card-icon">${q.icon}</div>
+      <div class="quiz-card-title">${q.title}</div>
+      <div class="quiz-card-meta">${q.questions.length} questions · Multiple choice</div>
+      <div style="margin-top:12px;"><span class="chip chip-purple">${q.id.toUpperCase()}</span></div>
+    </div>`).join('');
+}
+
+async function startQuiz(id) {
+  const quiz = BUILTIN_QUIZZES.find(q=>q.id===id);
+  if (!quiz) return;
+
+  // Check blocklist
+  if (_currentMember && window.FB_READY) {
+    const blocked = await window.FB.isBlocked(_currentMember.name);
+    if (blocked) { alert('⛔ You have been blocked from quizzes. Contact Bravehart.'); return; }
+  }
+
+  _activeQuiz = quiz;
+  _quizQuestions = [...quiz.questions].sort(()=>Math.random()-.5);
+  _quizIdx = 0; _quizScore = 0; _answered = false;
+  document.getElementById('quiz-list-view').style.display='none';
+  document.getElementById('quiz-active-view').style.display='block';
+  document.getElementById('quiz-result-view').style.display='none';
+  document.getElementById('active-quiz-title').textContent = quiz.title;
+  document.getElementById('active-quiz-meta').textContent = `${_quizQuestions.length} questions`;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  if (_quizIdx >= _quizQuestions.length) { showQuizResults(); return; }
+  _answered = false;
+  const q = _quizQuestions[_quizIdx];
+  const progress = ((_quizIdx)/_quizQuestions.length)*100;
+  document.getElementById('quiz-progress').style.width = progress+'%';
+  document.getElementById('quiz-question-area').innerHTML = `
+    <div class="quiz-question-box">
+      <div class="quiz-q-num">Question ${_quizIdx+1} of ${_quizQuestions.length}</div>
+      <div class="quiz-q-text">${q.q}</div>
+    </div>
+    <div class="quiz-options">
+      ${q.opts.map((opt,i)=>`<button class="quiz-opt" id="opt-${i}" onclick="selectAnswer(${i})">${String.fromCharCode(65+i)}. ${opt}</button>`).join('')}
+    </div>
+    <div id="quiz-explanation" class="quiz-explanation" style="display:none;"></div>`;
+  document.getElementById('quiz-nav').innerHTML = `<button class="btn btn-ghost" onclick="exitQuiz()">← Quit</button>`;
+}
+
+function selectAnswer(idx) {
+  if (_answered) return;
+  _answered = true;
+  const q = _quizQuestions[_quizIdx];
+  const correct = q.ans;
+  if (idx === correct) _quizScore++;
+  // Highlight
+  q.opts.forEach((_,i)=>{
+    const btn = document.getElementById(`opt-${i}`);
+    if (i===correct) btn.classList.add('correct');
+    else if (i===idx) btn.classList.add('wrong');
+    btn.disabled=true;
+  });
+  // Explanation
+  const exp = document.getElementById('quiz-explanation');
+  exp.textContent = '💡 ' + q.exp;
+  exp.style.display='block';
+  // Next button
+  document.getElementById('quiz-nav').innerHTML = `
+    <button class="btn btn-ghost" onclick="exitQuiz()">← Quit</button>
+    <button class="btn btn-primary" onclick="nextQuestion()">${_quizIdx+1<_quizQuestions.length?'Next →':'Finish ✓'}</button>`;
+}
+
+function nextQuestion() { _quizIdx++; renderQuestion(); }
+
+async function showQuizResults() {
+  document.getElementById('quiz-active-view').style.display='none';
+  document.getElementById('quiz-result-view').style.display='block';
+  const pct = Math.round((_quizScore/_quizQuestions.length)*100);
+  const emoji = pct>=80?'🏆':pct>=60?'✅':pct>=40?'📚':'💪';
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-score').textContent = `${pct}%`;
+  document.getElementById('result-label').textContent = `${_quizScore}/${_quizQuestions.length} correct — ${pct>=80?'Excellent!':pct>=60?'Good job!':pct>=40?'Keep studying!':'Don\'t give up!'}`;
+
+  // Save result
+  const name = _currentMember?.name || 'Anonymous';
+  const result = { name, quiz: _activeQuiz.title, quizId: _activeQuiz.id, score: _quizScore, total: _quizQuestions.length, percent: pct, date: new Date().toLocaleDateString('en-UG'), ts: Date.now() };
+  if (window.FB_READY) await window.FB.saveResult(result);
+  loadLeaderboard();
+}
+
+function exitQuiz() {
+  _activeQuiz=null;
+  document.getElementById('quiz-list-view').style.display='block';
+  document.getElementById('quiz-active-view').style.display='none';
+  document.getElementById('quiz-result-view').style.display='none';
+}
+function retakeQuiz() { if(_activeQuiz) startQuiz(_activeQuiz.id); }
+
+// ══════════════════════════════════════════════════════════
+//  LEADERBOARD
+// ══════════════════════════════════════════════════════════
+async function loadLeaderboard() {
+  if (!window.FB_READY) return;
+  const results = await window.FB.getAllResults();
+  if (!results.length) {
+    document.getElementById('lb-podium').innerHTML='<div style="color:var(--text3);font-size:13px;font-family:\'JetBrains Mono\',monospace;">No results yet. Take a quiz!</div>';
+    document.getElementById('lb-list').innerHTML='';
+    return;
+  }
+  // Best score per name per quiz
+  const best = {};
+  results.forEach(r=>{
+    const key = r.name+'::'+r.quizId;
+    if (!best[key] || r.percent > best[key].percent) best[key] = r;
+  });
+  const sorted = Object.values(best).sort((a,b)=>b.percent-a.percent).slice(0,20);
+
+  // Podium (top 3)
+  const top = sorted.slice(0,3);
+  const order = [1,0,2]; // show 2nd, 1st, 3rd
+  const pClasses = ['p2','p1','p3'];
+  const pEmojis = ['🥈','🥇','🥉'];
+  document.getElementById('lb-podium').innerHTML = order.filter(i=>top[i]).map((i,j)=>`
+    <div class="lb-podium-item">
+      <div class="lb-podium-name">${top[i].name}</div>
+      <div class="lb-podium-block ${pClasses[j]}">${pEmojis[j]}</div>
+      <div style="font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text3);">${top[i].percent}%</div>
+    </div>`).join('');
+
+  document.getElementById('lb-list').innerHTML = sorted.map((r,i)=>`
+    <div class="lb-row">
+      <div class="lb-rank" style="color:${i===0?'var(--accent4)':i===1?'var(--text)':i===2?'var(--accent2)':'var(--text3)'};">${i+1}</div>
+      <div class="post-avatar" style="width:32px;height:32px;font-size:13px;">${r.name[0].toUpperCase()}</div>
+      <div><div class="lb-name">${r.name}</div><div class="lb-quiz">${r.quiz}</div></div>
+      <div style="text-align:right;"><div class="lb-score">${r.percent}%</div><div class="lb-quiz">${r.date}</div></div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+//  DISCUSSION
+// ══════════════════════════════════════════════════════════
+async function submitPost() {
+  const author = document.getElementById('post-author').value.trim();
+  const body   = document.getElementById('post-body').value.trim();
+  const err    = document.getElementById('post-error');
+  if (!author||!body) { showErr(err,'❌ Enter your name and message.'); return; }
+
+  if (window.FB_READY) {
+    const blocked = await window.FB.isBlocked(author);
+    if (blocked) { showErr(err,'⛔ You are blocked from posting. Contact Bravehart.'); return; }
+    await window.FB.savePost({ author, body, ts: Date.now() });
+  }
+  document.getElementById('post-body').value='';
+}
+
+function loadPosts() {
+  if (!window.FB_READY) return;
+  window.FB.onPosts(posts=>{
+    const list = document.getElementById('post-list');
+    if (!posts.length) { list.innerHTML='<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No posts yet. Start the conversation!</div>'; return; }
+    list.innerHTML = posts.map(p=>`
+      <div class="post-item">
+        <div class="post-item-hdr">
+          <div class="post-avatar">${p.author[0].toUpperCase()}</div>
+          <div><div class="post-author">${p.author}</div><div class="post-time">${new Date(p.ts).toLocaleString()}</div></div>
+          ${_isAdmin?`<button class="post-delete-btn" onclick="deletePost('${p._key}')">🗑️</button>`:''}
+        </div>
+        <div class="post-body">${p.body}</div>
+      </div>`).join('');
+  });
+}
+
+function deletePost(key) {
+  if (confirm('Delete this post?') && window.FB_READY) window.FB.deletePost(key);
+}
+
+// ══════════════════════════════════════════════════════════
+//  ATTENDANCE
+// ══════════════════════════════════════════════════════════
+async function doCheckIn() {
+  const name = document.getElementById('checkin-name').value.trim();
+  const err  = document.getElementById('checkin-error');
+  if (!name) { showErr(err,'❌ Enter your name first.'); return; }
+  if (window.FB_READY) {
+    const blocked = await window.FB.isBlocked(name);
+    if (blocked) { showErr(err,'⛔ You are blocked. Contact Bravehart.'); return; }
+    await window.FB.checkIn(name);
+  }
+  alert(`✅ ${name} checked in for today!`);
+  loadAttendance();
+}
+
+function loadAttendance() {
+  if (!window.FB_READY) return;
+  window.FB.onAttendance(att=>{
+    const grid = document.getElementById('att-grid');
+    const today = new Date().toISOString().split('T')[0];
+    const members = Object.entries(att);
+    if (!members.length) { grid.innerHTML='<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No attendance yet.</div>'; return; }
+    grid.innerHTML = members.map(([key,days])=>{
+      const dayList = Object.keys(days).sort().reverse();
+      const checkedToday = dayList[0]===today;
+      let streak=0, d=new Date();
+      for(const day of dayList){if(day===d.toISOString().split('T')[0]){streak++;d.setDate(d.getDate()-1);}else break;}
+      const name = days[dayList[0]].name || key.replace(/_/g,' ');
+      return `<div class="att-card">
+        <div class="att-avatar" style="background:${checkedToday?'linear-gradient(135deg,var(--accent3),#06d6a0)':'linear-gradient(135deg,var(--text3),#333)'};">${name[0].toUpperCase()}</div>
+        <div><div class="att-name">${name} ${checkedToday?'✅':''}</div><div class="att-streak">🔥 ${streak} day streak</div><div class="att-last">Last: ${dayList[0]}</div></div>
+      </div>`;
+    }).join('');
+  });
+}
+
+// ══════════════════════════════════════════════════════════
+//  ADMIN — MEMBERS
+// ══════════════════════════════════════════════════════════
+async function adminAddMember() {
+  const name  = document.getElementById('nm-name').value.trim();
+  const email = document.getElementById('nm-email').value.trim();
+  const phone = document.getElementById('nm-phone').value.trim();
+  const code  = document.getElementById('nm-code').value.trim();
+  const fb    = document.getElementById('nm-feedback');
+  if (!name||!email||!code) { showFeedback(fb,'❌ Name, email, and code are required.','var(--accent2)'); return; }
+  if (code.length < 6)      { showFeedback(fb,'❌ Code must be at least 6 characters.','var(--accent2)'); return; }
+  if (!window.FB_READY)     { showFeedback(fb,'⚠️ Firebase not ready.','var(--accent4)'); return; }
+  const uid = 'm_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+  const codeHash = await sha256(code);
+  await window.FB.createMember(uid,{name,email,phone:phone||'',codeHash,active:true,createdAt:Date.now()});
+  showFeedback(fb,`✅ Member "${name}" added!`,'var(--accent3)');
+  document.getElementById('nm-name').value='';
+  document.getElementById('nm-email').value='';
+  document.getElementById('nm-phone').value='';
+  document.getElementById('nm-code').value='';
+  loadAdminMembers();
+}
+
+async function loadAdminMembers() {
+  if (!window.FB_READY) return;
+  const members = await window.FB.getAllMembers();
+  const list = document.getElementById('admin-members-list');
+  if (!Object.keys(members).length) { list.innerHTML='<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No members yet.</div>'; return; }
+  list.innerHTML = Object.entries(members).map(([uid,m])=>`
+    <div class="member-row">
+      <div class="member-row-avatar">${(m.name||'?')[0].toUpperCase()}</div>
+      <div>
+        <div class="member-row-name">${m.name}</div>
+        <div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${m.email} ${m.phone?'· '+m.phone:''}</div>
+      </div>
+      <span class="chip ${m.active===false?'chip-red':'chip-green'}">${m.active===false?'Deactivated':'Active'}</span>
+      <div class="member-actions">
+        <button class="member-action-btn mab-reset" onclick="resetMemberCode('${uid}','${m.name}')">Reset Code</button>
+        <button class="member-action-btn mab-toggle" onclick="toggleMember('${uid}',${m.active!==false})">${m.active===false?'Activate':'Deactivate'}</button>
+        <button class="member-action-btn mab-bind" onclick="resetDeviceBinding('${uid}','${m.name}')">Reset Device</button>
+        <button class="member-action-btn mab-delete" onclick="deleteMember('${uid}','${m.name}')">Delete</button>
+      </div>
+    </div>`).join('');
+}
+
+async function resetMemberCode(uid, name) {
+  const code = prompt(`New access code for ${name} (min 6 chars):`);
+  if (!code||code.length<6) { alert('Code must be at least 6 characters.'); return; }
+  const h = await sha256(code);
+  await window.FB.updateMember(uid,{codeHash:h});
+  alert(`✅ Code reset for ${name}.`);
+}
+
+async function toggleMember(uid, currentlyActive) {
+  await window.FB.updateMember(uid,{active:!currentlyActive});
+  if (currentlyActive) { await window.FB.clearSession(uid).catch(()=>{}); }
+  loadAdminMembers();
+}
+
+async function deleteMember(uid, name) {
+  if (!confirm(`Delete member "${name}"? This cannot be undone.`)) return;
+  await window.FB.deleteMember(uid);
+  await window.FB.clearSession(uid).catch(()=>{});
+  await window.FB.clearDeviceBinding(uid).catch(()=>{});
+  loadAdminMembers();
+}
+
+async function resetDeviceBinding(uid, name) {
+  if (!confirm(`Reset device binding for "${name}"? They can log in from any device once.`)) return;
+  await window.FB.clearDeviceBinding(uid);
+  alert(`✅ Device binding cleared for ${name}.`);
+}
+
+// ── Blocklist ──────────────────────────────────────────────
+async function blockMember() {
+  const name = document.getElementById('block-name').value.trim();
+  if (!name) return;
+  if (window.FB_READY) await window.FB.addBlock(name);
+  document.getElementById('block-name').value='';
+  loadBlocklist();
+}
+
+async function loadBlocklist() {
+  if (!window.FB_READY) return;
+  const blocked = await window.FB.getBlocklist();
+  const el = document.getElementById('blocklist');
+  if (!el) return;
+  el.innerHTML = blocked.length
+    ? blocked.map(n=>`<span class="blocklist-tag">${n}<button onclick="unblockMember('${n}')">×</button></span>`).join('')
+    : '<div style="color:var(--text3);font-size:11px;font-family:\'JetBrains Mono\',monospace;">No blocked members.</div>';
+}
+
+async function unblockMember(name) {
+  if (window.FB_READY) await window.FB.removeBlock(name);
+  loadBlocklist();
+}
+
+// ── Admin Tabs ─────────────────────────────────────────────
+function switchAdminTab(id) {
+  document.querySelectorAll('.stab').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.stab-panel').forEach(p=>{p.classList.remove('active');p.style.display='none';});
+  document.getElementById('stab-'+id).classList.add('active');
+  const panel = document.getElementById('stab-panel-'+id);
+  panel.classList.add('active'); panel.style.display='block';
+  if (id==='stats') { loadAdminStats(); loadAdminAttempts(); }
+  if (id==='danger') loadAdminPosts();
+  if (id==='security') { loadAdminMembers(); loadDeviceBindings(); }
+}
+
+// ── Admin Stats ────────────────────────────────────────────
+async function loadAdminStats() {
+  if (!window.FB_READY) return;
+  const [members, results, posts, flashcards] = await Promise.all([
+    window.FB.getAllMembers(), window.FB.getAllResults(),
+    window.FB.getPosts(), window.FB.getFlashcards()
+  ]);
+  const totalCards = flashcards.length + BUILTIN_FLASHCARDS.length;
+  document.getElementById('admin-stats-content').innerHTML = `
+    👥 Total Members: <strong>${Object.keys(members).length}</strong><br>
+    📝 Quiz Attempts: <strong>${results.length}</strong><br>
+    💬 Discussion Posts: <strong>${posts.length}</strong><br>
+    🃏 Total Flashcards: <strong>${totalCards}</strong><br>
+    📚 Built-in Notes: <strong>${NOTES_DATA.length}</strong><br>
+    🧠 Quiz Sets: <strong>${BUILTIN_QUIZZES.length}</strong><br>
+    💻 C Challenges: <strong>${C_CHALLENGES.length}</strong>`;
+}
+
+async function loadAdminAttempts() {
+  if (!window.FB_READY) return;
+  const results = await window.FB.getAllResults();
+  const el = document.getElementById('admin-attempts');
+  if (!el) return;
+  if (!results.length) { el.innerHTML='<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No attempts yet.</div>'; return; }
+  el.innerHTML = results.slice().reverse().map(r=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">
+      <div class="post-avatar" style="width:28px;height:28px;font-size:11px;">${(r.name||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;"><strong>${r.name}</strong><br><span style="color:var(--text3);font-family:'JetBrains Mono',monospace;font-size:10px;">${r.quiz}</span></div>
+      <span class="chip ${r.percent>=60?'chip-green':'chip-red'}">${r.percent}%</span>
+      <span style="color:var(--text3);font-size:10px;font-family:'JetBrains Mono',monospace;">${r.date}</span>
+    </div>`).join('');
+}
+
+async function loadAdminPosts() {
+  if (!window.FB_READY) return;
+  const posts = await window.FB.getPosts();
+  const el = document.getElementById('admin-posts-list');
+  if (!el) return;
+  if (!posts.length) { el.innerHTML='<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No posts.</div>'; return; }
+  el.innerHTML = posts.map(p=>`
+    <div style="display:flex;align-items:flex-start;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">
+      <div style="flex:1;"><strong>${p.author}</strong>: ${p.body.slice(0,80)}${p.body.length>80?'...':''}</div>
+      <button class="member-action-btn mab-delete" onclick="deletePost('${p._key}')">Delete</button>
+    </div>`).join('');
+}
+
+async function loadDeviceBindings() {
+  if (!window.FB_READY) return;
+  const members = await window.FB.getAllMembers();
+  const el = document.getElementById('device-binding-list');
+  if (!el) return;
+  const entries = Object.entries(members);
+  if (!entries.length) { el.innerHTML='<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No members.</div>'; return; }
+  el.innerHTML = entries.map(([uid,m])=>`
+    <div class="member-row">
+      <div class="member-row-avatar">${(m.name||'?')[0].toUpperCase()}</div>
+      <div style="flex:1;"><div class="member-row-name">${m.name}</div><div style="font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace;">${m.email}</div></div>
+      <button class="member-action-btn mab-bind" onclick="resetDeviceBinding('${uid}','${m.name}')">Reset Device Binding</button>
+    </div>`).join('');
+}
+
+// ── Danger Zone ────────────────────────────────────────────
+async function clearAllResults() {
+  if (!confirm('Clear ALL quiz results? This is permanent.')) return;
+  if (window.FB_READY) await window.FB.clearResults();
+  alert('✅ All results cleared.');
+  loadLeaderboard();
+}
+async function clearAllPostsAdmin() {
+  if (!confirm('Clear ALL posts? Permanent.')) return;
+  if (window.FB_READY) await window.FB.clearPosts();
+  alert('✅ All posts cleared.');
+}
+async function clearAllSessions() {
+  if (!confirm('Force logout ALL members? They will need to re-login.')) return;
+  if (window.FB_READY) {
+    const members = await window.FB.getAllMembers();
+    const promises = Object.keys(members).map(uid=>window.FB.clearSession(uid));
+    await Promise.all(promises);
+  }
+  alert('✅ All member sessions cleared.');
+}
+
+function exportResults() {
+  if (!window.FB_READY) return;
+  window.FB.getAllResults().then(results=>{
+    const csv = 'Name,Quiz,Score,Percent,Date\n' + results.map(r=>`${r.name},${r.quiz},${r.score}/${r.total},${r.percent}%,${r.date}`).join('\n');
+    const blob = new Blob([csv], {type:'text/csv'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'rdl_results.csv';
+    a.click();
+  });
+}
+
+// ── Admin Quiz Question ────────────────────────────────────
+async function adminAddQuestion() {
+  const qid  = document.getElementById('add-q-quiz').value;
+  const text = document.getElementById('add-q-text').value.trim();
+  const a    = document.getElementById('add-q-a').value.trim();
+  const b    = document.getElementById('add-q-b').value.trim();
+  const c    = document.getElementById('add-q-c').value.trim();
+  const d    = document.getElementById('add-q-d').value.trim();
+  const ans  = parseInt(document.getElementById('add-q-ans').value);
+  const exp  = document.getElementById('add-q-exp').value.trim();
+  const st   = document.getElementById('quiz-add-status');
+  if (!text||!a||!b||!c||!d) { showFeedback(st,'❌ Fill all fields.','var(--accent2)'); return; }
+  const quiz = BUILTIN_QUIZZES.find(q=>q.id===qid);
+  if (quiz) { quiz.questions.push({q:text,opts:[a,b,c,d],ans,exp}); }
+  ['add-q-text','add-q-a','add-q-b','add-q-c','add-q-d','add-q-exp'].forEach(id=>document.getElementById(id).value='');
+  showFeedback(st,`✅ Question added to ${qid.toUpperCase()}!`,'var(--accent3)');
+}
+
+// ── Admin Flashcard ────────────────────────────────────────
+async function adminAddFlashcard() {
+  const course = document.getElementById('add-fc-course').value;
+  const q      = document.getElementById('add-fc-q').value.trim();
+  const a      = document.getElementById('add-fc-a').value.trim();
+  const st     = document.getElementById('fc-add-status');
+  if (!q||!a) { showFeedback(st,'❌ Question and answer are required.','var(--accent2)'); return; }
+  if (window.FB_READY) await window.FB.saveFlashcard({course,q,a,ts:Date.now()});
+  document.getElementById('add-fc-q').value='';
+  document.getElementById('add-fc-a').value='';
+  showFeedback(st,`✅ Flashcard added for ${course}!`,'var(--accent3)');
+  loadFlashcards();
+}
+
+// ── Admin File Upload ──────────────────────────────────────
+async function uploadCourseFile() {
+  const file   = document.getElementById('file-upload').files[0];
+  const course = document.getElementById('upload-course').value;
+  const label  = document.getElementById('upload-label').value.trim();
+  const st     = document.getElementById('file-status');
+  if (!file) return;
+  showFeedback(st,'⏳ Uploading...','var(--accent4)'); st.style.display='block';
+  try {
+    await window.FB.uploadFile(file, course, label||file.name);
+    showFeedback(st,`✅ Uploaded to ${course}!`,'var(--accent3)');
+    document.getElementById('upload-label').value='';
+    loadUploadedFiles();
+  } catch(e) {
+    showFeedback(st,'❌ Upload failed: '+e.message,'var(--accent2)');
+  }
+}
+
+// ── Admin Password Change ──────────────────────────────────
+async function changeAdminPassword() {
+  const cur  = document.getElementById('current-admin-pw').value.trim();
+  const nw   = document.getElementById('new-admin-pw').value.trim();
+  const conf = document.getElementById('confirm-admin-pw').value.trim();
+  const st   = document.getElementById('pw-change-status');
+  if (!cur||!nw||!conf) { showFeedback(st,'❌ Fill all fields.','var(--accent2)'); return; }
+  if (nw.length<6)      { showFeedback(st,'❌ New password must be at least 6 characters.','var(--accent2)'); return; }
+  if (nw!==conf)        { showFeedback(st,'❌ New passwords do not match.','var(--accent2)'); return; }
+  const stored = await window.FB.getAdminHash();
+  const curHash = await sha256(cur);
+  if (stored && curHash!==stored) { showFeedback(st,'❌ Current password is wrong.','var(--accent2)'); return; }
+  await window.FB.setAdminHash(await sha256(nw));
+  showFeedback(st,'✅ Password changed successfully!','var(--accent3)');
+  ['current-admin-pw','new-admin-pw','confirm-admin-pw'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ── Helpers ────────────────────────────────────────────────
+function showFeedback(el, msg, color) {
+  el.textContent=msg; el.style.color=color; el.style.display='block';
+  setTimeout(()=>el.style.display='none', 3500);
+}
+
+// Close notifications on outside click
+document.addEventListener('click', e=>{
+  const panel = document.getElementById('notif-panel');
+  const btn   = document.getElementById('notif-btn');
+  if (panel && !panel.contains(e.target) && !btn.contains(e.target)) {
+    panel.classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>
