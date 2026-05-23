@@ -624,11 +624,6 @@ select.form-input{cursor:pointer;}
         <div class="sidebar-section-label">Admin</div>
         <div class="nav-item" id="nav-admin" onclick="showView('admin')"><span class="nav-icon">🛡️</span> Admin Panel</div>
       </div>
-      <div class="sidebar-section">
-        <div class="sidebar-section-label">Practice</div>
-        <div class="nav-item" id="nav-clearn" onclick="showView('clearn')"><span class="nav-icon">🎬</span> C Video Lessons</div>
-        <div class="nav-item" id="nav-sql" onclick="showView('sql')"><span class="nav-icon">🗄️</span> MySQL Practice</div>
-      </div>
     </nav>
 
     <!-- MAIN CONTENT -->
@@ -671,8 +666,12 @@ select.form-input{cursor:pointer;}
               <div class="activity-item"><div class="activity-dot" style="background:#a78bfa;"></div><div><strong style="font-size:12px;">BSM 121</strong> — Research Methods</div></div>
             </div>
             <div class="section-title" style="margin-top:20px;">PDF Resources</div>
-            <div id="home-pdfs">
-              <div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">Loading resources...</div>
+            <div style="display:flex;flex-direction:column;gap:6px;" id="home-pdfs">
+              <a href="CSC122_Structured_Software_Dev.pdf" target="_blank" class="pdf-link-btn">📄 CSC 122 — Structured Software Dev</a>
+              <a href="CSC121_Computer_Hardware_Maintenance.pdf" target="_blank" class="pdf-link-btn">📄 CSC 121 — Hardware Maintenance</a>
+              <a href="CSC123_Database_Systems_Design_I.pdf" target="_blank" class="pdf-link-btn">📄 CSC 123 — Database Systems</a>
+              <a href="ICT121_Computer_Workshop_Practice.pdf" target="_blank" class="pdf-link-btn">📄 ICT 121 — Workshop Practice</a>
+              <a href="BSM121_Research_Methods.pdf" target="_blank" class="pdf-link-btn">📄 BSM 121 — Research Methods</a>
             </div>
           </div>
         </div>
@@ -693,10 +692,15 @@ select.form-input{cursor:pointer;}
           <div class="course-tab" onclick="filterNotes('bsm121',this)">BSM 121</div>
         </div>
         <div class="notes-grid fade-in" id="notes-grid"></div>
-        <div style="margin-top:24px;" id="notes-pdf-section">
-          <div class="section-title">📥 PDF Downloads</div>
-          <div id="notes-pdf-links">
-            <div style="font-size:12px;color:var(--text3);font-family:'JetBrains Mono',monospace;">Loading...</div>
+        <div style="margin-top:24px;">
+          <div class="section-title">📥 Download Full PDFs</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <a href="CSC122_Structured_Software_Dev.pdf" target="_blank" class="pdf-link-btn">📄 CSC 122 PDF</a>
+            <a href="CSC121_Computer_Hardware_Maintenance.pdf" target="_blank" class="pdf-link-btn">📄 CSC 121 PDF</a>
+            <a href="CSC123_Database_Systems_Design_I.pdf" target="_blank" class="pdf-link-btn">📄 CSC 123 PDF</a>
+            <a href="ICT121_Computer_Workshop_Practice.pdf" target="_blank" class="pdf-link-btn">📄 ICT 121 PDF</a>
+            <a href="BSM121_Research_Methods.pdf" target="_blank" class="pdf-link-btn">📄 BSM 121 PDF</a>
+            <a href="Diploma-in-DCS.pdf" target="_blank" class="pdf-link-btn">🎓 Diploma DCS Programme</a>
           </div>
         </div>
         <!-- Admin: extra uploaded files -->
@@ -877,14 +881,12 @@ int main() {
             </div>
           </div>
         </div>
-        <!-- PDF & Doc Resources — admin only -->
-        <div id="clearn-resources-admin" style="display:none;">
-          <div class="section-title fade-in">📄 Resources <span class="chip chip-red" style="font-size:9px;">ADMIN ONLY</span></div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;" class="fade-in">
-            <a href="LEARN C PROGRAMMING WITH EASE/Common_C_Mistakes.pdf" target="_blank" download class="pdf-link-btn">📄 Common C Mistakes (PDF)</a>
-            <a href="LEARN C PROGRAMMING WITH EASE/project ideas.docx" target="_blank" download class="pdf-link-btn">📄 C Project Ideas (DOCX)</a>
-            <a href="LEARN C PROGRAMMING WITH EASE/c learner videos/C learner video guide 1.pdf" target="_blank" download class="pdf-link-btn">📄 Video Guide 1 (PDF)</a>
-          </div>
+        <!-- PDF & Doc Resources -->
+        <div class="section-title fade-in">📄 Resources</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px;" class="fade-in">
+          <a href="LEARN C PROGRAMMING WITH EASE/Common_C_Mistakes.pdf" target="_blank" class="pdf-link-btn">📄 Common C Mistakes (PDF)</a>
+          <a href="LEARN C PROGRAMMING WITH EASE/project ideas.docx" target="_blank" class="pdf-link-btn">📄 C Project Ideas (DOCX)</a>
+          <a href="LEARN C PROGRAMMING WITH EASE/c learner videos/C learner video guide 1.pdf" target="_blank" class="pdf-link-btn">📄 Video Guide 1 (PDF)</a>
         </div>
         <!-- Video List -->
         <div class="section-title fade-in">🎬 Video Lessons</div>
@@ -895,114 +897,6 @@ int main() {
             These .mp4 files are stored locally in your <code>LEARN C PROGRAMMING WITH EASE/c learner videos/</code> folder.<br>
             To watch them here, you can run a local server: <code>python3 -m http.server 8080</code> from your project root,<br>
             then visit <code>http://localhost:8080</code> — the videos will stream directly.
-          </div>
-        </div>
-      </div>
-
-      <!-- ── MySQL PRACTICE ── -->
-      <div class="view" id="view-sql">
-        <div class="page-hdr fade-in">
-          <h1>🗄️ MySQL Practice</h1>
-          <p>Write SQL, see simulated results — <span>CSC 123 · Database Systems</span></p>
-        </div>
-
-        <!-- SQL Editor -->
-        <div class="code-layout fade-in" style="margin-bottom:20px;">
-          <div class="code-panel">
-            <div class="code-panel-hdr">
-              <span style="font-size:14px;">📝</span>
-              <h3>SQL Editor</h3>
-              <select id="sql-challenge-select" class="form-input" style="width:auto;padding:5px 10px;font-size:11px;" onchange="loadSQLChallenge()">
-                <option value="">-- Load Exercise --</option>
-              </select>
-              <button class="btn btn-green" style="font-size:11px;padding:6px 12px;" onclick="runSQL()">▶ Run</button>
-              <button class="btn btn-ghost" style="font-size:11px;padding:6px 10px;" onclick="clearSQL()">Clear</button>
-              <button class="btn btn-ghost" style="font-size:11px;padding:6px 10px;color:var(--accent4);border-color:rgba(247,183,49,.3);" onclick="resetSQLDB()" title="Restore all sample data">↺ Reset DB</button>
-            </div>
-            <textarea class="code-editor" id="sql-editor" spellcheck="false" placeholder="-- Write your MySQL query here...
-SELECT * FROM students;"></textarea>
-          </div>
-          <div class="code-panel">
-            <div class="code-panel-hdr">
-              <span style="font-size:14px;">📊</span>
-              <h3>Query Result</h3>
-              <button class="btn btn-ghost" style="font-size:11px;padding:6px 10px;" onclick="clearSQLOutput()">Clear</button>
-            </div>
-            <div class="code-output" id="sql-output">
-              <div class="output-info">-- Results appear here after you run a query</div>
-              <div class="output-info">-- Sample tables pre-loaded: students, courses, enrollments</div>
-              <div class="output-info">-- Type a query and click ▶ Run</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Schema Reference -->
-        <div style="margin-bottom:20px;" class="fade-in">
-          <div class="section-title">📋 Available Tables (Sample Database)</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
-            <div class="card" style="font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.8;">
-              <div style="font-weight:700;color:var(--accent);margin-bottom:8px;">📌 students</div>
-              <div style="color:var(--text3);">id INT PRIMARY KEY</div>
-              <div style="color:var(--text3);">name VARCHAR(100)</div>
-              <div style="color:var(--text3);">email VARCHAR(100)</div>
-              <div style="color:var(--text3);">marks INT</div>
-              <div style="color:var(--text3);">course_id INT (FK)</div>
-            </div>
-            <div class="card" style="font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.8;">
-              <div style="font-weight:700;color:var(--accent2);margin-bottom:8px;">📌 courses</div>
-              <div style="color:var(--text3);">id INT PRIMARY KEY</div>
-              <div style="color:var(--text3);">title VARCHAR(100)</div>
-              <div style="color:var(--text3);">code VARCHAR(20)</div>
-              <div style="color:var(--text3);">credits INT</div>
-            </div>
-            <div class="card" style="font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.8;">
-              <div style="font-weight:700;color:var(--accent3);margin-bottom:8px;">📌 enrollments</div>
-              <div style="color:var(--text3);">id INT PRIMARY KEY</div>
-              <div style="color:var(--text3);">student_id INT (FK)</div>
-              <div style="color:var(--text3);">course_id INT (FK)</div>
-              <div style="color:var(--text3);">grade VARCHAR(2)</div>
-              <div style="color:var(--text3);">semester VARCHAR(20)</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- SQL Exercises -->
-        <div class="section-title fade-in">📚 Practice Exercises</div>
-        <div class="challenges-list fade-in" id="sql-challenges-list"></div>
-
-        <!-- Quick Reference -->
-        <div style="margin-top:24px;" class="fade-in">
-          <div class="section-title">⚡ Quick SQL Reference</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">
-            <div class="card">
-              <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">SELECT</div>
-              <pre style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.7;overflow-x:auto;">SELECT col1, col2
-FROM table
-WHERE condition
-ORDER BY col DESC
-LIMIT 10;</pre>
-            </div>
-            <div class="card">
-              <div style="font-size:12px;font-weight:700;color:var(--accent2);margin-bottom:8px;">INSERT / UPDATE / DELETE</div>
-              <pre style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.7;overflow-x:auto;">INSERT INTO t (col) VALUES (val);
-UPDATE t SET col=val WHERE id=1;
-DELETE FROM t WHERE id=1;</pre>
-            </div>
-            <div class="card">
-              <div style="font-size:12px;font-weight:700;color:var(--accent3);margin-bottom:8px;">JOINS</div>
-              <pre style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.7;overflow-x:auto;">SELECT s.name, c.title
-FROM students s
-INNER JOIN courses c
-  ON s.course_id = c.id;</pre>
-            </div>
-            <div class="card">
-              <div style="font-size:12px;font-weight:700;color:var(--accent4);margin-bottom:8px;">AGGREGATE</div>
-              <pre style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;line-height:1.7;overflow-x:auto;">SELECT COUNT(*), AVG(marks),
-       MAX(marks), MIN(marks)
-FROM students
-GROUP BY course_id
-HAVING AVG(marks) > 60;</pre>
-            </div>
           </div>
         </div>
       </div>
@@ -1270,7 +1164,6 @@ HAVING AVG(marks) > 60;</pre>
   <div style="font-size:10px;font-weight:700;letter-spacing:2px;color:var(--text3);font-family:'JetBrains Mono',monospace;padding:0 10px 8px;border-bottom:1px solid var(--border);margin-bottom:6px;">MORE PAGES</div>
   <div class="mob-more-item" onclick="showView('code');setMobActive('code');closeMobMore()"><span class="mob-more-icon">💻</span><span>C Practice</span></div>
   <div class="mob-more-item" onclick="showView('clearn');setMobActive('clearn');closeMobMore()"><span class="mob-more-icon">🎬</span><span>C Video Lessons</span></div>
-  <div class="mob-more-item" onclick="showView('sql');setMobActive('sql');closeMobMore()"><span class="mob-more-icon">🗄️</span><span>MySQL Practice</span></div>
   <div class="mob-more-item" onclick="showView('lb');setMobActive('lb');closeMobMore()"><span class="mob-more-icon">🏆</span><span>Leaderboard</span></div>
   <div class="mob-more-item" onclick="showView('discuss');setMobActive('discuss');closeMobMore()"><span class="mob-more-icon">💬</span><span>Discussion</span></div>
   <div class="mob-more-item" onclick="showView('attend');setMobActive('attend');closeMobMore()"><span class="mob-more-icon">📆</span><span>Attendance</span></div>
@@ -1564,7 +1457,6 @@ function logout() {
 //  APP INIT
 // ══════════════════════════════════════════════════════════
 function initApp() {
-  renderPDFLinks();
   loadNotifications();
   loadAnnouncement();
   renderNotes();
@@ -1573,8 +1465,6 @@ function initApp() {
   loadPosts();
   loadLeaderboard();
   loadAttendance();
-  buildChallenges();
-  buildSQLChallenges();
   if (_isAdmin) {
     loadAdminMembers();
     loadBlocklist();
@@ -1584,6 +1474,7 @@ function initApp() {
     loadDeviceBindings();
   }
   updateHomeStats();
+  buildChallenges();
 }
 
 function showView(id) {
@@ -2254,44 +2145,6 @@ const C_VIDEOS = [
 
 const VIDEO_BASE = 'LEARN C PROGRAMMING WITH EASE/c learner videos/';
 
-function renderPDFLinks() {
-  // Admin-only: show actual download links; members see a "ask Bravehart" notice
-  const PDF_FILES = [
-    {label:'CSC 122 — Structured Software Dev', file:'CSC122_Structured_Software_Dev.pdf'},
-    {label:'CSC 121 — Hardware Maintenance',     file:'CSC121_Computer_Hardware_Maintenance.pdf'},
-    {label:'CSC 123 — Database Systems',         file:'CSC123_Database_Systems_Design_I.pdf'},
-    {label:'ICT 121 — Workshop Practice',        file:'ICT121_Computer_Workshop_Practice.pdf'},
-    {label:'BSM 121 — Research Methods',         file:'BSM121_Research_Methods.pdf'},
-    {label:'Diploma in DCS Programme',           file:'Diploma-in-DCS.pdf'},
-  ];
-
-  const homePdfs  = document.getElementById('home-pdfs');
-  const notesPdfs = document.getElementById('notes-pdf-links');
-  const clAdmin   = document.getElementById('clearn-resources-admin');
-
-  if (_isAdmin) {
-    // Show full download links
-    const html = `<div style="display:flex;flex-wrap:wrap;gap:8px;">` +
-      PDF_FILES.map(p=>`<a href="${p.file}" target="_blank" download class="pdf-link-btn">📄 ${p.label}</a>`).join('') +
-      `</div>`;
-    if (homePdfs)  homePdfs.innerHTML  = html;
-    if (notesPdfs) notesPdfs.innerHTML = html;
-    if (clAdmin)   clAdmin.style.display = 'block';
-  } else {
-    // Members: view-only (no download attribute), no direct file links
-    const html = `<div style="display:flex;flex-wrap:wrap;gap:8px;">` +
-      PDF_FILES.map(p=>
-        `<div class="pdf-link-btn" style="cursor:default;opacity:.7;" title="Downloads restricted — contact Bravehart">
-           🔒 ${p.label}
-         </div>`
-      ).join('') +
-      `</div><div style="font-size:11px;color:var(--text3);font-family:'JetBrains Mono',monospace;margin-top:8px;">📌 PDF downloads are admin-only. Use the Study Notes cards to read content.</div>`;
-    if (homePdfs)  homePdfs.innerHTML  = html;
-    if (notesPdfs) notesPdfs.innerHTML = html;
-    if (clAdmin)   clAdmin.style.display = 'none';
-  }
-}
-
 function buildCVideoGrid() {
   const grid = document.getElementById('clearn-video-grid');
   if (!grid) return;
@@ -2311,10 +2164,10 @@ function buildCVideoGrid() {
             <span class="chip chip-green" style="font-size:9px;margin-top:4px;">${v.topic}</span>
           </div>
         </div>
-        <video src="${path}" controls preload="none" style="width:100%;border-radius:8px;background:#000;max-height:180px;">
+        <video src="${path}" controls preload="none" style="width:100%;border-radius:8px;background:#000;max-height:180px;" poster="">
           Your browser does not support video.
         </video>
-        ${_isAdmin ? `<a href="${path}" download class="pdf-link-btn" style="margin-top:10px;font-size:11px;">⬇️ Download</a>` : ''}
+        <a href="${path}" download class="pdf-link-btn" style="margin-top:10px;font-size:11px;">⬇️ Download</a>
       </div>`;
     });
   });
@@ -2627,1019 +2480,43 @@ function loadChallenge() {
 }
 
 function runCode() {
-  const raw = document.getElementById('code-editor').value;
-  const out = document.getElementById('code-output');
+  const code = document.getElementById('code-editor').value;
+  const out  = document.getElementById('code-output');
   out.innerHTML = '';
+
+  // Simulated C execution — parse printf patterns
   const lines = [];
-
-  // ── basic structural checks ──────────────────────────────
-  if (!raw.includes('main')) {
-    lines.push({t:'err', v:'Error: no main() function found.'});
-    render(lines, out); return;
-  }
-
-  lines.push({t:'info', v:'// ✅ Simulated C execution — TheRealistDevLab'});
-  lines.push({t:'info', v:'// ─────────────────────────────────────'});
-
-  try {
-    const output = simulateC(raw);
-    if (output.length === 0) {
-      lines.push({t:'info', v:'// (no output — no printf() calls reached)'});
-    } else {
-      output.forEach(l => lines.push(l));
-    }
-  } catch(e) {
-    lines.push({t:'err', v:'Runtime error: ' + e.message});
-  }
-
-  // ── extra warnings ───────────────────────────────────────
-  if (raw.includes('malloc') && !raw.includes('free'))
-    lines.push({t:'err', v:'⚠ Warning: malloc() without free() — memory leak risk!'});
-  if (/\bif\s*\([^=!<>()]*=[^=]/.test(raw))
-    lines.push({t:'err', v:'⚠ Warning: possible assignment inside if() — did you mean ==?'});
-  if (raw.includes('scanf'))
-    lines.push({t:'info', v:'// Note: scanf() needs real input — simulated as 0 here.'});
-
-  render(lines, out);
-}
-
-function render(lines, out) {
-  out.innerHTML = lines.map(l =>
-    `<div class="output-line output-${l.t==='err'?'err':l.t==='info'?'info':'ok'}">${escHtml(l.v)}</div>`
-  ).join('');
-}
-
-// ── C Simulator ──────────────────────────────────────────────
-function simulateC(code) {
-  // Strip comments
-  code = code.replace(/\/\/[^\n]*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
-
-  // Extract main body
-  const mainMatch = code.match(/int\s+main\s*\([^)]*\)\s*\{([\s\S]*)\}/);
-  if (!mainMatch) return [{t:'err', v:'Could not parse main() body.'}];
-  let body = mainMatch[1];
-
-  // Also pull in any function definitions above main (for user-defined functions, basic support)
-  const output = [];
-  const vars = {}; // variable store: name -> value
-
-  // Evaluate the body line by line (simplified interpreter)
-  const stmts = splitStatements(body);
-  evalStmts(stmts, vars, output, code, 0);
-  return output;
-}
-
-function splitStatements(body) {
-  // Split on semicolons and braces, keeping structure
-  const stmts = [];
-  let depth = 0, cur = '', i = 0;
-  while (i < body.length) {
-    const ch = body[i];
-    if (ch === '{') { depth++; cur += ch; }
-    else if (ch === '}') {
-      depth--;
-      cur += ch;
-      if (depth === 0) { stmts.push(cur.trim()); cur = ''; }
-    } else if (ch === ';' && depth === 0) {
-      cur += ch;
-      stmts.push(cur.trim());
-      cur = '';
-    } else { cur += ch; }
-    i++;
-  }
-  if (cur.trim()) stmts.push(cur.trim());
-  return stmts.filter(s => s.length > 0);
-}
-
-function evalStmts(stmts, vars, output, fullCode, depth) {
-  if (depth > 200) return; // prevent infinite loops
-  let i = 0;
-  while (i < stmts.length) {
-    const s = stmts[i].trim();
-
-    // ── Variable declaration: int/float/double/char x = expr; ──
-    const decl = s.match(/^(int|float|double|char|long|short|unsigned\s+int|unsigned\s+long)\s+(.+);$/);
-    if (decl) {
-      const type = decl[1];
-      const rest = decl[2];
-      // Handle multiple declarations: int a = 1, b = 2, c;
-      const parts = splitDeclarations(rest);
-      parts.forEach(p => {
-        const m = p.trim().match(/^(\w+)(?:\s*=\s*(.+))?$/);
-        if (m) {
-          const name = m[1];
-          let val = m[2] !== undefined ? evalExpr(m[2].trim(), vars) : 0;
-          if (type === 'char' && typeof val === 'string' && val.length === 1) { val = val; }
-          else if (type === 'char') { val = typeof val === 'number' ? String.fromCharCode(val) : val; }
-          vars[name] = val;
-        }
+  // Check for obvious issues
+  if (!code.includes('main')) { lines.push({t:'err',v:'Error: no main() function found.'}); }
+  else if (!code.includes('#include')) { lines.push({t:'err',v:'Warning: no #include directive.'}); }
+  else {
+    lines.push({t:'info',v:`// ✅ Code compiled (simulated)`});
+    lines.push({t:'info',v:`// C compiler output:`});
+    lines.push({t:'info',v:`//`});
+    // Extract printf strings
+    const pf = [...code.matchAll(/printf\s*\(\s*["'](.+?)["']/g)];
+    if (pf.length) {
+      pf.forEach(m=>{
+        let s = m[1].replace(/\\n/g,'\n').replace(/\\t/g,'\t');
+        s.split('\n').filter(l=>l).forEach(l=>lines.push({t:'ok',v:l}));
       });
-      i++; continue;
-    }
-
-    // ── Char declaration with literal ──
-    const charDecl = s.match(/^char\s+(\w+)\s*=\s*'(.)'\s*;$/);
-    if (charDecl) { vars[charDecl[1]] = charDecl[2]; i++; continue; }
-
-    // ── String (char array) declaration ──
-    const strDecl = s.match(/^char\s+(\w+)\s*\[\s*\d*\s*\]\s*=\s*"([^"]*)"\s*;$/);
-    if (strDecl) { vars[strDecl[1]] = strDecl[2]; i++; continue; }
-
-    // ── Assignment: x = expr; or x += expr; etc. ──
-    const assign = s.match(/^(\w+)\s*([\+\-\*\/\%]?=)\s*(.+);$/);
-    if (assign && !s.startsWith('if') && !s.startsWith('while') && !s.startsWith('for')) {
-      const [,name, op, rhs] = assign;
-      const val = evalExpr(rhs.trim(), vars);
-      if (op === '=') vars[name] = val;
-      else if (op === '+=') vars[name] = (vars[name]||0) + val;
-      else if (op === '-=') vars[name] = (vars[name]||0) - val;
-      else if (op === '*=') vars[name] = (vars[name]||0) * val;
-      else if (op === '/=') vars[name] = (vars[name]||0) / val;
-      else if (op === '%=') vars[name] = (vars[name]||0) % val;
-      i++; continue;
-    }
-
-    // ── Increment/Decrement: x++; x--; ++x; --x; ──
-    if (/^(\w+)\s*\+\+\s*;$/.test(s)) { const n=s.match(/^(\w+)/)[1]; vars[n]=(vars[n]||0)+1; i++; continue; }
-    if (/^(\w+)\s*--\s*;$/.test(s))   { const n=s.match(/^(\w+)/)[1]; vars[n]=(vars[n]||0)-1; i++; continue; }
-    if (/^\+\+(\w+)\s*;$/.test(s))    { const n=s.match(/\+\+(\w+)/)[1]; vars[n]=(vars[n]||0)+1; i++; continue; }
-    if (/^--(\w+)\s*;$/.test(s))      { const n=s.match(/--(\w+)/)[1]; vars[n]=(vars[n]||0)-1; i++; continue; }
-
-    // ── printf ──
-    const pfMatch = s.match(/^printf\s*\(\s*(["'])([\s\S]*?)\1\s*(,\s*([\s\S]*?))?\s*\)\s*;$/);
-    if (pfMatch) {
-      const fmt  = pfMatch[2];
-      const args = pfMatch[4] ? splitArgs(pfMatch[4]) : [];
-      const result = formatPrintf(fmt, args, vars);
-      result.split('\n').forEach(line => { if (line !== '') output.push({t:'ok', v:line}); });
-      i++; continue;
-    }
-
-    // ── if / else if / else ──
-    if (s.startsWith('if') || s.startsWith('else if')) {
-      const condMatch = s.match(/^(?:else\s+)?if\s*\((.+?)\)\s*\{([\s\S]*)\}(?:\s*else\s*\{([\s\S]*)\})?/);
-      if (condMatch) {
-        const cond = evalCond(condMatch[1], vars);
-        const thenBlock = splitStatements(condMatch[2]);
-        const elseBlock = condMatch[3] ? splitStatements(condMatch[3]) : [];
-        evalStmts(cond ? thenBlock : elseBlock, vars, output, fullCode, depth+1);
-        i++; continue;
-      }
-    }
-    // bare else
-    if (s.startsWith('else') && s.includes('{')) {
-      i++; continue; // handled by if block above
-    }
-
-    // ── for loop ──
-    const forMatch = s.match(/^for\s*\(([^;]*);([^;]*);([^)]*)\)\s*\{([\s\S]*)\}/);
-    if (forMatch) {
-      let [,init,cond,incr,body] = forMatch;
-      // init
-      const initVars = {...vars};
-      const initStmt = (init.trim()+';');
-      evalStmts(splitStatements(initStmt), vars, [], fullCode, depth+1);
-      let iters = 0;
-      while (evalCond(cond.trim(), vars) && iters < 500) {
-        const bodyStmts = splitStatements(body);
-        evalStmts(bodyStmts, vars, output, fullCode, depth+1);
-        evalStmts(splitStatements(incr.trim()+';'), vars, [], fullCode, depth+1);
-        iters++;
-      }
-      i++; continue;
-    }
-
-    // ── while loop ──
-    const whileMatch = s.match(/^while\s*\((.+?)\)\s*\{([\s\S]*)\}/);
-    if (whileMatch) {
-      let iters = 0;
-      while (evalCond(whileMatch[1].trim(), vars) && iters < 500) {
-        evalStmts(splitStatements(whileMatch[2]), vars, output, fullCode, depth+1);
-        iters++;
-      }
-      i++; continue;
-    }
-
-    // ── do-while ──
-    const doMatch = s.match(/^do\s*\{([\s\S]*)\}\s*while\s*\((.+?)\)\s*;$/);
-    if (doMatch) {
-      let iters = 0;
-      do {
-        evalStmts(splitStatements(doMatch[1]), vars, output, fullCode, depth+1);
-        iters++;
-      } while (evalCond(doMatch[2].trim(), vars) && iters < 500);
-      i++; continue;
-    }
-
-    // ── return ──
-    if (s.match(/^return\s*.*;$/)) { break; }
-
-    i++;
-  }
-}
-
-function splitDeclarations(s) {
-  // Split "a = 1, b, c = 3" into ["a = 1", "b", "c = 3"]
-  const parts = []; let depth = 0, cur = '';
-  for (const ch of s) {
-    if (ch === '(' || ch === '[') depth++;
-    else if (ch === ')' || ch === ']') depth--;
-    else if (ch === ',' && depth === 0) { parts.push(cur.trim()); cur = ''; continue; }
-    cur += ch;
-  }
-  if (cur.trim()) parts.push(cur.trim());
-  return parts;
-}
-
-function splitArgs(s) {
-  const parts = []; let depth = 0, cur = '';
-  for (const ch of s) {
-    if (ch === '(' || ch === '[') depth++;
-    else if (ch === ')' || ch === ']') depth--;
-    else if (ch === ',' && depth === 0) { parts.push(cur.trim()); cur = ''; continue; }
-    cur += ch;
-  }
-  if (cur.trim()) parts.push(cur.trim());
-  return parts;
-}
-
-function evalExpr(expr, vars) {
-  expr = expr.trim();
-  // Char literal
-  if (/^'.'$/.test(expr)) return expr[1];
-  // String literal
-  if (/^"[^"]*"$/.test(expr)) return expr.slice(1,-1);
-  // Try substituting variables then eval safely
-  let e = expr;
-  // Replace variable names with their values (longest first to avoid partial matches)
-  Object.keys(vars).sort((a,b)=>b.length-a.length).forEach(k => {
-    const v = vars[k];
-    const numVal = typeof v === 'number' ? v : (typeof v === 'string' ? v.charCodeAt(0) : 0);
-    e = e.replace(new RegExp('\\b'+k+'\\b','g'), numVal);
-  });
-  // Replace sizeof(int)=4, sizeof(char)=1 etc.
-  e = e.replace(/sizeof\s*\(\s*int\s*\)/g,'4').replace(/sizeof\s*\(\s*char\s*\)/g,'1')
-        .replace(/sizeof\s*\(\s*float\s*\)/g,'4').replace(/sizeof\s*\(\s*double\s*\)/g,'8');
-  // Cast: (int)expr, (float)expr
-  e = e.replace(/\(int\)\s*/g,'').replace(/\(float\)\s*/g,'').replace(/\(double\)\s*/g,'');
-  try {
-    // Safe eval: only allow math chars
-    if (/^[\d\s\+\-\*\/\%\(\)\.]+$/.test(e)) {
-      const result = Function('"use strict"; return ('+e+')')();
-      return typeof result === 'number' ? result : 0;
-    }
-  } catch(err) {}
-  // Fallback: try to parse as number
-  const n = parseFloat(e);
-  return isNaN(n) ? 0 : n;
-}
-
-function evalCond(cond, vars) {
-  cond = cond.trim();
-  // Replace variables
-  let e = cond;
-  Object.keys(vars).sort((a,b)=>b.length-a.length).forEach(k => {
-    const v = vars[k];
-    const numVal = typeof v === 'number' ? v : (typeof v === 'string' && v.length===1 ? v.charCodeAt(0) : 0);
-    e = e.replace(new RegExp('\\b'+k+'\\b','g'), numVal);
-  });
-  try {
-    // Allow comparisons and logical operators
-    if (/^[\d\s\+\-\*\/\%\(\)\.\<\>\=\!\&\|]+$/.test(e)) {
-      // Replace C logical && || ! with JS equivalents (already same)
-      return !!Function('"use strict"; return ('+e+')')();
-    }
-  } catch(err) {}
-  return false;
-}
-
-function formatPrintf(fmt, args, vars) {
-  // Resolve each arg to its value
-  const vals = args.map(a => {
-    a = a.trim();
-    // Direct variable lookup
-    if (vars.hasOwnProperty(a)) return vars[a];
-    // Expression
-    return evalExpr(a, vars);
-  });
-
-  let argIdx = 0;
-  let result = '';
-  let i = 0;
-  while (i < fmt.length) {
-    if (fmt[i] === '%') {
-      i++;
-      // Optional flags/width/precision: skip them
-      while (i < fmt.length && '-+0 #'.includes(fmt[i])) i++;
-      while (i < fmt.length && fmt[i] >= '0' && fmt[i] <= '9') i++;
-      if (fmt[i] === '.') { i++; while (i < fmt.length && fmt[i] >= '0' && fmt[i] <= '9') i++; }
-      // Length modifier
-      if (fmt[i] === 'l' || fmt[i] === 'h') i++;
-      const spec = fmt[i]; i++;
-      const val = vals[argIdx++];
-      if (val === undefined) { result += '%'+spec; continue; }
-      if (spec === 'd' || spec === 'i') {
-        result += Math.trunc(typeof val==='string' ? val.charCodeAt(0) : val);
-      } else if (spec === 'u') {
-        result += Math.abs(Math.trunc(typeof val==='string' ? val.charCodeAt(0) : val));
-      } else if (spec === 'f') {
-        result += (typeof val==='string' ? val.charCodeAt(0) : val).toFixed(6);
-      } else if (spec === 'e') {
-        result += (typeof val==='string' ? val.charCodeAt(0) : val).toExponential(6);
-      } else if (spec === 'g') {
-        result += parseFloat((typeof val==='string' ? val.charCodeAt(0) : val).toPrecision(6));
-      } else if (spec === 'c') {
-        result += typeof val==='string' ? val[0] : String.fromCharCode(Math.trunc(val));
-      } else if (spec === 's') {
-        result += typeof val==='string' ? val : String(val);
-      } else if (spec === 'x') {
-        result += Math.trunc(typeof val==='string' ? val.charCodeAt(0) : val).toString(16);
-      } else if (spec === 'o') {
-        result += Math.trunc(typeof val==='string' ? val.charCodeAt(0) : val).toString(8);
-      } else if (spec === '%') {
-        result += '%'; argIdx--;
-      } else {
-        result += '%' + spec;
-      }
-    } else if (fmt[i] === '\\') {
-      i++;
-      const esc = fmt[i]; i++;
-      if      (esc === 'n') result += '\n';
-      else if (esc === 't') result += '\t';
-      else if (esc === 'r') result += '\r';
-      else if (esc === '"') result += '"';
-      else if (esc === "'") result += "'";
-      else if (esc === '\\') result += '\\';
-      else if (esc === '0') result += '\0';
-      else result += '\\'+esc;
     } else {
-      result += fmt[i]; i++;
+      lines.push({t:'info',v:'// No printf() calls found — nothing to output'});
     }
+    // Check for scanf
+    if (code.includes('scanf')) lines.push({t:'info',v:'// (scanf requires real input — simulated here)'});
+    // Check for common errors
+    if (/\bif\s*\([^=!<>]*=[^=]/.test(code)) lines.push({t:'err',v:'Warning: possible assignment in if condition — did you mean ==?'});
+    if (code.includes('malloc') && !code.includes('free')) lines.push({t:'err',v:'Warning: malloc() used without free() — potential memory leak!'});
   }
-  return result;
+  out.innerHTML = lines.map(l=>`<div class="output-line output-${l.t==='err'?'err':l.t==='info'?'info':'ok'}">${escHtml(l.v)}</div>`).join('');
 }
-
 function clearEditor() { document.getElementById('code-editor').value=''; }
 function clearOutput() { document.getElementById('code-output').innerHTML='<div class="output-info">// Output cleared</div>'; }
-function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ══════════════════════════════════════════════════════════
-//  MySQL PRACTICE — In-Browser SQL Simulator
-// ══════════════════════════════════════════════════════════
-
-// ── Sample Database ────────────────────────────────────────
-const SQL_DB = {
-  students: {
-    cols: ['id','name','email','marks','course_id'],
-    rows: [
-      [1,'Bravehart','bravehart@gmail.com',92,1],
-      [2,'Dreamboat','dreamboat@gmail.com',78,2],
-      [3,'Alice Nakato','alice@gmail.com',85,1],
-      [4,'Brian Okello','brian@gmail.com',64,3],
-      [5,'Cynthia Apio','cynthia@gmail.com',91,2],
-      [6,'David Mwangi','david@gmail.com',55,3],
-      [7,'Eva Namukasa','eva@gmail.com',73,1],
-      [8,'Frank Opio','frank@gmail.com',88,2],
-      [9,'Grace Akello','grace@gmail.com',45,4],
-      [10,'Henry Sebuliba','henry@gmail.com',67,4],
-    ]
-  },
-  courses: {
-    cols: ['id','title','code','credits'],
-    rows: [
-      [1,'Structured Software Development','CSC122',3],
-      [2,'Computer Hardware Maintenance','CSC121',3],
-      [3,'Database Systems Design I','CSC123',3],
-      [4,'Computer Workshop Practice','ICT121',2],
-      [5,'Research Methods','BSM121',2],
-    ]
-  },
-  enrollments: {
-    cols: ['id','student_id','course_id','grade','semester'],
-    rows: [
-      [1,1,1,'A','Sem2 2026'],
-      [2,1,3,'B','Sem2 2026'],
-      [3,2,2,'B','Sem2 2026'],
-      [4,3,1,'A','Sem2 2026'],
-      [5,4,3,'C','Sem2 2026'],
-      [6,5,2,'A','Sem2 2026'],
-      [7,6,3,'D','Sem2 2026'],
-      [8,7,1,'B','Sem2 2026'],
-      [9,8,2,'A','Sem2 2026'],
-      [10,9,4,'F','Sem2 2026'],
-    ]
-  }
-};
-
-// Working copy (mutable for INSERT/UPDATE/DELETE)
-let _sqlDB = JSON.parse(JSON.stringify(SQL_DB));
-
-const SQL_EXERCISES = [
-  { title:'Select All Students',         difficulty:'easy',
-    desc:'Retrieve all columns from the students table.',
-    sql:'SELECT * FROM students;',
-    tip:'Use SELECT * to get all columns.' },
-  { title:'Select Specific Columns',     difficulty:'easy',
-    desc:'Show only the name and marks of all students.',
-    sql:'SELECT name, marks FROM students;',
-    tip:'List column names separated by commas after SELECT.' },
-  { title:'Filter with WHERE',           difficulty:'easy',
-    desc:'Find all students with marks above 80.',
-    sql:'SELECT name, marks FROM students WHERE marks > 80;',
-    tip:'The WHERE clause filters rows based on a condition.' },
-  { title:'ORDER BY Marks',              difficulty:'easy',
-    desc:'List all students ordered by marks from highest to lowest.',
-    sql:'SELECT name, marks FROM students ORDER BY marks DESC;',
-    tip:'DESC = descending (highest first). ASC = ascending.' },
-  { title:'LIMIT Results',               difficulty:'easy',
-    desc:'Show only the top 3 students by marks.',
-    sql:'SELECT name, marks FROM students ORDER BY marks DESC LIMIT 3;',
-    tip:'LIMIT restricts the number of rows returned.' },
-  { title:'COUNT All Students',          difficulty:'easy',
-    desc:'Count how many students are in the table.',
-    sql:'SELECT COUNT(*) AS total_students FROM students;',
-    tip:'COUNT(*) counts all rows. AS gives the result a label.' },
-  { title:'Average Marks',               difficulty:'medium',
-    desc:'Calculate the average marks of all students.',
-    sql:'SELECT AVG(marks) AS average_marks FROM students;',
-    tip:'AVG() computes the mean. Use ROUND(AVG(marks),2) for 2 decimal places.' },
-  { title:'MAX and MIN',                 difficulty:'medium',
-    desc:'Find the highest and lowest marks in the class.',
-    sql:'SELECT MAX(marks) AS highest, MIN(marks) AS lowest FROM students;',
-    tip:'MAX() and MIN() work on numeric columns.' },
-  { title:'GROUP BY Course',             difficulty:'medium',
-    desc:'Show the average marks per course (by course_id).',
-    sql:'SELECT course_id, AVG(marks) AS avg_marks, COUNT(*) AS students\nFROM students\nGROUP BY course_id;',
-    tip:'GROUP BY groups rows with the same value. Use with aggregate functions.' },
-  { title:'HAVING Filter',               difficulty:'medium',
-    desc:'Show courses where the average marks are above 70.',
-    sql:'SELECT course_id, AVG(marks) AS avg_marks\nFROM students\nGROUP BY course_id\nHAVING AVG(marks) > 70;',
-    tip:'HAVING filters grouped results (like WHERE but for aggregates).' },
-  { title:'INNER JOIN',                  difficulty:'medium',
-    desc:'Show student names alongside their course titles.',
-    sql:'SELECT s.name, c.title AS course\nFROM students s\nINNER JOIN courses c ON s.course_id = c.id;',
-    tip:'INNER JOIN returns rows that have a match in both tables.' },
-  { title:'LEFT JOIN',                   difficulty:'medium',
-    desc:'Show all courses and how many students are in each (including courses with zero students).',
-    sql:'SELECT c.code, c.title, COUNT(s.id) AS enrolled\nFROM courses c\nLEFT JOIN students s ON c.id = s.course_id\nGROUP BY c.id, c.code, c.title;',
-    tip:'LEFT JOIN includes all rows from the left table even if no match on the right.' },
-  { title:'WHERE with LIKE',             difficulty:'medium',
-    desc:'Find all students whose name starts with the letter "A".',
-    sql:"SELECT name, email FROM students WHERE name LIKE 'A%';",
-    tip:'LIKE with % is a wildcard. A% = starts with A. %a% = contains a.' },
-  { title:'INSERT a Student',            difficulty:'medium',
-    desc:'Add a new student called "Test Student" with marks of 70 in course 1.',
-    sql:"INSERT INTO students (id, name, email, marks, course_id)\nVALUES (11, 'Test Student', 'test@gmail.com', 70, 1);",
-    tip:'INSERT INTO adds a new row. Specify columns then their VALUES.' },
-  { title:'UPDATE Marks',               difficulty:'medium',
-    desc:'Update Bravehart\'s marks to 95.',
-    sql:"UPDATE students SET marks = 95 WHERE name = 'Bravehart';",
-    tip:'Always use WHERE in UPDATE — without it, ALL rows get updated!' },
-  { title:'DELETE a Student',           difficulty:'hard',
-    desc:'Delete the student with id = 10 from the table.',
-    sql:'DELETE FROM students WHERE id = 10;',
-    tip:'Always use WHERE in DELETE — without it, ALL rows are deleted!' },
-  { title:'Subquery',                   difficulty:'hard',
-    desc:'Find students with marks above the class average.',
-    sql:'SELECT name, marks FROM students\nWHERE marks > (SELECT AVG(marks) FROM students);',
-    tip:'A subquery is a query inside another query — wrap it in parentheses.' },
-  { title:'Three-Table JOIN',           difficulty:'hard',
-    desc:'Show student names, course titles, and their grade from enrollments.',
-    sql:'SELECT s.name, c.title, e.grade\nFROM enrollments e\nINNER JOIN students s ON e.student_id = s.id\nINNER JOIN courses c ON e.course_id = c.id\nORDER BY s.name;',
-    tip:'Chain multiple JOINs to link three or more tables.' },
-  { title:'CREATE TABLE',              difficulty:'hard',
-    desc:'Write a CREATE TABLE statement for a "lecturers" table with id, name, and department.',
-    sql:"CREATE TABLE lecturers (\n    id INT PRIMARY KEY,\n    name VARCHAR(100) NOT NULL,\n    department VARCHAR(50)\n);",
-    tip:'CREATE TABLE defines the structure. Specify column name, type, and constraints.' },
-  { title:'Aggregate + JOIN',          difficulty:'hard',
-    desc:'Show each course name and the number of A grades in it.',
-    sql:"SELECT c.title, COUNT(*) AS a_grades\nFROM enrollments e\nINNER JOIN courses c ON e.course_id = c.id\nWHERE e.grade = 'A'\nGROUP BY c.id, c.title\nORDER BY a_grades DESC;",
-    tip:'Combine WHERE, JOIN, GROUP BY and COUNT() for powerful aggregations.' },
-];
-
-function buildSQLChallenges() {
-  const list = document.getElementById('sql-challenges-list');
-  const sel  = document.getElementById('sql-challenge-select');
-  if (!list || !sel) return;
-  list.innerHTML = SQL_EXERCISES.map((ex,i)=>`
-    <div class="challenge-card" onclick="loadSQLChallengeById(${i})">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-        <div class="challenge-card-title">${ex.title}</div>
-        <span class="challenge-difficulty diff-${ex.difficulty}">[${ex.difficulty.toUpperCase()}]</span>
-      </div>
-      <div class="challenge-card-desc">${ex.desc}</div>
-      <button class="btn btn-green" style="font-size:11px;padding:5px 12px;margin-top:4px;" onclick="event.stopPropagation();loadSQLChallengeById(${i})">Load →</button>
-    </div>`).join('');
-  sel.innerHTML = '<option value="">-- Load Exercise --</option>' +
-    SQL_EXERCISES.map((ex,i)=>`<option value="${i}">${ex.title} [${ex.difficulty}]</option>`).join('');
-}
-
-function loadSQLChallengeById(idx) {
-  const ex = SQL_EXERCISES[idx];
-  document.getElementById('sql-editor').value = ex.sql;
-  document.getElementById('sql-challenge-select').value = idx;
-  document.getElementById('sql-output').innerHTML =
-    `<div class="output-info">-- Exercise: ${ex.title}</div>` +
-    `<div class="output-info">-- ${ex.desc}</div>` +
-    `<div class="output-info">&nbsp;</div>` +
-    `<div class="output-info">-- 💡 Tip: ${ex.tip}</div>` +
-    `<div class="output-info">&nbsp;</div>` +
-    `<div class="output-info">-- Click ▶ Run to execute</div>`;
-}
-function loadSQLChallenge() {
-  const v = document.getElementById('sql-challenge-select').value;
-  if (v !== '') loadSQLChallengeById(parseInt(v));
-}
-function clearSQL() { document.getElementById('sql-editor').value=''; }
-function clearSQLOutput() {
-  document.getElementById('sql-output').innerHTML='<div class="output-info">-- Output cleared</div>';
-}
-
-// ── SQL Runner ─────────────────────────────────────────────
-function runSQL() {
-  const raw = document.getElementById('sql-editor').value.trim();
-  const out = document.getElementById('sql-output');
-  if (!raw) { out.innerHTML='<div class="output-info">-- Nothing to run</div>'; return; }
-
-  // Split on ; to handle multiple statements
-  const stmts = raw.split(/;\s*/).map(s=>s.trim()).filter(s=>s.length>0);
-  let html = '';
-
-  stmts.forEach((stmt, si) => {
-    if (si > 0) html += '<div class="output-info">──────────────────────────────</div>';
-    try {
-      const result = execSQL(stmt + ';');
-      html += result;
-    } catch(e) {
-      html += `<div class="output-err">❌ Error: ${escHtml(e.message)}</div>`;
-    }
-  });
-  out.innerHTML = html || '<div class="output-info">-- No output</div>';
-}
-
-function execSQL(stmt) {
-  const s = stmt.trim();
-  const up = s.toUpperCase();
-
-  // ── SELECT ─────────────────────────────────────────────
-  if (up.startsWith('SELECT')) {
-    return execSelect(s);
-  }
-  // ── INSERT ─────────────────────────────────────────────
-  if (up.startsWith('INSERT')) {
-    return execInsert(s);
-  }
-  // ── UPDATE ─────────────────────────────────────────────
-  if (up.startsWith('UPDATE')) {
-    return execUpdate(s);
-  }
-  // ── DELETE ─────────────────────────────────────────────
-  if (up.startsWith('DELETE')) {
-    return execDelete(s);
-  }
-  // ── CREATE TABLE ───────────────────────────────────────
-  if (up.startsWith('CREATE TABLE')) {
-    const m = s.match(/CREATE\s+TABLE\s+(\w+)/i);
-    const tbl = m ? m[1] : 'new_table';
-    return `<div class="output-ok">✅ Table <strong>${escHtml(tbl)}</strong> created successfully (simulated).</div>`;
-  }
-  // ── DROP TABLE ─────────────────────────────────────────
-  if (up.startsWith('DROP TABLE')) {
-    const m = s.match(/DROP\s+TABLE\s+(\w+)/i);
-    const tbl = m ? m[1] : '?';
-    return `<div class="output-ok">✅ Table <strong>${escHtml(tbl)}</strong> dropped (simulated).</div>`;
-  }
-  // ── ALTER TABLE ────────────────────────────────────────
-  if (up.startsWith('ALTER TABLE')) {
-    return `<div class="output-ok">✅ ALTER TABLE executed (simulated).</div>`;
-  }
-
-  return `<div class="output-info">-- Statement type not fully simulated: ${escHtml(s.slice(0,60))}</div>`;
-}
-
-// ── Full SELECT engine ─────────────────────────────────────
-function execSelect(stmt) {
-  // Normalise whitespace
-  let s = stmt.replace(/\s+/g,' ').replace(/;$/,'').trim();
-
-  // Pull out GROUP BY, HAVING, ORDER BY, LIMIT first (they come at end)
-  let groupBy='', having='', orderBy='', limit=null;
-  const limitM = s.match(/\bLIMIT\s+(\d+)\b/i);
-  if (limitM) { limit = parseInt(limitM[1]); s = s.replace(/\bLIMIT\s+\d+\b/i,'').trim(); }
-  const orderM = s.match(/\bORDER\s+BY\s+(.+?)(?=\bGROUP\b|\bHAVING\b|\bLIMIT\b|$)/i);
-  if (orderM) { orderBy = orderM[1].trim(); s = s.replace(/\bORDER\s+BY\s+.+/i,'').trim(); }
-  const havingM = s.match(/\bHAVING\s+(.+?)(?=\bORDER\b|\bLIMIT\b|$)/i);
-  if (havingM) { having = havingM[1].trim(); s = s.replace(/\bHAVING\s+.+/i,'').trim(); }
-  const groupM = s.match(/\bGROUP\s+BY\s+(.+?)(?=\bHAVING\b|\bORDER\b|\bLIMIT\b|$)/i);
-  if (groupM) { groupBy = groupM[1].trim(); s = s.replace(/\bGROUP\s+BY\s+.+/i,'').trim(); }
-
-  // WHERE
-  let where = '';
-  const whereM = s.match(/\bWHERE\s+(.+?)(?=\bGROUP\b|\bORDER\b|\bHAVING\b|\bINNER\b|\bLEFT\b|\bRIGHT\b|\bJOIN\b|$)/i);
-  if (whereM) { where = whereM[1].trim(); s = s.replace(/\bWHERE\s+.+/i,'').trim(); }
-
-  // FROM + JOIN
-  const fromM = s.match(/\bFROM\s+(.+?)(?=\bWHERE\b|\bGROUP\b|\bORDER\b|$)/i);
-  if (!fromM) return `<div class="output-err">❌ Missing FROM clause.</div>`;
-  const fromStr = fromM[1].trim();
-
-  // Columns (between SELECT and FROM)
-  const selectM = s.match(/^SELECT\s+(.+?)\s+FROM\b/i);
-  if (!selectM) return `<div class="output-err">❌ Could not parse SELECT columns.</div>`;
-  const colsStr = selectM[1].trim();
-
-  // Parse FROM: handle JOINs
-  const { rows, aliases } = parseFrom(fromStr);
-  if (!rows) return `<div class="output-err">❌ Table not found in FROM clause.</div>`;
-
-  // Apply WHERE
-  let filtered = where ? rows.filter(r => evalSQLCond(where, r, aliases)) : rows;
-
-  // GROUP BY
-  if (groupBy) {
-    filtered = applyGroupBy(filtered, groupBy, colsStr, having, aliases);
-    return renderSQLTable(filtered.cols, filtered.rows, `${filtered.rows.length} row(s)`);
-  }
-
-  // Project columns
-  const projected = projectCols(filtered, colsStr, aliases);
-
-  // HAVING (without GROUP BY — apply to all as one group)
-  // ORDER BY
-  if (orderBy) {
-    const parts = orderBy.split(',').map(p=>p.trim());
-    projected.rows.sort((a,b)=>{
-      for (const part of parts) {
-        const m = part.match(/^(.+?)\s*(ASC|DESC)?$/i);
-        if (!m) continue;
-        const col = m[1].trim();
-        const dir = (m[2]||'ASC').toUpperCase();
-        const ci = projected.cols.findIndex(c=>c.toLowerCase()===col.toLowerCase()||c.toLowerCase().includes(col.toLowerCase()));
-        if (ci<0) continue;
-        const av = a[ci], bv = b[ci];
-        const cmp = typeof av==='number'&&typeof bv==='number' ? av-bv : String(av).localeCompare(String(bv));
-        if (cmp!==0) return dir==='DESC' ? -cmp : cmp;
-      }
-      return 0;
-    });
-  }
-
-  // LIMIT
-  if (limit !== null) projected.rows = projected.rows.slice(0, limit);
-
-  return renderSQLTable(projected.cols, projected.rows, `${projected.rows.length} row(s)`);
-}
-
-function parseFrom(fromStr) {
-  // Multiple JOINs: "students s INNER JOIN courses c ON s.course_id = c.id LEFT JOIN ..."
-  const aliases = {}; // alias -> tableName
-  let rows = null;
-
-  // First table (before any JOIN)
-  const firstM = fromStr.match(/^(\w+)(?:\s+(?:AS\s+)?(\w+))?/i);
-  if (!firstM) return { rows: null, aliases };
-  const firstTable = firstM[1].toLowerCase();
-  const firstAlias = (firstM[2] || firstM[1]).toLowerCase();
-  if (!_sqlDB[firstTable]) return { rows: null, aliases };
-  aliases[firstAlias] = firstTable;
-  aliases[firstTable] = firstTable;
-
-  // Build initial rows with aliased column names
-  const tbl = _sqlDB[firstTable];
-  rows = tbl.rows.map(row => {
-    const obj = {};
-    tbl.cols.forEach((c,i)=>{ obj[firstAlias+'.'+c]=row[i]; obj[c]=row[i]; });
-    return obj;
-  });
-
-  // Process JOINs
-  const joinRe = /(INNER|LEFT|RIGHT|FULL|CROSS)?\s*JOIN\s+(\w+)(?:\s+(?:AS\s+)?(\w+))?\s+ON\s+(.+?)(?=(?:INNER|LEFT|RIGHT|FULL|CROSS)?\s*JOIN\b|WHERE\b|GROUP\b|ORDER\b|HAVING\b|$)/gi;
-  let jm;
-  while ((jm = joinRe.exec(fromStr)) !== null) {
-    const joinType = (jm[1]||'INNER').toUpperCase();
-    const joinTable = jm[2].toLowerCase();
-    const joinAlias = (jm[3]||jm[2]).toLowerCase();
-    const onCond   = jm[4].trim();
-    if (!_sqlDB[joinTable]) continue;
-    aliases[joinAlias] = joinTable;
-    aliases[joinTable] = joinTable;
-    const jTbl = _sqlDB[joinTable];
-    const result = [];
-    rows.forEach(leftRow => {
-      const matches = jTbl.rows.filter(jr=>{
-        const jObj = {};
-        jTbl.cols.forEach((c,i)=>{ jObj[joinAlias+'.'+c]=jr[i]; jObj[c]=jr[i]; });
-        return evalSQLCond(onCond, {...leftRow,...jObj}, aliases);
-      });
-      if (matches.length > 0) {
-        matches.forEach(jr=>{
-          const jObj = {};
-          jTbl.cols.forEach((c,i)=>{ jObj[joinAlias+'.'+c]=jr[i]; jObj[c]=jr[i]; });
-          result.push({...leftRow,...jObj});
-        });
-      } else if (joinType==='LEFT') {
-        const jObj = {};
-        jTbl.cols.forEach(c=>{ jObj[joinAlias+'.'+c]=null; jObj[c]=null; });
-        result.push({...leftRow,...jObj});
-      }
-    });
-    rows = result;
-  }
-  return { rows, aliases };
-}
-
-function evalSQLCond(cond, row, aliases) {
-  // Handle AND / OR (simple — not nested)
-  if (/\bAND\b/i.test(cond) && !/\bOR\b/i.test(cond)) {
-    return cond.split(/\bAND\b/i).every(c=>evalSQLCond(c.trim(),row,aliases));
-  }
-  if (/\bOR\b/i.test(cond)) {
-    return cond.split(/\bOR\b/i).some(c=>evalSQLCond(c.trim(),row,aliases));
-  }
-
-  // LIKE
-  const likeM = cond.match(/^(.+?)\s+LIKE\s+'([^']*)'/i);
-  if (likeM) {
-    const v = sqlVal(likeM[1].trim(), row);
-    const pat = likeM[2].replace(/%/g,'.*').replace(/_/g,'.');
-    return new RegExp('^'+pat+'$','i').test(String(v));
-  }
-
-  // Subquery (simplified — handle AVG subquery)
-  const subM = cond.match(/^(.+?)\s*(>|<|>=|<=|=|!=|<>)\s*\(\s*SELECT\s+(.+)/i);
-  if (subM) {
-    const lv = sqlVal(subM[1].trim(), row);
-    const sub = 'SELECT ' + subM[3].replace(/\)\s*$/,'');
-    const sr = execSelectForScalar(sub);
-    return compareVals(lv, subM[2], sr);
-  }
-
-  // Standard comparison
-  const cmpM = cond.match(/^(.+?)\s*(>=|<=|!=|<>|>|<|=)\s*(.+)$/);
-  if (cmpM) {
-    const lv = sqlVal(cmpM[1].trim(), row);
-    const rv = sqlVal(cmpM[3].trim(), row);
-    return compareVals(lv, cmpM[2], rv);
-  }
-  return true;
-}
-
-function sqlVal(token, row) {
-  token = token.trim();
-  if (/^'.*'$/.test(token)) return token.slice(1,-1);
-  if (/^\d+(\.\d+)?$/.test(token)) return parseFloat(token);
-  if (row.hasOwnProperty(token)) return row[token];
-  // alias.col
-  if (row.hasOwnProperty(token.toLowerCase())) return row[token.toLowerCase()];
-  // Try partial match
-  const k = Object.keys(row).find(k=>k===token||k===token.toLowerCase()||k.endsWith('.'+token.toLowerCase()));
-  return k !== undefined ? row[k] : null;
-}
-
-function compareVals(a, op, b) {
-  if (typeof a === 'string' && typeof b !== 'string') b = String(b);
-  if (typeof b === 'string' && typeof a !== 'string') a = String(a);
-  if (op==='='||op==='==') return a==b;
-  if (op==='!='||op==='<>') return a!=b;
-  if (op==='>') return a>b;
-  if (op==='<') return a<b;
-  if (op==='>=') return a>=b;
-  if (op==='<=') return a<=b;
-  return false;
-}
-
-function execSelectForScalar(stmt) {
-  // Execute a simple SELECT returning a single value (for subqueries)
-  const { rows, aliases } = parseFrom((stmt.match(/FROM\s+(\w+)/i)||[])[1]||'');
-  if (!rows) return null;
-  const colStr = (stmt.match(/SELECT\s+(.+?)\s+FROM/i)||[])[1]||'*';
-  const proj = projectCols(rows, colStr, aliases);
-  if (!proj.rows.length) return null;
-  return proj.rows[0][0];
-}
-
-function projectCols(rows, colsStr, aliases) {
-  if (colsStr.trim() === '*') {
-    // Get all unique columns across rows
-    const allCols = [];
-    rows.forEach(r => Object.keys(r).forEach(k=>{ if(!k.includes('.')&&!allCols.includes(k)) allCols.push(k); }));
-    return { cols: allCols, rows: rows.map(r=>allCols.map(c=>r[c]??null)) };
-  }
-
-  // Split columns (handle functions and aliases)
-  const colDefs = splitArgs(colsStr);
-  const resultCols = [];
-  const resultRows = rows.map(()=>[]);
-
-  colDefs.forEach((cd, ci) => {
-    cd = cd.trim();
-    // AS alias
-    const asM = cd.match(/^(.+?)\s+AS\s+(\w+)$/i);
-    const expr = asM ? asM[1].trim() : cd;
-    const alias = asM ? asM[2] : expr.replace(/[^a-zA-Z0-9_]/g,'_');
-    resultCols.push(alias);
-
-    rows.forEach((r,ri) => {
-      resultRows[ri].push(evalSQLExpr(expr, r));
-    });
-  });
-
-  return { cols: resultCols, rows: resultRows };
-}
-
-function evalSQLExpr(expr, row) {
-  expr = expr.trim();
-  const up = expr.toUpperCase();
-
-  // COUNT(*)
-  if (/^COUNT\s*\(\s*\*\s*\)$/i.test(expr)) return 1; // per-row; aggregation done in applyGroupBy
-  if (/^COUNT\s*\((.+)\)$/i.test(expr)) { const m=expr.match(/^COUNT\s*\((.+)\)$/i); const v=sqlVal(m[1],row); return v!==null?1:0; }
-  if (/^SUM\s*\((.+)\)$/i.test(expr))   { const m=expr.match(/^SUM\s*\((.+)\)$/i);   return sqlVal(m[1],row)??0; }
-  if (/^AVG\s*\((.+)\)$/i.test(expr))   { const m=expr.match(/^AVG\s*\((.+)\)$/i);   return sqlVal(m[1],row)??0; }
-  if (/^MAX\s*\((.+)\)$/i.test(expr))   { const m=expr.match(/^MAX\s*\((.+)\)$/i);   return sqlVal(m[1],row)??0; }
-  if (/^MIN\s*\((.+)\)$/i.test(expr))   { const m=expr.match(/^MIN\s*\((.+)\)$/i);   return sqlVal(m[1],row)??0; }
-  if (/^ROUND\s*\((.+),\s*(\d+)\)$/i.test(expr)) {
-    const m=expr.match(/^ROUND\s*\((.+),\s*(\d+)\)$/i);
-    return parseFloat((sqlVal(m[1],row)||0).toFixed(parseInt(m[2])));
-  }
-
-  return sqlVal(expr, row);
-}
-
-function applyGroupBy(rows, groupBy, colsStr, having, aliases) {
-  const groupCols = groupBy.split(',').map(c=>c.trim().toLowerCase());
-  const groups = {};
-  rows.forEach(r => {
-    const key = groupCols.map(c=>{ const v = sqlVal(c,r); return v; }).join('|~|');
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(r);
-  });
-
-  const colDefs = splitArgs(colsStr).map(cd=>{
-    cd=cd.trim();
-    const asM = cd.match(/^(.+?)\s+AS\s+(\w+)$/i);
-    return { expr: asM?asM[1].trim():cd, alias: asM?asM[2]:cd.replace(/[^a-zA-Z0-9_]/g,'_') };
-  });
-
-  const resultCols = colDefs.map(d=>d.alias);
-  const resultRows = [];
-
-  Object.values(groups).forEach(grpRows => {
-    const row = [];
-    colDefs.forEach(d=>{
-      const expr = d.expr;
-      if (/^COUNT\s*\(\s*\*\s*\)$/i.test(expr)) { row.push(grpRows.length); return; }
-      if (/^COUNT\s*\((.+)\)$/i.test(expr)) {
-        const m=expr.match(/^COUNT\s*\((.+)\)$/i);
-        row.push(grpRows.filter(r=>sqlVal(m[1],r)!==null).length); return;
-      }
-      if (/^SUM\s*\((.+)\)$/i.test(expr)) {
-        const m=expr.match(/^SUM\s*\((.+)\)$/i);
-        row.push(grpRows.reduce((acc,r)=>acc+(parseFloat(sqlVal(m[1],r))||0),0)); return;
-      }
-      if (/^AVG\s*\((.+)\)$/i.test(expr)) {
-        const m=expr.match(/^AVG\s*\((.+)\)$/i);
-        const sum=grpRows.reduce((acc,r)=>acc+(parseFloat(sqlVal(m[1],r))||0),0);
-        row.push(Math.round((sum/grpRows.length)*100)/100); return;
-      }
-      if (/^MAX\s*\((.+)\)$/i.test(expr)) {
-        const m=expr.match(/^MAX\s*\((.+)\)$/i);
-        row.push(Math.max(...grpRows.map(r=>parseFloat(sqlVal(m[1],r))||0))); return;
-      }
-      if (/^MIN\s*\((.+)\)$/i.test(expr)) {
-        const m=expr.match(/^MIN\s*\((.+)\)$/i);
-        row.push(Math.min(...grpRows.map(r=>parseFloat(sqlVal(m[1],r))||0))); return;
-      }
-      if (/^ROUND\s*\(.+,\s*\d+\)$/i.test(expr)) {
-        const m=expr.match(/^ROUND\s*\((.+),\s*(\d+)\)$/i);
-        const inner = m[1];
-        let v;
-        if (/^AVG\s*\((.+)\)$/i.test(inner)) {
-          const mi=inner.match(/^AVG\s*\((.+)\)$/i);
-          const sum=grpRows.reduce((a,r)=>a+(parseFloat(sqlVal(mi[1],r))||0),0);
-          v = sum/grpRows.length;
-        } else { v = parseFloat(sqlVal(inner, grpRows[0]))||0; }
-        row.push(parseFloat(v.toFixed(parseInt(m[2])))); return;
-      }
-      // Non-aggregate: take first row value
-      row.push(sqlVal(expr, grpRows[0]));
-    });
-    resultRows.push(row);
-  });
-
-  // HAVING
-  let finalRows = resultRows;
-  if (having) {
-    finalRows = resultRows.filter(row=>{
-      const rowObj = {};
-      resultCols.forEach((c,i)=>rowObj[c]=row[i]);
-      return evalSQLCond(having, rowObj, aliases);
-    });
-  }
-
-  return { cols: resultCols, rows: finalRows };
-}
-
-// ── INSERT ─────────────────────────────────────────────────
-function execInsert(stmt) {
-  const m = stmt.match(/INSERT\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/i);
-  if (!m) return `<div class="output-err">❌ Invalid INSERT syntax. Use: INSERT INTO table (col1,col2) VALUES (val1,val2);</div>`;
-  const tbl = m[1].toLowerCase();
-  if (!_sqlDB[tbl]) return `<div class="output-err">❌ Table "${escHtml(tbl)}" not found.</div>`;
-  const cols = m[2].split(',').map(c=>c.trim());
-  const vals = m[3].split(',').map(v=>{
-    v=v.trim();
-    if (/^'.*'$/.test(v)) return v.slice(1,-1);
-    return isNaN(v) ? v : parseFloat(v);
-  });
-  const row = _sqlDB[tbl].cols.map(c=>{
-    const ci = cols.findIndex(cc=>cc.toLowerCase()===c.toLowerCase());
-    return ci>=0 ? vals[ci] : null;
-  });
-  _sqlDB[tbl].rows.push(row);
-  return `<div class="output-ok">✅ 1 row inserted into <strong>${escHtml(tbl)}</strong>. Total: ${_sqlDB[tbl].rows.length} rows.</div>`;
-}
-
-// ── UPDATE ─────────────────────────────────────────────────
-function execUpdate(stmt) {
-  const m = stmt.match(/UPDATE\s+(\w+)\s+SET\s+(.+?)(?:\s+WHERE\s+(.+?))?;?$/i);
-  if (!m) return `<div class="output-err">❌ Invalid UPDATE syntax.</div>`;
-  const tbl = m[1].toLowerCase();
-  if (!_sqlDB[tbl]) return `<div class="output-err">❌ Table "${escHtml(tbl)}" not found.</div>`;
-  const setParts = m[2].split(',').map(s=>s.trim());
-  const where    = m[3]||null;
-  const cols     = _sqlDB[tbl].cols;
-  let count = 0;
-  _sqlDB[tbl].rows = _sqlDB[tbl].rows.map(row=>{
-    const rowObj = {}; cols.forEach((c,i)=>rowObj[c]=row[i]);
-    if (where && !evalSQLCond(where, rowObj, {})) return row;
-    const newRow = [...row];
-    setParts.forEach(sp=>{
-      const sm = sp.match(/^(\w+)\s*=\s*(.+)$/);
-      if (!sm) return;
-      const ci = cols.findIndex(c=>c.toLowerCase()===sm[1].toLowerCase());
-      if (ci<0) return;
-      let v = sm[2].trim();
-      if (/^'.*'$/.test(v)) v=v.slice(1,-1);
-      else if (!isNaN(v)) v=parseFloat(v);
-      newRow[ci] = v;
-    });
-    count++;
-    return newRow;
-  });
-  return `<div class="output-ok">✅ ${count} row(s) updated in <strong>${escHtml(tbl)}</strong>.</div>`;
-}
-
-// ── DELETE ─────────────────────────────────────────────────
-function execDelete(stmt) {
-  const m = stmt.match(/DELETE\s+FROM\s+(\w+)(?:\s+WHERE\s+(.+?))?;?$/i);
-  if (!m) return `<div class="output-err">❌ Invalid DELETE syntax.</div>`;
-  const tbl = m[1].toLowerCase();
-  if (!_sqlDB[tbl]) return `<div class="output-err">❌ Table "${escHtml(tbl)}" not found.</div>`;
-  const where = m[2]||null;
-  if (!where) {
-    const count = _sqlDB[tbl].rows.length;
-    _sqlDB[tbl].rows = [];
-    return `<div class="output-ok">⚠️ Deleted ALL ${count} rows from <strong>${escHtml(tbl)}</strong>.</div>`;
-  }
-  const cols = _sqlDB[tbl].cols;
-  const before = _sqlDB[tbl].rows.length;
-  _sqlDB[tbl].rows = _sqlDB[tbl].rows.filter(row=>{
-    const rowObj = {}; cols.forEach((c,i)=>rowObj[c]=row[i]);
-    return !evalSQLCond(where, rowObj, {});
-  });
-  const deleted = before - _sqlDB[tbl].rows.length;
-  return `<div class="output-ok">✅ ${deleted} row(s) deleted from <strong>${escHtml(tbl)}</strong>.</div>`;
-}
-
-// ── Render table output ────────────────────────────────────
-function renderSQLTable(cols, rows, meta) {
-  if (!rows.length) return `<div class="output-info">-- Empty result set (0 rows)</div>`;
-  let html = `<div class="output-info">-- ${meta}</div>`;
-  html += `<div style="overflow-x:auto;margin-top:6px;">`;
-  html += `<table style="border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:11px;min-width:100%;">`;
-  // Header
-  html += `<tr style="background:rgba(124,109,250,.12);">`;
-  cols.forEach(c => html += `<th style="padding:6px 12px;border:1px solid var(--border2);color:var(--accent);text-align:left;white-space:nowrap;">${escHtml(String(c))}</th>`);
-  html += `</tr>`;
-  // Rows
-  rows.forEach((row,i) => {
-    html += `<tr style="background:${i%2===0?'rgba(255,255,255,.02)':'transparent'};">`;
-    row.forEach(v => html += `<td style="padding:5px 12px;border:1px solid var(--border);color:var(--text2);white-space:nowrap;">${v===null?'<em style="color:var(--text3)">NULL</em>':escHtml(String(v))}</td>`);
-    html += `</tr>`;
-  });
-  html += `</table></div>`;
-  return html;
-}
-
-// Re-export splitArgs for SQL (already defined above for C)
-
-function resetSQLDB() {
-  _sqlDB = JSON.parse(JSON.stringify(SQL_DB));
-  document.getElementById('sql-output').innerHTML =
-    '<div class="output-ok">✅ Sample database restored to original state.</div>' +
-    '<div class="output-info">-- students (10 rows), courses (5 rows), enrollments (10 rows)</div>';
-}
+//  QUIZZES
 // ══════════════════════════════════════════════════════════
 const BUILTIN_QUIZZES = [
   { id:'csc122', title:'CSC 122 — C Programming & Software Dev', icon:'💻', color:'var(--accent)',
