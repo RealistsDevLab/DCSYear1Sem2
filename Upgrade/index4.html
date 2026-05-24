@@ -158,13 +158,6 @@ body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-he
 /* ══ UTILITIES ══ */
 .hidden{display:none!important;}
 .fade-in{animation:fadeUp .5s ease both;}
-@keyframes bellRing{
-  0%,100%{transform:rotate(0);}
-  20%{transform:rotate(-18deg);}
-  40%{transform:rotate(18deg);}
-  60%{transform:rotate(-12deg);}
-  80%{transform:rotate(12deg);}
-}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
 .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;border:none;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;}
 .btn-primary{background:linear-gradient(135deg,var(--accent),#a78bfa);color:#fff;}
@@ -624,7 +617,7 @@ select.form-input{cursor:pointer;}
         <div class="nav-item" id="nav-clearn" onclick="showView('clearn')"><span class="nav-icon">🎬</span> C Video Lessons</div>
       <div class="sidebar-section">
         <div class="sidebar-section-label">Community</div>
-        <div class="nav-item" id="nav-discuss" onclick="showView('discuss')"><span class="nav-icon">💬</span> Discussion <span class="nav-badge" id="discuss-badge" style="display:none;"></span></div>
+        <div class="nav-item" id="nav-discuss" onclick="showView('discuss')"><span class="nav-icon">💬</span> Discussion</div>
         <div class="nav-item" id="nav-attend" onclick="showView('attend')"><span class="nav-icon">📆</span> Attendance</div>
       </div>
       <div class="sidebar-section" id="admin-nav-section" style="display:none;">
@@ -1075,7 +1068,6 @@ HAVING AVG(marks) > 60;</pre>
               <h3><div class="admin-card-icon" style="background:rgba(247,183,49,.12);">🔔</div> Send Notification</h3>
               <div class="form-group"><label class="form-label">Message</label><input type="text" id="notif-msg" class="form-input" placeholder="Notification message..."></div>
               <button class="btn btn-primary" onclick="sendNotification()">Send 🔔</button>
-              <div id="notif-send-status" style="display:none;margin-top:8px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--accent3);">✅ Notification sent!</div>
             </div>
           </div>
         </div>
@@ -1510,35 +1502,7 @@ function startSessionWatcher(uid, token) {
   });
 }
 
-// ── Notification helpers ───────────────────────────────────
-function toggleNotifPanel() {
-  document.getElementById('notif-panel').classList.toggle('open');
-}
-
-function markNotifRead(key, el) {
-  if (window.FB_READY) window.FB.markRead(key);
-  el.classList.remove('unread');
-}
-
-function sendNotification() {
-  const msg = document.getElementById('notif-msg').value.trim();
-  if (!msg) return;
-  if (window.FB_READY) window.FB.pushNotification(msg);
-  document.getElementById('notif-msg').value = '';
-  const st = document.getElementById('notif-send-status');
-  if (st) { st.style.display='block'; setTimeout(()=>st.style.display='none',2500); }
-}
-
-function postAnnouncement() {
-  const txt = document.getElementById('admin-announcement').value.trim();
-  if (!txt) return;
-  if (window.FB_READY) window.FB.setAnnouncement(txt);
-  // No alert needed — the live listener will update the bar immediately for everyone
-}
-function clearAnnouncement() {
-  if (window.FB_READY) window.FB.setAnnouncement('');
-  document.getElementById('admin-announcement').value='';
-}
+// ── Enter App ──────────────────────────────────────────────
 function enterApp() {
   document.getElementById('login-page').style.display='none';
   const app = document.getElementById('app');
@@ -1546,8 +1510,7 @@ function enterApp() {
 
   const name = _isAdmin ? 'Bravehart (Admin)' : (_currentMember?.name || 'Member');
   document.getElementById('hdr-username').textContent = name;
-  document.getElementById('home-greeting-text').textContent =
-    `Welcome back, ${_isAdmin ? 'Bravehart' : (_currentMember?.name?.split(' ')[0] || 'Realist')} 👋`;
+  document.getElementById('home-greeting-text').textContent = `Welcome back, ${_isAdmin ? 'Bravehart' : (_currentMember?.name?.split(' ')[0] || 'Realist')} 👋`;
 
   if (_isAdmin) {
     document.getElementById('settings-btn').style.display='flex';
@@ -1558,17 +1521,7 @@ function enterApp() {
 
   startSessionTimeout();
   buildCVideoGrid();
-
-  // Wait for Firebase then attach all real-time listeners at once
-  if (window.FB_READY) {
-    attachRealtimeListeners();
-    initApp();
-  } else {
-    window.addEventListener('fb-ready', () => {
-      attachRealtimeListeners();
-      initApp();
-    }, { once: true });
-  }
+  initApp();
 }
 
 // ── Mobile Nav ─────────────────────────────────────────────
@@ -1601,8 +1554,6 @@ function logout() {
   if (_currentMember && window.FB_READY) window.FB.clearSession(_currentMember.uid).catch(()=>{});
   clearTimeout(_sessionTimer);
   _sessionRole=null; _currentMember=null; _isAdmin=false; _sessionToken=null;
-  _listenersAttached = false; // allow re-attach on next login
-  _allFlashcards = [];
   document.getElementById('app').style.display='none';
   document.getElementById('login-page').style.display='flex';
   document.getElementById('session-kicked-modal').classList.remove('open');
@@ -1614,18 +1565,16 @@ function logout() {
 // ══════════════════════════════════════════════════════════
 function initApp() {
   renderPDFLinks();
-  renderNotes();          // static — render once
-  loadQuizList();         // static — render once
-  buildChallenges();      // static — render once
-  buildSQLChallenges();   // static — render once
-  loadLeaderboard();      // reads Firebase once
-  loadAttendance();       // attaches onValue listener
-
-  // Flashcards initial render (listener in attachRealtimeListeners keeps it live)
-  _allFlashcards = [...BUILTIN_FLASHCARDS];
-  renderFlashcardGrid();
-  document.getElementById('fc-count-total').textContent = BUILTIN_FLASHCARDS.length;
-
+  loadNotifications();
+  loadAnnouncement();
+  renderNotes();
+  loadFlashcards();
+  loadQuizList();
+  loadPosts();
+  loadLeaderboard();
+  loadAttendance();
+  buildChallenges();
+  buildSQLChallenges();
   if (_isAdmin) {
     loadAdminMembers();
     loadBlocklist();
@@ -1644,129 +1593,75 @@ function showView(id) {
   if (v) v.classList.add('active');
   const n = document.getElementById('nav-'+id);
   if (n) n.classList.add('active');
+  // Sync desktop scroll to top
   const main = document.getElementById('main-content');
   if (main) main.scrollTop=0;
+  // Close mobile more menu
   closeMobMore();
-  // Close notif panel
-  document.getElementById('notif-panel').classList.remove('open');
 
-  // Only reload things not covered by real-time listeners
-  if (id==='lb')     loadLeaderboard();
-  if (id==='attend') loadAttendance();
-  if (id==='admin')  { loadAdminMembers(); loadAdminStats(); loadAdminAttempts(); loadAdminPosts(); loadDeviceBindings(); loadBlocklist(); }
-  if (id==='notes')  loadUploadedFiles();
-  // discuss, flash, notifications — all live via onValue, no reload needed
+  if (id==='lb')      loadLeaderboard();
+  if (id==='attend')  loadAttendance();
+  if (id==='admin')   { loadAdminMembers(); loadAdminStats(); loadAdminAttempts(); loadAdminPosts(); loadDeviceBindings(); loadBlocklist(); }
+  if (id==='flash')   loadFlashcards();
+  if (id==='notes')   loadUploadedFiles();
+  if (id==='discuss') loadPosts();
 }
 
 // ══════════════════════════════════════════════════════════
-//  REAL-TIME LISTENERS — attached ONCE at login
+//  NOTIFICATIONS
 // ══════════════════════════════════════════════════════════
-let _listenersAttached = false;
-
-function attachRealtimeListeners() {
-  if (_listenersAttached || !window.FB_READY) return;
-  _listenersAttached = true;
-
-  // ── Announcement (already works — keep as is) ──────────
-  window.FB.onAnnouncement(text => {
-    const bar  = document.getElementById('announcement-bar');
-    const el   = document.getElementById('announcement-text');
-    if (text) { bar.style.display='flex'; el.textContent=text; }
-    else       { bar.style.display='none'; }
-  });
-
-  // ── Notifications — live bell + panel ─────────────────
-  window.FB.onNotifications(notifs => {
-    const unread = notifs.filter(n => !n.read);
-    const dot  = document.getElementById('notif-dot');
-    const btn  = document.getElementById('notif-btn');
-    const list = document.getElementById('notif-list');
-    if (!dot || !list) return;
-
-    // Bell badge
+function toggleNotifPanel() {
+  document.getElementById('notif-panel').classList.toggle('open');
+}
+function loadNotifications() {
+  if (!window.FB_READY) return;
+  window.FB.onNotifications(notifs=>{
+    const unread = notifs.filter(n=>!n.read);
+    const dot = document.getElementById('notif-dot');
     dot.style.display = unread.length ? 'block' : 'none';
-    if (unread.length) {
-      btn.style.animation = 'bellRing .4s ease 2';
-      setTimeout(() => btn.style.animation='', 900);
-    }
-
-    // Panel list (newest first)
-    const sorted = notifs.slice().sort((a,b) => b.ts - a.ts);
-    list.innerHTML = sorted.length
-      ? sorted.map(n => `
-          <div class="notif-item ${n.read?'':'unread'}" onclick="markNotifRead('${n._key}',this)">
-            <div style="font-size:13px;">${escHtml(n.msg)}</div>
-            <div style="font-size:9px;color:var(--text3);margin-top:3px;">${timeAgo(n.ts)}</div>
-          </div>`).join('')
-      : '<div class="notif-empty">No notifications yet.</div>';
-  });
-
-  // ── Discussion — live feed ─────────────────────────────
-  window.FB.onPosts(posts => {
-    const list = document.getElementById('post-list');
-    if (!list) return;
-
-    // Update nav badge
-    const badge = document.getElementById('discuss-badge');
-    if (badge) {
-      badge.textContent = posts.length || '';
-      badge.style.display = posts.length ? 'inline-flex' : 'none';
-    }
-
-    if (!posts.length) {
-      list.innerHTML = `<div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;padding:20px 0;text-align:center;">
-        No posts yet — start the conversation! 💬
-      </div>`;
-      return;
-    }
-
-    list.innerHTML = posts.map(p => `
-      <div class="post-item fade-in">
-        <div class="post-item-hdr">
-          <div class="post-avatar">${escHtml(p.author[0].toUpperCase())}</div>
-          <div>
-            <div class="post-author">${escHtml(p.author)}</div>
-            <div class="post-time">${timeAgo(p.ts)}</div>
-          </div>
-          ${_isAdmin ? `<button class="post-delete-btn" onclick="deletePost('${p._key}')">🗑️</button>` : ''}
-        </div>
-        <div class="post-body" style="white-space:pre-wrap;">${escHtml(p.body)}</div>
+    const list = document.getElementById('notif-list');
+    if (!notifs.length) { list.innerHTML='<div class="notif-empty">No notifications.</div>'; return; }
+    list.innerHTML = notifs.slice().reverse().map(n=>`
+      <div class="notif-item ${n.read?'':'unread'}" onclick="markNotifRead('${n._key}',this)">
+        <div>${n.msg}</div>
+        <div style="font-size:9px;color:var(--text3);margin-top:3px;">${new Date(n.ts).toLocaleDateString()}</div>
       </div>`).join('');
   });
+}
+function markNotifRead(key, el) {
+  if (window.FB_READY) window.FB.markRead(key);
+  el.classList.remove('unread');
+}
+function sendNotification() {
+  const msg = document.getElementById('notif-msg').value.trim();
+  if (!msg) return;
+  if (window.FB_READY) window.FB.pushNotification(msg);
+  document.getElementById('notif-msg').value='';
+  alert('✅ Notification sent!');
+}
 
-  // ── Flashcards live (admin adds → everyone sees instantly) ──
-  window.FB.onFlashcards(cards => {
-    const extra = cards; // Firebase-stored cards
-    _allFlashcards = [...BUILTIN_FLASHCARDS, ...extra];
-    renderFlashcardGrid();
-    // Update stat
-    document.getElementById('fc-count-total').textContent = _allFlashcards.length;
-    updateHomeStats();
+// ══════════════════════════════════════════════════════════
+//  ANNOUNCEMENT
+// ══════════════════════════════════════════════════════════
+function loadAnnouncement() {
+  if (!window.FB_READY) return;
+  window.FB.onAnnouncement(text=>{
+    const bar = document.getElementById('announcement-bar');
+    if (text) {
+      bar.style.display='flex';
+      document.getElementById('announcement-text').textContent = text;
+    } else { bar.style.display='none'; }
   });
 }
-
-// Replace old separate loaders (kept for compatibility but now no-ops or thin wrappers)
-function loadNotifications() { /* handled by attachRealtimeListeners */ }
-function loadPosts()         { /* handled by attachRealtimeListeners */ }
-function loadAnnouncement()  { /* handled by attachRealtimeListeners */ }
-function loadFlashcards() {
-  // Render immediately from cached data while listener keeps it live
-  renderFlashcardGrid();
+function postAnnouncement() {
+  const txt = document.getElementById('admin-announcement').value.trim();
+  if (!txt) return;
+  if (window.FB_READY) window.FB.setAnnouncement(txt);
+  alert('✅ Announcement posted!');
 }
-
-// ── Helpers ────────────────────────────────────────────────
-function timeAgo(ts) {
-  const diff = Date.now() - ts;
-  const s = Math.floor(diff/1000);
-  const m = Math.floor(s/60);
-  const h = Math.floor(m/60);
-  const d = Math.floor(h/24);
-  if (s < 5)   return 'just now';
-  if (s < 60)  return `${s}s ago`;
-  if (m < 60)  return `${m}m ago`;
-  if (h < 24)  return `${h}h ago`;
-  if (d < 7)   return `${d}d ago`;
-  return new Date(ts).toLocaleDateString();
+function clearAnnouncement() {
+  if (window.FB_READY) window.FB.setAnnouncement('');
+  document.getElementById('admin-announcement').value='';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -3946,28 +3841,32 @@ async function submitPost() {
   const author = document.getElementById('post-author').value.trim();
   const body   = document.getElementById('post-body').value.trim();
   const err    = document.getElementById('post-error');
-  if (!author || !body) { showErr(err, '❌ Enter your name and message.'); return; }
+  if (!author||!body) { showErr(err,'❌ Enter your name and message.'); return; }
 
-  const btn = document.querySelector('#view-discuss .btn-primary');
-  if (btn) { btn.textContent='Posting...'; btn.disabled=true; }
-
-  try {
-    if (window.FB_READY) {
-      const blocked = await window.FB.isBlocked(author);
-      if (blocked) { showErr(err, '⛔ You are blocked from posting. Contact Bravehart.'); return; }
-      await window.FB.savePost({ author, body, ts: Date.now() });
-      // onPosts listener fires automatically — no manual reload needed
-    }
-    document.getElementById('post-body').value = '';
-    // Scroll to top of post list so they see their post appear
-    const list = document.getElementById('post-list');
-    if (list) list.scrollIntoView({ behavior:'smooth', block:'start' });
-  } finally {
-    if (btn) { btn.textContent='Post →'; btn.disabled=false; }
+  if (window.FB_READY) {
+    const blocked = await window.FB.isBlocked(author);
+    if (blocked) { showErr(err,'⛔ You are blocked from posting. Contact Bravehart.'); return; }
+    await window.FB.savePost({ author, body, ts: Date.now() });
   }
+  document.getElementById('post-body').value='';
 }
 
-// loadPosts is now a no-op — real-time listener in attachRealtimeListeners handles it
+function loadPosts() {
+  if (!window.FB_READY) return;
+  window.FB.onPosts(posts=>{
+    const list = document.getElementById('post-list');
+    if (!posts.length) { list.innerHTML='<div style="color:var(--text3);font-size:12px;font-family:\'JetBrains Mono\',monospace;">No posts yet. Start the conversation!</div>'; return; }
+    list.innerHTML = posts.map(p=>`
+      <div class="post-item">
+        <div class="post-item-hdr">
+          <div class="post-avatar">${p.author[0].toUpperCase()}</div>
+          <div><div class="post-author">${p.author}</div><div class="post-time">${new Date(p.ts).toLocaleString()}</div></div>
+          ${_isAdmin?`<button class="post-delete-btn" onclick="deletePost('${p._key}')">🗑️</button>`:''}
+        </div>
+        <div class="post-body">${p.body}</div>
+      </div>`).join('');
+  });
+}
 
 function deletePost(key) {
   if (confirm('Delete this post?') && window.FB_READY) window.FB.deletePost(key);
