@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- ground shadow -->
+  <ellipse cx="256" cy="474" rx="158" ry="18" fill="rgba(0,0,0,0.13)"/>
+
+  <!-- BOTTOM BOOK — Red, tilted left -->
+  <g transform="rotate(-12 256 310)">
+    <rect x="82"  y="220" width="38" height="210" rx="8" fill="#c0392b"/>
+    <rect x="120" y="210" width="214" height="220" rx="8" fill="#e74c3c"/>
+    <rect x="332" y="216" width="14" height="208" rx="3" fill="#f5ede8"/>
+    <rect x="120" y="210" width="214" height="13" rx="5" fill="rgba(255,255,255,0.22)"/>
+    <rect x="82"  y="220" width="38" height="11" rx="5" fill="rgba(255,255,255,0.18)"/>
+  </g>
+
+  <!-- MIDDLE BOOK — Amber, nearly flat -->
+  <g transform="rotate(4 256 256)">
+    <rect x="92"  y="162" width="38" height="194" rx="8" fill="#d68910"/>
+    <rect x="130" y="152" width="218" height="204" rx="8" fill="#f39c12"/>
+    <rect x="346" y="158" width="14" height="192" rx="3" fill="#fdf3dc"/>
+    <rect x="130" y="152" width="218" height="13" rx="5" fill="rgba(255,255,255,0.24)"/>
+    <rect x="92"  y="162" width="38" height="11" rx="5" fill="rgba(255,255,255,0.20)"/>
+  </g>
+
+  <!-- TOP BOOK — Green, slight tilt right -->
+  <g transform="rotate(-5 256 180)">
+    <rect x="106" y="82"  width="38" height="192" rx="8" fill="#27ae60"/>
+    <rect x="144" y="72"  width="220" height="202" rx="8" fill="#2ecc71"/>
+    <rect x="362" y="78"  width="14" height="190" rx="3" fill="#e8faf0"/>
+    <rect x="144" y="72"  width="220" height="13" rx="5" fill="rgba(255,255,255,0.26)"/>
+    <rect x="106" y="82"  width="38" height="11" rx="5" fill="rgba(255,255,255,0.20)"/>
+    <!-- title lines on cover -->
+    <rect x="164" y="130" width="128" height="9"  rx="4" fill="rgba(255,255,255,0.30)"/>
+    <rect x="164" y="150" width="88"  height="7"  rx="3" fill="rgba(255,255,255,0.20)"/>
+  </g>
+</svg>

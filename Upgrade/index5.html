@@ -3,18 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DCS | E-LEARNING 📚</title>
+<title>TheRealistDevLab — DCS Study Portal</title>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<link rel="icon" type="image/svg+xml" href="icon.svg">
-<link rel="apple-touch-icon" href="icon.svg">
-<link rel="shortcut icon" href="icon.svg">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#7c6dfa">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="DCS Learn">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
 
@@ -63,19 +55,10 @@
     getAllMembers:  async () => { const s = await get(ref(db,'members')); return s.exists() ? s.val() : {}; },
     getMemberByUid:async (uid) => { const s = await get(ref(db,'members/'+uid)); return s.exists() ? s.val() : null; },
     onMembers:     (cb) => onValue(ref(db,'members'), s => cb(s.exists() ? s.val() : {})),
-    // Announcements — push-list so multiple can coexist & all show in real time
-    pushAnnouncement:   (msg) => push(ref(db,'announcements'), { msg, ts: Date.now() }),
-    deleteAnnouncement: (key) => remove(ref(db,'announcements/'+key)),
-    clearAnnouncements: ()    => remove(ref(db,'announcements')),
-    onAnnouncements: (cb) => onValue(ref(db,'announcements'), s => {
-      const a=[]; if(s.exists()) s.forEach(c=>a.unshift({...c.val(),_key:c.key})); cb(a);
-    }),
-    // Notifications
-    pushNotification: (msg) => push(ref(db,'notifications'), { msg, ts: Date.now(), read: false }),
-    onNotifications:  (cb)  => onValue(ref(db,'notifications'), s => { const a=[]; if(s.exists()) s.forEach(c=>a.push({...c.val(),_key:c.key})); cb(a); }),
-    markRead:   (k) => update(ref(db,'notifications/'+k), { read: true }),
-    deleteNotif:(k) => remove(ref(db,'notifications/'+k)),
-    clearNotifs:()  => remove(ref(db,'notifications')),
+    // Announcements
+    getAnnouncement: async () => { const s = await get(ref(db,'config/announcement')); return s.exists() ? s.val() : ''; },
+    setAnnouncement: (v) => set(ref(db,'config/announcement'), v),
+    onAnnouncement:  (cb) => onValue(ref(db,'config/announcement'), s => cb(s.exists() ? s.val() : '')),
     // Blocklist
     getBlocklist: async () => { const s = await get(ref(db,'blocklist')); return s.exists() ? Object.values(s.val()) : []; },
     addBlock:    (n) => set(ref(db,'blocklist/'+n.replace(/\s/g,'_')), n),
@@ -108,9 +91,7 @@
     // Notifications
     pushNotification: (msg) => push(ref(db,'notifications'), { msg, ts: Date.now(), read: false }),
     onNotifications:  (cb) => onValue(ref(db,'notifications'), s => { const a=[]; if(s.exists()) s.forEach(c=>a.push({...c.val(),_key:c.key})); cb(a); }),
-    markRead:   (k) => update(ref(db,'notifications/'+k), { read: true }),
-    deleteNotif:(k) => remove(ref(db,'notifications/'+k)),
-    clearNotifs:()  => remove(ref(db,'notifications')),
+    markRead: (k) => update(ref(db,'notifications/'+k), { read: true }),
     // Attendance
     checkIn: (name) => {
       const today = new Date().toISOString().split('T')[0];
@@ -144,7 +125,7 @@
 
   window.FB_READY = true;
   window.dispatchEvent(new Event('fb-ready'));
-  console.log('✅ Firebase connected — DCS E-LEARNING');
+  console.log('✅ Firebase connected — TheRealistDevLab');
 </script>
 
 <style>
@@ -218,7 +199,7 @@ select.form-input{cursor:pointer;}
 .login-glow2{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(ellipse,rgba(240,93,140,.08) 0%,transparent 70%);bottom:-50px;right:-50px;}
 .login-box{position:relative;z-index:10;width:440px;background:rgba(13,13,26,.92);backdrop-filter:blur(24px);border:1px solid rgba(124,109,250,.2);border-radius:20px;padding:48px 42px;box-shadow:0 48px 96px rgba(0,0,0,.7),0 0 0 1px rgba(124,109,250,.08);}
 .login-logo-row{display:flex;align-items:center;gap:12px;margin-bottom:6px;}
-.login-logo-icon{width:52px;height:52px;background:transparent;border-radius:0;display:flex;align-items:center;justify-content:center;}
+.login-logo-icon{width:46px;height:46px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;}
 .login-logo-text{font-family:'Space Mono',monospace;font-size:14px;font-weight:700;line-height:1.25;}
 .login-logo-text small{display:block;font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;}
 .login-title{font-size:26px;font-weight:800;margin:20px 0 5px;background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
@@ -239,7 +220,7 @@ select.form-input{cursor:pointer;}
 /* Header */
 .hdr{height:var(--hdr);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:14px;position:fixed;top:0;left:0;right:0;z-index:200;}
 .hdr-logo{display:flex;align-items:center;gap:9px;flex-shrink:0;}
-.hdr-logo-icon{width:32px;height:32px;background:transparent;border-radius:0;display:flex;align-items:center;justify-content:center;}
+.hdr-logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;}
 .hdr-logo-text{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;}
 .hdr-logo-text small{display:block;font-size:8px;color:var(--text3);letter-spacing:1.5px;}
 .hdr-sep{width:1px;height:28px;background:var(--border);flex-shrink:0;}
@@ -548,30 +529,8 @@ select.form-input{cursor:pointer;}
   <!-- MEMBER LOGIN -->
   <div class="login-box" id="member-login-box">
     <div class="login-logo-row">
-      <div class="login-logo-icon" style="background:transparent;padding:0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="28" height="28" style="display:block;">
-  <ellipse cx="256" cy="474" rx="158" ry="18" fill="rgba(0,0,0,0.13)"/>
-  <g transform="rotate(-12 256 310)">
-    <rect x="82" y="220" width="38" height="210" rx="8" fill="#c0392b"/>
-    <rect x="120" y="210" width="214" height="220" rx="8" fill="#e74c3c"/>
-    <rect x="332" y="216" width="14" height="208" rx="3" fill="#f5ede8"/>
-    <rect x="120" y="210" width="214" height="13" rx="5" fill="rgba(255,255,255,0.22)"/>
-  </g>
-  <g transform="rotate(4 256 256)">
-    <rect x="92" y="162" width="38" height="194" rx="8" fill="#d68910"/>
-    <rect x="130" y="152" width="218" height="204" rx="8" fill="#f39c12"/>
-    <rect x="346" y="158" width="14" height="192" rx="3" fill="#fdf3dc"/>
-    <rect x="130" y="152" width="218" height="13" rx="5" fill="rgba(255,255,255,0.24)"/>
-  </g>
-  <g transform="rotate(-5 256 180)">
-    <rect x="106" y="82" width="38" height="192" rx="8" fill="#27ae60"/>
-    <rect x="144" y="72" width="220" height="202" rx="8" fill="#2ecc71"/>
-    <rect x="362" y="78" width="14" height="190" rx="3" fill="#e8faf0"/>
-    <rect x="144" y="72" width="220" height="13" rx="5" fill="rgba(255,255,255,0.26)"/>
-    <rect x="164" y="130" width="128" height="9" rx="4" fill="rgba(255,255,255,0.30)"/>
-    <rect x="164" y="150" width="88" height="7" rx="3" fill="rgba(255,255,255,0.20)"/>
-  </g>
-</svg></div>
-      <div class="login-logo-text">DCS | E-LEARNING<small>// YEAR 1 · SEM 2</small></div>
+      <div class="login-logo-icon">🚀</div>
+      <div class="login-logo-text">TheRealistDevLab<small>// DCS STUDY PORTAL</small></div>
     </div>
     <h2 class="login-title">Welcome Back</h2>
     <p class="login-sub">Enter your identity + access code to continue<br><span>// UICT · DCS Year 1 · Semester 2 · 2026</span></p>
@@ -588,7 +547,7 @@ select.form-input{cursor:pointer;}
     <div class="error-msg" id="login-error" style="margin-top:12px;"></div>
 
     <div class="login-toggle">— or — <a onclick="showAdminLogin()">Admin access</a></div>
-    <div class="login-footer">UICT · DCS Year 1 · <span>2026</span></div>
+    <div class="login-footer">TheRealists · UICT · <span>2026</span></div>
   </div>
 
   <!-- ADMIN LOGIN -->
@@ -598,7 +557,7 @@ select.form-input{cursor:pointer;}
       <div class="login-logo-text">Admin Access<small>// BRAVEHART ONLY</small></div>
     </div>
     <h2 class="login-title" style="background:linear-gradient(135deg,var(--text),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Restricted Access</h2>
-    <p class="login-sub">Authorised administrator only<br><span>// Bravehart · DCS E-Learning</span></p>
+    <p class="login-sub">Authorised administrator only<br><span>// Bravehart · TheRealists</span></p>
 
     <div class="form-group">
       <label class="form-label">Admin Password</label>
@@ -624,24 +583,8 @@ select.form-input{cursor:pointer;}
   <!-- HEADER -->
   <header class="hdr">
     <div class="hdr-logo">
-      <div class="hdr-logo-icon" style="background:transparent;padding:0;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="18" height="18" style="display:block;">
-  <g transform="rotate(-12 256 310)">
-    <rect x="82" y="220" width="38" height="210" rx="8" fill="#c0392b"/>
-    <rect x="120" y="210" width="214" height="220" rx="8" fill="#e74c3c"/>
-    <rect x="332" y="216" width="14" height="208" rx="3" fill="#f5ede8"/>
-  </g>
-  <g transform="rotate(4 256 256)">
-    <rect x="92" y="162" width="38" height="194" rx="8" fill="#d68910"/>
-    <rect x="130" y="152" width="218" height="204" rx="8" fill="#f39c12"/>
-    <rect x="346" y="158" width="14" height="192" rx="3" fill="#fdf3dc"/>
-  </g>
-  <g transform="rotate(-5 256 180)">
-    <rect x="106" y="82" width="38" height="192" rx="8" fill="#27ae60"/>
-    <rect x="144" y="72" width="220" height="202" rx="8" fill="#2ecc71"/>
-    <rect x="362" y="78" width="14" height="190" rx="3" fill="#e8faf0"/>
-  </g>
-</svg></div>
-      <div class="hdr-logo-text">DCS | E-LEARNING<small>YEAR 1 · SEM 2</small></div>
+      <div class="hdr-logo-icon">🚀</div>
+      <div class="hdr-logo-text">TheRealistDevLab<small>DCS STUDY PORTAL</small></div>
     </div>
     <div class="hdr-sep"></div>
     <div class="hdr-user-chip">
@@ -659,10 +602,7 @@ select.form-input{cursor:pointer;}
 
   <!-- NOTIFICATION PANEL -->
   <div class="notif-panel" id="notif-panel">
-    <div class="notif-panel-hdr" style="display:flex;align-items:center;justify-content:space-between;">
-      <span>🔔 Notifications</span>
-      <button id="notif-clear-btn" onclick="clearAllNotifs()" style="display:none;background:none;border:none;font-size:11px;color:var(--accent2);cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:700;">Clear all</button>
-    </div>
+    <div class="notif-panel-hdr">🔔 Notifications</div>
     <div id="notif-list"><div class="notif-empty">No notifications yet.</div></div>
   </div>
 
@@ -705,7 +645,7 @@ select.form-input{cursor:pointer;}
       <div class="view active" id="view-home">
         <div class="page-hdr fade-in">
           <h1 id="home-greeting-text">Welcome back 👋</h1>
-          <p>DCS Year 1 Semester 2 · <span>DCS E-LEARNING · UICT 2026</span></p>
+          <p>DCS Year 1 Semester 2 · <span>TheRealists · UICT 2026</span></p>
         </div>
         <div id="announcement-bar" style="display:none;" class="announcement-bar fade-in">
           <div class="ann-icon">📢</div>
@@ -725,7 +665,7 @@ select.form-input{cursor:pointer;}
               <div class="quick-link" onclick="showView('flash')"><div class="quick-link-icon">🃏</div><div class="quick-link-text"><strong>Flashcards</strong><small>Practice key concepts</small></div><span style="margin-left:auto;color:var(--text3);">→</span></div>
               <div class="quick-link" onclick="showView('code')"><div class="quick-link-icon">💻</div><div class="quick-link-text"><strong>C Programming Practice</strong><small>Challenges + code editor</small></div><span style="margin-left:auto;color:var(--text3);">→</span></div>
               <div class="quick-link" onclick="showView('quiz')"><div class="quick-link-icon">🧠</div><div class="quick-link-text"><strong>Take a Quiz</strong><small>Test your knowledge</small></div><span style="margin-left:auto;color:var(--text3);">→</span></div>
-              <div class="quick-link" onclick="showView('discuss')"><div class="quick-link-icon">💬</div><div class="quick-link-text"><strong>Discussion</strong><small>Ask & answer with classmates</small></div><span style="margin-left:auto;color:var(--text3);">→</span></div>
+              <div class="quick-link" onclick="showView('discuss')"><div class="quick-link-icon">💬</div><div class="quick-link-text"><strong>Discussion</strong><small>Ask & answer with TheRealists</small></div><span style="margin-left:auto;color:var(--text3);">→</span></div>
             </div>
           </div>
           <div>
@@ -816,7 +756,7 @@ select.form-input{cursor:pointer;}
 #include &lt;stdio.h&gt;
 
 int main() {
-    printf(&quot;Hello, DCS Students!\n&quot;);
+    printf(&quot;Hello, TheRealists!\n&quot;);
     return 0;
 }"></textarea>
           </div>
@@ -883,7 +823,7 @@ int main() {
       <div class="view" id="view-lb">
         <div class="page-hdr fade-in">
           <h1>🏆 Leaderboard</h1>
-          <p>Top scores across all quizzes — <span>DCS E-LEARNING Rankings</span></p>
+          <p>Top scores across all quizzes — <span>TheRealists Rankings</span></p>
         </div>
         <div id="lb-podium" class="lb-podium fade-in"></div>
         <div id="lb-list" class="fade-in"></div>
@@ -893,7 +833,7 @@ int main() {
       <div class="view" id="view-discuss">
         <div class="page-hdr fade-in">
           <h1>💬 Discussion</h1>
-          <p>Ask questions · share tips · help each other — <span>DCS E-LEARNING</span></p>
+          <p>Ask questions · share tips · help each other — <span>TheRealists</span></p>
         </div>
         <div class="post-form fade-in">
           <div class="form-group">
@@ -1128,7 +1068,7 @@ HAVING AVG(marks) > 60;</pre>
               <div class="form-group"><label class="form-label">Announcement</label><textarea id="admin-announcement" class="form-input" placeholder="Write announcement for all members..." style="min-height:100px;"></textarea></div>
               <div style="display:flex;gap:8px;">
                 <button class="btn btn-primary" onclick="postAnnouncement()">Post →</button>
-                <button class="btn btn-danger" onclick="clearAnnouncement()">Clear All</button>
+                <button class="btn btn-ghost" onclick="clearAnnouncement()">Clear</button>
               </div>
             </div>
             <div class="admin-card">
@@ -1226,7 +1166,6 @@ HAVING AVG(marks) > 60;</pre>
             <div style="display:flex;flex-direction:column;gap:10px;">
               <button class="btn btn-danger" onclick="clearAllResults()">🗑️ Clear All Quiz Results</button>
               <button class="btn btn-danger" onclick="clearAllPostsAdmin()">🗑️ Clear All Discussion Posts</button>
-              <button class="btn btn-danger" onclick="clearAllNotifs()">🗑️ Clear All Notifications</button>
               <button class="btn btn-danger" onclick="clearAllSessions()">🔐 Force Logout All Members</button>
             </div>
           </div>
@@ -1580,10 +1519,6 @@ function markNotifRead(key, el) {
   if (window.FB_READY) window.FB.markRead(key);
   el.classList.remove('unread');
 }
-function clearAllNotifs() {
-  if (!confirm('Clear all notifications?')) return;
-  if (window.FB_READY) window.FB.clearNotifs();
-}
 
 function sendNotification() {
   const msg = document.getElementById('notif-msg').value.trim();
@@ -1597,19 +1532,12 @@ function sendNotification() {
 function postAnnouncement() {
   const txt = document.getElementById('admin-announcement').value.trim();
   if (!txt) return;
-  if (window.FB_READY) window.FB.pushAnnouncement(txt);
-  document.getElementById('admin-announcement').value = '';
-  // Live listener updates the bar for everyone instantly — no alert needed
+  if (window.FB_READY) window.FB.setAnnouncement(txt);
+  // No alert needed — the live listener will update the bar immediately for everyone
 }
 function clearAnnouncement() {
-  if (!confirm('Clear ALL announcements?')) return;
-  if (window.FB_READY) window.FB.clearAnnouncements();
-}
-function deleteAnnouncement(key) {
-  if (window.FB_READY) window.FB.deleteAnnouncement(key);
-}
-function deleteNotif(key) {
-  if (window.FB_READY) window.FB.deleteNotif(key);
+  if (window.FB_READY) window.FB.setAnnouncement('');
+  document.getElementById('admin-announcement').value='';
 }
 function enterApp() {
   document.getElementById('login-page').style.display='none';
@@ -1739,82 +1667,63 @@ function attachRealtimeListeners() {
   if (_listenersAttached || !window.FB_READY) return;
   _listenersAttached = true;
 
-  // ── Announcements ─────────────────────────────────────
-  // Store as a push-list so multiple can exist side-by-side
-  window.FB.onAnnouncements(items => {
-    const bar = document.getElementById('announcement-bar');
-    const el  = document.getElementById('announcement-text');
-    if (!bar || !el) return;
-    if (!items.length) { bar.style.display='none'; return; }
-    bar.style.display = 'flex';
-    // Show all announcements stacked, newest first
-    el.innerHTML = items.map(a =>
-      `<div style="padding:4px 0;${items.length>1?'border-bottom:1px solid rgba(124,109,250,.15);':''}">
-        <span style="font-weight:700;">${escHtml(a.msg)}</span>
-        <span style="font-size:10px;color:var(--text3);margin-left:8px;font-family:'JetBrains Mono',monospace;">${timeAgo(a.ts)}</span>
-        ${_isAdmin ? `<button onclick="deleteAnnouncement('${a._key}')" style="background:none;border:none;color:var(--accent2);cursor:pointer;font-size:12px;margin-left:6px;" title="Delete">✕</button>` : ''}
-      </div>`
-    ).join('');
+  // ── Announcement (already works — keep as is) ──────────
+  window.FB.onAnnouncement(text => {
+    const bar  = document.getElementById('announcement-bar');
+    const el   = document.getElementById('announcement-text');
+    if (text) { bar.style.display='flex'; el.textContent=text; }
+    else       { bar.style.display='none'; }
   });
 
-  // ── Notifications ─────────────────────────────────────
+  // ── Notifications — live bell + panel ─────────────────
   window.FB.onNotifications(notifs => {
+    const unread = notifs.filter(n => !n.read);
     const dot  = document.getElementById('notif-dot');
     const btn  = document.getElementById('notif-btn');
     const list = document.getElementById('notif-list');
     if (!dot || !list) return;
 
-    const unread = notifs.filter(n => !n.read);
+    // Bell badge
     dot.style.display = unread.length ? 'block' : 'none';
-
-    // Show clear button for admin
-    const clearBtn = document.getElementById('notif-clear-btn');
-    if (clearBtn) clearBtn.style.display = (_isAdmin && notifs.length) ? 'block' : 'none';
-
-    // Ring the bell only when new unread arrive
     if (unread.length) {
-      btn.style.animation = 'none';
-      requestAnimationFrame(() => {
-        btn.style.animation = 'bellRing .5s ease 2';
-        setTimeout(() => btn.style.animation = '', 1100);
-      });
+      btn.style.animation = 'bellRing .4s ease 2';
+      setTimeout(() => btn.style.animation='', 900);
     }
 
-    // Render panel (newest first)
-    const sorted = notifs.slice().sort((a, b) => b.ts - a.ts);
+    // Panel list (newest first)
+    const sorted = notifs.slice().sort((a,b) => b.ts - a.ts);
     list.innerHTML = sorted.length
       ? sorted.map(n => `
-          <div class="notif-item ${n.read ? '' : 'unread'}" onclick="markNotifRead('${n._key}', this)">
-            <div style="display:flex;align-items:flex-start;gap:6px;">
-              <div style="flex:1;font-size:12px;line-height:1.5;">${escHtml(n.msg)}</div>
-              ${_isAdmin ? `<button onclick="event.stopPropagation();deleteNotif('${n._key}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:13px;flex-shrink:0;" title="Delete">✕</button>` : ''}
-            </div>
-            <div style="font-size:9px;color:var(--text3);margin-top:4px;font-family:'JetBrains Mono',monospace;">${timeAgo(n.ts)}</div>
-          </div>`)
-        .join('')
+          <div class="notif-item ${n.read?'':'unread'}" onclick="markNotifRead('${n._key}',this)">
+            <div style="font-size:13px;">${escHtml(n.msg)}</div>
+            <div style="font-size:9px;color:var(--text3);margin-top:3px;">${timeAgo(n.ts)}</div>
+          </div>`).join('')
       : '<div class="notif-empty">No notifications yet.</div>';
   });
 
-  // ── Discussion ────────────────────────────────────────
+  // ── Discussion — live feed ─────────────────────────────
   window.FB.onPosts(posts => {
-    const list  = document.getElementById('post-list');
-    const badge = document.getElementById('discuss-badge');
+    const list = document.getElementById('post-list');
     if (!list) return;
 
+    // Update nav badge
+    const badge = document.getElementById('discuss-badge');
     if (badge) {
-      badge.textContent    = posts.length || '';
-      badge.style.display  = posts.length ? 'inline-flex' : 'none';
+      badge.textContent = posts.length || '';
+      badge.style.display = posts.length ? 'inline-flex' : 'none';
     }
 
     if (!posts.length) {
-      list.innerHTML = `<div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;padding:20px 0;text-align:center;">No posts yet — start the conversation! 💬</div>`;
+      list.innerHTML = `<div style="color:var(--text3);font-size:12px;font-family:'JetBrains Mono',monospace;padding:20px 0;text-align:center;">
+        No posts yet — start the conversation! 💬
+      </div>`;
       return;
     }
 
     list.innerHTML = posts.map(p => `
       <div class="post-item fade-in">
         <div class="post-item-hdr">
-          <div class="post-avatar">${escHtml((p.author||'?')[0].toUpperCase())}</div>
+          <div class="post-avatar">${escHtml(p.author[0].toUpperCase())}</div>
           <div>
             <div class="post-author">${escHtml(p.author)}</div>
             <div class="post-time">${timeAgo(p.ts)}</div>
@@ -1825,32 +1734,38 @@ function attachRealtimeListeners() {
       </div>`).join('');
   });
 
-  // ── Flashcards ────────────────────────────────────────
+  // ── Flashcards live (admin adds → everyone sees instantly) ──
   window.FB.onFlashcards(cards => {
-    _allFlashcards = [...BUILTIN_FLASHCARDS, ...cards];
+    const extra = cards; // Firebase-stored cards
+    _allFlashcards = [...BUILTIN_FLASHCARDS, ...extra];
     renderFlashcardGrid();
+    // Update stat
     document.getElementById('fc-count-total').textContent = _allFlashcards.length;
     updateHomeStats();
   });
 }
 
-// No-ops — real-time listeners handle everything
-function loadNotifications() {}
-function loadPosts()         {}
-function loadAnnouncement()  {}
-function loadFlashcards()    { renderFlashcardGrid(); }
+// Replace old separate loaders (kept for compatibility but now no-ops or thin wrappers)
+function loadNotifications() { /* handled by attachRealtimeListeners */ }
+function loadPosts()         { /* handled by attachRealtimeListeners */ }
+function loadAnnouncement()  { /* handled by attachRealtimeListeners */ }
+function loadFlashcards() {
+  // Render immediately from cached data while listener keeps it live
+  renderFlashcardGrid();
+}
 
-// ── Helpers ───────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────
 function timeAgo(ts) {
-  const s = Math.floor((Date.now()-ts)/1000);
-  if (s <  5)   return 'just now';
-  if (s < 60)   return `${s}s ago`;
+  const diff = Date.now() - ts;
+  const s = Math.floor(diff/1000);
   const m = Math.floor(s/60);
-  if (m < 60)   return `${m}m ago`;
   const h = Math.floor(m/60);
-  if (h < 24)   return `${h}h ago`;
   const d = Math.floor(h/24);
-  if (d <  7)   return `${d}d ago`;
+  if (s < 5)   return 'just now';
+  if (s < 60)  return `${s}s ago`;
+  if (m < 60)  return `${m}m ago`;
+  if (h < 24)  return `${h}h ago`;
+  if (d < 7)   return `${d}d ago`;
   return new Date(ts).toLocaleDateString();
 }
 
@@ -2828,7 +2743,7 @@ function runCode() {
     render(lines, out); return;
   }
 
-  lines.push({t:'info', v:'// ✅ Simulated C execution — DCS E-LEARNING'});
+  lines.push({t:'info', v:'// ✅ Simulated C execution — TheRealistDevLab'});
   lines.push({t:'info', v:'// ─────────────────────────────────────'});
 
   try {
